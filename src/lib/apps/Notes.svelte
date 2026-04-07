@@ -115,6 +115,9 @@
 
   function highlight(content, name) {
     const ext = getExt(name);
+    // SECURITY: HTML escape MUST happen before regex replacements.
+    // The @html in the template is safe ONLY because this escaping runs first.
+    // Do NOT reorder or add regex replacements before this line.
     let code = content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     if (ext === 'py') {
       code = code

@@ -774,7 +774,7 @@
               <p class="twofa-hint">Usa Google Authenticator, Authy, o cualquier app compatible con TOTP.</p>
 
               <div class="twofa-qr-wrap">
-                {#if twofaQrSvg}
+                {#if twofaQrSvg && twofaQrSvg.trim().startsWith('<svg') && !twofaQrSvg.includes('<script')}
                   <div class="twofa-qr">{@html twofaQrSvg}</div>
                 {:else}
                   <div class="twofa-qr-placeholder"><div class="spinner"></div></div>
