@@ -35,6 +35,10 @@ let currentToken = '';
 token.subscribe(t => currentToken = t);
 export function getToken() { return currentToken; }
 
+// Centralized auth headers — use these instead of defining hdrs() in each component
+export function hdrs() { return { 'Authorization': `Bearer ${currentToken}` }; }
+export function jsonHdrs() { return { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }; }
+
 // Initialize — check status + restore session
 export async function init() {
   // Leer el token aquí, dentro de onMount, cuando localStorage ya está disponible
