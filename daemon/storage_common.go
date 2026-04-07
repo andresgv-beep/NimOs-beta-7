@@ -54,39 +54,6 @@ func writePoolIdentity(mountPoint, name, poolType, vdevType string, disks []stri
 
 // ─── Config Helpers ──────────────────────────────────────────────────────────
 
-// removePoolFromConfig removes a pool by name from storage.json and updates primaryPool.
-// Returns the updated config and the removed pool's config (or nil if not found).
-func removePoolFromConfig(poolName string) (conf map[string]interface{}, poolConf map[string]interface{}, poolIdx int) {
-	conf = getStorageConfigFull()
-	confPools, _ := conf["pools"].([]interface{})
-
-	for i, p := range confPools {
-		pm, _ := p.(map[string]interface{})
-		if n, _ := pm["name"].(string); n == poolName {
-			poolConf = pm
-			poolIdx = i
-
-			// Remove from slice
-			confPools = append(confPools[:i], confPools[i+1:]...)
-			conf["pools"] = confPools
-
-			// Update primary pool
-			if primary, _ := conf["primaryPool"].(string); primary == poolName {
-				if len(confPools) > 0 {
-					if first, ok := confPools[0].(map[string]interface{}); ok {
-						conf["primaryPool"] = first["name"]
-					}
-				} else {
-					conf["primaryPool"] = nil
-					conf["configuredAt"] = nil
-				}
-			}
-			return
-		}
-	}
-	return conf, nil, -1
-}
-
 // deleteSharesForPool removes all shares associated with a pool from the DB.
 func deleteSharesForPool(poolName, mountPoint string) {
 	shares, _ := dbSharesListRaw()

@@ -1474,7 +1474,6 @@ func serveFileDownload(w http.ResponseWriter, r *http.Request, fullPath string) 
 			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, stat.Size()))
 			w.Header().Set("Accept-Ranges", "bytes")
 			w.Header().Set("Content-Length", fmt.Sprintf("%d", chunkSize))
-			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.WriteHeader(206)
 			io.CopyN(w, f, chunkSize)
 			return
@@ -1485,7 +1484,6 @@ func serveFileDownload(w http.ResponseWriter, r *http.Request, fullPath string) 
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", stat.Size()))
 	w.Header().Set("Accept-Ranges", "bytes")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if isDownload {
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
 	}

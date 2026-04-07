@@ -349,17 +349,8 @@ func scanForRestorablePoolsGo() []map[string]interface{} {
 	return []map[string]interface{}{}
 }
 
-func restorePoolGo(device, poolName string) map[string]interface{} {
-	return map[string]interface{}{"error": "Restore not yet reimplemented"}
-}
-
 func backupConfigToPoolGo() {
 	// TODO: reimplement
-}
-
-func runExec(name string, args ...string) {
-	cmd := exec.Command(name, args...)
-	cmd.Run()
 }
 
 func appendFstab(uuid, mountPoint, filesystem string) {

@@ -464,7 +464,7 @@ func dbUsersVerifyPassword(username string) (string, error) {
 // Session operations
 // ═══════════════════════════════════
 
-const sessionExpiryMs int64 = 7 * 24 * 60 * 60 * 1000 // 7 days
+const sessionExpiryMs int64 = 24 * 60 * 60 * 1000 // 24 hours (sliding — renewed on each request)
 
 func dbSessionCreate(token, username, role, ip string) error {
 	now := time.Now().UnixMilli()
@@ -485,6 +485,9 @@ func dbSessionGet(token string) (*DBSession, error) {
 		db.Exec(`DELETE FROM sessions WHERE token = ?`, token)
 		return nil, fmt.Errorf("session expired")
 	}
+	// Sliding expiry: renew on each use so active users stay logged in
+	newExpiry := time.Now().UnixMilli() + sessionExpiryMs
+	db.Exec(`UPDATE sessions SET expires_at = ? WHERE token = ?`, newExpiry, token)
 	return &s, nil
 }
 

@@ -171,7 +171,6 @@ func handleTorrentProxy(w http.ResponseWriter, r *http.Request) {
 
 	// Forward response
 	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
 }
@@ -230,7 +229,6 @@ func handleTorrentUploadGo(w http.ResponseWriter, r *http.Request) {
 
 	respBody, _ := io.ReadAll(resp.Body)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(200)
 	if len(respBody) > 0 {
 		w.Write(respBody)

@@ -253,17 +253,40 @@ func getBtrfsPoolInfo(poolConf map[string]interface{}, primaryPool string) map[s
 	// Check if mounted
 	mountSrc, _ := runSafe("findmnt", "-n", "-o", "SOURCE", mountPoint)
 	if strings.TrimSpace(mountSrc) != "" {
-		rootSrc, _ := run("findmnt -n -o SOURCE / 2>/dev/null")
+		rootSrc, _ := runSafe("findmnt", "-n", "-o", "SOURCE", "/")
 		if strings.TrimSpace(mountSrc) != strings.TrimSpace(rootSrc) {
 			poolStatus = "active"
-			if dfOut, ok := runSafe("df", "-B1", "--output=size,used,avail", mountPoint); ok {
-				lines := strings.Split(strings.TrimSpace(dfOut), "\n")
-				if len(lines) > 1 {
-					parts := strings.Fields(lines[1])
-					if len(parts) >= 3 {
-						total = parseInt64(parts[0])
-						used = parseInt64(parts[1])
-						available = parseInt64(parts[2])
+			// Use btrfs filesystem usage for RAID-correct capacity
+			// df reports raw capacity which is 2x actual for RAID1
+			if bfsOut, ok := runSafe("btrfs", "filesystem", "usage", "-b", mountPoint); ok {
+				for _, line := range strings.Split(bfsOut, "\n") {
+					line = strings.TrimSpace(line)
+					if strings.HasPrefix(line, "Device size:") {
+						total = parseInt64(strings.TrimSpace(strings.TrimPrefix(line, "Device size:")))
+					} else if strings.HasPrefix(line, "Used:") {
+						used = parseInt64(strings.TrimSpace(strings.TrimPrefix(line, "Used:")))
+					} else if strings.HasPrefix(line, "Free (estimated):") {
+						// Format: "Free (estimated):      1234567890    (min: 123456789)"
+						val := strings.TrimSpace(strings.TrimPrefix(line, "Free (estimated):"))
+						// Take just the first number (before any parenthetical)
+						if idx := strings.Index(val, "("); idx > 0 {
+							val = strings.TrimSpace(val[:idx])
+						}
+						available = parseInt64(val)
+					}
+				}
+			}
+			// Fallback to df if btrfs command failed
+			if total == 0 {
+				if dfOut, ok := runSafe("df", "-B1", "--output=size,used,avail", mountPoint); ok {
+					lines := strings.Split(strings.TrimSpace(dfOut), "\n")
+					if len(lines) > 1 {
+						parts := strings.Fields(lines[1])
+						if len(parts) >= 3 {
+							total = parseInt64(parts[0])
+							used = parseInt64(parts[1])
+							available = parseInt64(parts[2])
+						}
 					}
 				}
 			}
