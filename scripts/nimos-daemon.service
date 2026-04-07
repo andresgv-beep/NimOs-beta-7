@@ -1,6 +1,6 @@
 [Unit]
 Description=NimOS Daemon
-Documentation=https://github.com/andresgv-beep/NimOs-beta-6
+Documentation=https://github.com/andresgv-beep/NimOs-beta-7
 After=local-fs.target zfs-mount.service zfs-import.target
 Before=nimbusos.service
 
