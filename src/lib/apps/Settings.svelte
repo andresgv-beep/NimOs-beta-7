@@ -4,9 +4,8 @@
   import TabNav from '$lib/components/TabNav.svelte';
   import ShareWizard from '$lib/components/ShareWizard.svelte';
   import { user } from '$lib/stores/auth.js';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, hdrs } from '$lib/stores/auth.js';
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}` });
 
   // ── Navegación ──
   let activeView = 'shares';

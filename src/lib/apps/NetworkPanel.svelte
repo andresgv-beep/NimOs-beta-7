@@ -1,11 +1,10 @@
 <script>
   import { onMount } from 'svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, hdrs } from '$lib/stores/auth.js';
 
   export let activeTab = 'interfaces';
   export let activeSub = 'interfaces';
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}` });
 
   // ── Data ──
   let netIfaces   = [];

@@ -1,8 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, hdrs } from '$lib/stores/auth.js';
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}` });
 
   let torrents = [];
   let activeTab = 'all';

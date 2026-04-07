@@ -1,7 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import TreeNode from '$lib/components/TreeNode.svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, jsonHdrs as hdrs } from '$lib/stores/auth.js';
   import { notifySuccess, notifyError, notifyWarning } from '$lib/stores/notifications.js';
   import { addTask } from '$lib/stores/uploadTasks.js';
 
@@ -26,7 +26,6 @@
   let viewMode = 'grid';  // 'grid' | 'list'
   let newFolderModal = null; // { name: '' }
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' });
 
   function filePath(file) {
     return currentPath === '/' ? `/${file.name}` : `${currentPath}/${file.name}`;

@@ -1,12 +1,11 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, hdrs } from '$lib/stores/auth.js';
   import { openWindow } from '$lib/stores/windows.js';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
   export let activeTab = 'disks';
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}` });
 
   let loading = true;
   let pools = [];

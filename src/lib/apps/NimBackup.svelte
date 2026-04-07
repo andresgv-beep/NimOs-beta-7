@@ -1,9 +1,8 @@
 <script>
   import { onMount } from 'svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, jsonHdrs as hdrs } from '$lib/stores/auth.js';
   import NimLink from '$lib/apps/NimLink.svelte';
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' });
 
   let view = 'resumen';
   let devices = [];

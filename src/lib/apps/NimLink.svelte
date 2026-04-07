@@ -1,13 +1,12 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, jsonHdrs as hdrs } from '$lib/stores/auth.js';
 
   export let mode = 'pair'; // 'pair' | 'job' | 'sync'
   export let device = null; // for job/sync modes — the target device
   export let pools = [];    // available local pools for job creation
 
   const dispatch = createEventDispatcher();
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' });
 
   // ── Wizard state ──
   let step = 1;

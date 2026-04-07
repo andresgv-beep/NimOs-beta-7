@@ -1,11 +1,10 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { getToken } from '$lib/stores/auth.js';
+  import { getToken, hdrs } from '$lib/stores/auth.js';
 
   export let activeTab = 'monitor';
   export let activeSub = 'monitor';
 
-  const hdrs = () => ({ 'Authorization': `Bearer ${getToken()}` });
 
   // ── Data ──
   let systemData  = {};
