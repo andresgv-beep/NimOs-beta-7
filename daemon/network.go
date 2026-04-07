@@ -96,9 +96,9 @@ func handleDdnsRoutes(w http.ResponseWriter, r *http.Request) {
 
 	if path == "/api/ddns/status" && method == "GET" {
 		conf := readJSONConfig(ddnsConfigFile, map[string]interface{}{"enabled": false})
-		extIp, _ := run("curl -fsSL --connect-timeout 5 https://api.ipify.org 2>/dev/null")
+		extIp, _ := runSafe("curl", "-fsSL", "--connect-timeout", "5", "https://api.ipify.org")
 		if extIp == "" {
-			extIp, _ = run("curl -fsSL --connect-timeout 5 https://ifconfig.me 2>/dev/null")
+			extIp, _ = runSafe("curl", "-fsSL", "--connect-timeout", "5", "https://ifconfig.me")
 		}
 		lastLog := ""
 		if data, err := os.ReadFile(ddnsLogFile); err == nil {
@@ -337,7 +337,7 @@ func handleRemoteAccessRoutes(w http.ResponseWriter, r *http.Request) {
     }
 }`, httpsPort, httpsPort, domain, certDir, certDir)
 			os.WriteFile("/etc/nginx/sites-available/nimbusos-https.conf", []byte(nginxConf), 0644)
-			run("ln -sf /etc/nginx/sites-available/nimbusos-https.conf /etc/nginx/sites-enabled/nimbusos-https.conf")
+			runSafe("ln", "-sf", "/etc/nginx/sites-available/nimbusos-https.conf", "/etc/nginx/sites-enabled/nimbusos-https.conf")
 			runSafe("sudo", "ufw", "allow", fmt.Sprintf("%d/tcp", httpsPort))
 			run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx")
 			https := map[string]interface{}{"enabled": true, "port": httpsPort}
@@ -345,8 +345,8 @@ func handleRemoteAccessRoutes(w http.ResponseWriter, r *http.Request) {
 			writeJSONConfig(remoteAccessConfigFile, cfg)
 			jsonOk(w, map[string]interface{}{"ok": true, "message": fmt.Sprintf("HTTPS enabled on port %d", httpsPort)})
 		} else {
-			run("rm -f /etc/nginx/sites-enabled/nimbusos-https.conf")
-			run("sudo systemctl reload nginx")
+			runSafe("rm", "-f", "/etc/nginx/sites-enabled/nimbusos-https.conf")
+			runSafe("sudo", "systemctl", "reload", "nginx")
 			cfg["https"] = map[string]interface{}{"enabled": false, "port": httpsPort}
 			writeJSONConfig(remoteAccessConfigFile, cfg)
 			jsonOk(w, map[string]interface{}{"ok": true, "message": "HTTPS disabled"})
@@ -363,7 +363,7 @@ func getRemoteAccessStatusGo(cfg map[string]interface{}) map[string]interface{} 
 		"ssl":   map[string]interface{}{"valid": false},
 		"https": map[string]interface{}{"running": false, "enabled": false},
 	}
-	extIp, _ := run("curl -fsSL --connect-timeout 5 https://api.ipify.org 2>/dev/null")
+	extIp, _ := runSafe("curl", "-fsSL", "--connect-timeout", "5", "https://api.ipify.org")
 	ddnsConf, _ := cfg["ddns"].(map[string]interface{})
 	if ddnsConf != nil {
 		result["ddns"] = ddnsConf
@@ -472,7 +472,7 @@ func handleFtpRoutes(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.URL.Path == "/api/ftp/status" && r.Method == "GET":
 		_, installed := run("which vsftpd 2>/dev/null || test -x /usr/sbin/vsftpd && echo yes")
-		running1, _ := run("systemctl is-active vsftpd 2>/dev/null")
+		running1, _ := runSafe("systemctl", "is-active", "vsftpd")
 		running := strings.TrimSpace(running1) == "active"
 		jsonOk(w, map[string]interface{}{"installed": installed, "running": running})
 	case r.URL.Path == "/api/ftp/start" && r.Method == "POST":
@@ -496,7 +496,7 @@ func handleNfsRoutes(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.URL.Path == "/api/nfs/status" && r.Method == "GET":
 		_, installed := run("dpkg -l nfs-kernel-server 2>/dev/null | grep -q '^ii' && echo yes")
-		running1, _ := run("systemctl is-active nfs-server 2>/dev/null")
+		running1, _ := runSafe("systemctl", "is-active", "nfs-server")
 		running := strings.TrimSpace(running1) == "active"
 		exports := readFileStr("/etc/exports")
 		jsonOk(w, map[string]interface{}{"installed": installed, "running": running, "exports": exports})
@@ -544,9 +544,9 @@ func handleCertsRoutes(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 
 	if urlPath == "/api/certs/status" && method == "GET" {
-		_, certbotInstalled := run("which certbot 2>/dev/null")
+		_, certbotInstalled := runSafe("which", "certbot")
 		certs := []interface{}{}
-		if certList, ok := run("sudo certbot certificates 2>/dev/null"); ok {
+		if certList, ok := runSafe("sudo", "certbot", "certificates"); ok {
 			// Parse certbot output
 			_ = certList // simplified — return basic info
 		}
@@ -607,8 +607,8 @@ func handleProxyRoutes(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 
 	if urlPath == "/api/proxy/status" && method == "GET" {
-		_, installed := run("which nginx 2>/dev/null")
-		running1, _ := run("systemctl is-active nginx 2>/dev/null")
+		_, installed := runSafe("which", "nginx")
+		running1, _ := runSafe("systemctl", "is-active", "nginx")
 		running := strings.TrimSpace(running1) == "active"
 		var rules []interface{}
 		if data, err := os.ReadFile(proxyConfigFile); err == nil { json.Unmarshal(data, &rules) }
@@ -662,19 +662,19 @@ func handleWebdavRoutes(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 
 	if urlPath == "/api/webdav/status" && method == "GET" {
-		_, installed := run("which nginx 2>/dev/null")
+		_, installed := runSafe("which", "nginx")
 		running := false
 		if _, err := os.Stat("/etc/nginx/sites-enabled/nimbusos-webdav.conf"); err == nil { running = true }
 		jsonOk(w, map[string]interface{}{"installed": installed, "running": running})
 		return
 	}
 	if urlPath == "/api/webdav/start" && method == "POST" {
-		run("sudo ln -sf /etc/nginx/sites-available/nimbusos-webdav.conf /etc/nginx/sites-enabled/")
+		runSafe("sudo", "ln", "-sf", "/etc/nginx/sites-available/nimbusos-webdav.conf", "/etc/nginx/sites-enabled/")
 		run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 	if urlPath == "/api/webdav/stop" && method == "POST" {
-		run("sudo rm -f /etc/nginx/sites-enabled/nimbusos-webdav.conf")
+		runSafe("sudo", "rm", "-f", "/etc/nginx/sites-enabled/nimbusos-webdav.conf")
 		run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
@@ -693,9 +693,9 @@ func handleSmbRoutes(w http.ResponseWriter, r *http.Request) {
 
 	if urlPath == "/api/smb/status" && method == "GET" {
 		_, installed := run("which smbd 2>/dev/null || test -x /usr/sbin/smbd && echo yes")
-		running1, _ := run("systemctl is-active smbd 2>/dev/null")
+		running1, _ := runSafe("systemctl", "is-active", "smbd")
 		running := strings.TrimSpace(running1) == "active"
-		version, _ := run("smbd --version 2>/dev/null")
+		version, _ := runSafe("smbd", "--version")
 		config := readJSONConfig(smbConfigFile, map[string]interface{}{"workgroup": "WORKGROUP", "serverString": "NimOS NAS"})
 		jsonOk(w, map[string]interface{}{"installed": installed, "running": running, "version": version, "config": config, "port": 445})
 		return
@@ -724,13 +724,13 @@ func handleSmbRoutes(w http.ResponseWriter, r *http.Request) {
 
 	if urlPath == "/api/smb/restart" && method == "POST" {
 		if session.Role != "admin" { jsonError(w, 403, "Admin required"); return }
-		run("sudo systemctl restart smbd nmbd 2>/dev/null")
+		runSafe("sudo", "systemctl", "restart", "smbd", "nmbd")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 
 	if urlPath == "/api/smb/apply" && method == "POST" {
 		if session.Role != "admin" { jsonError(w, 403, "Admin required"); return }
-		run("sudo smbcontrol all reload-config 2>/dev/null")
+		runSafe("sudo", "smbcontrol", "all", "reload-config")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 
@@ -777,12 +777,12 @@ func handleFirewallRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func getFirewallRulesGo() map[string]interface{} {
-	ufwOut, _ := run("ufw status numbered 2>/dev/null")
+	ufwOut, _ := runSafe("ufw", "status", "numbered")
 	return map[string]interface{}{"rules": ufwOut, "active": strings.Contains(ufwOut, "Status: active")}
 }
 
 func getListeningPortsGo() map[string]interface{} {
-	out, _ := run("ss -tlnp 2>/dev/null")
+	out, _ := runSafe("ss", "-tlnp")
 	return map[string]interface{}{"ports": out}
 }
 

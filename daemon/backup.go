@@ -710,9 +710,9 @@ func executeBackupJob(job map[string]interface{}) map[string]interface{} {
 		fullSnap := fmt.Sprintf("%s@%s", source, snapName)
 
 		// 1. Create local snapshot
-		if out, ok := runSafe("zfs", "snapshot", fullSnap); !ok {
-			recordBackupFailure(jobID, jobName, deviceID, dest, "snapshot failed: "+out)
-			return map[string]interface{}{"error": "Failed to create snapshot: " + out}
+		if errMsg, err := zfsSnapshotCreate(fullSnap); err != nil {
+			recordBackupFailure(jobID, jobName, deviceID, dest, "snapshot failed: "+errMsg)
+			return map[string]interface{}{"error": "Failed to create snapshot: " + errMsg}
 		}
 
 		// 2. Send (incremental if previous snapshot exists)
@@ -732,9 +732,9 @@ func executeBackupJob(job map[string]interface{}) map[string]interface{} {
 		os.MkdirAll(source+"/.snapshots", 0755)
 
 		// 2. Create readonly snapshot
-		if out, ok := runSafe("btrfs", "subvolume", "snapshot", "-r", source, snapPath); !ok {
-			recordBackupFailure(jobID, jobName, deviceID, dest, "snapshot failed: "+out)
-			return map[string]interface{}{"error": "Failed to create snapshot: " + out}
+		if errMsg, err := btrfsSnapshotCreate(source, snapPath); err != nil {
+			recordBackupFailure(jobID, jobName, deviceID, dest, "snapshot failed: "+errMsg)
+			return map[string]interface{}{"error": "Failed to create snapshot: " + errMsg}
 		}
 
 		// 3. Send (incremental if previous snapshot exists)
@@ -917,7 +917,7 @@ func applyRetentionZFS(dataset string, maxAge time.Duration, maxCount int) {
 
 	for _, snap := range toDelete {
 		logMsg("backup: retention cleanup — destroying %s", snap)
-		runSafe("zfs", "destroy", snap)
+		zfsSnapshotDestroy(snap)
 	}
 }
 
@@ -958,7 +958,7 @@ func applyRetentionBtrfs(source string, maxAge time.Duration, maxCount int) {
 	for _, snap := range toDelete {
 		snapPath := fmt.Sprintf("%s/%s", snapDir, snap)
 		logMsg("backup: retention cleanup — deleting subvolume %s", snapPath)
-		runSafe("btrfs", "subvolume", "delete", snapPath)
+		btrfsSnapshotDestroy(snapPath)
 	}
 }
 
@@ -2053,7 +2053,7 @@ func isLocalAddr(addr string) bool {
 
 // getLocalHostname returns this machine's hostname.
 func getLocalHostname() string {
-	if out, ok := run("hostname"); ok && out != "" {
+	if out, ok := runSafe("hostname"); ok && out != "" {
 		return strings.TrimSpace(out)
 	}
 	return "NimOS"
@@ -2154,16 +2154,16 @@ func createBackupSnapshot(source, fsType string) map[string]interface{} {
 	switch fsType {
 	case "zfs":
 		fullSnap := fmt.Sprintf("%s@%s", source, snapName)
-		if out, ok := runSafe("zfs", "snapshot", fullSnap); !ok {
-			return map[string]interface{}{"error": "Failed: " + out}
+		if errMsg, err := zfsSnapshotCreate(fullSnap); err != nil {
+			return map[string]interface{}{"error": "Failed: " + errMsg}
 		}
 		return map[string]interface{}{"ok": true, "name": fullSnap, "type": "zfs"}
 
 	case "btrfs":
 		snapPath := fmt.Sprintf("%s/.snapshots/%s", source, snapName)
 		os.MkdirAll(source+"/.snapshots", 0755)
-		if out, ok := runSafe("btrfs", "subvolume", "snapshot", "-r", source, snapPath); !ok {
-			return map[string]interface{}{"error": "Failed: " + out}
+		if errMsg, err := btrfsSnapshotCreate(source, snapPath); err != nil {
+			return map[string]interface{}{"error": "Failed: " + errMsg}
 		}
 		return map[string]interface{}{"ok": true, "name": snapName, "path": snapPath, "type": "btrfs"}
 	}
@@ -2174,19 +2174,18 @@ func createBackupSnapshot(source, fsType string) map[string]interface{} {
 func deleteBackupSnapshot(name, fsType, source string) map[string]interface{} {
 	switch fsType {
 	case "zfs":
-		// name should be like "pool/dataset@nimbackup-XXXXXXXX-XXXXXX"
 		if !strings.Contains(name, "@") {
 			return map[string]interface{}{"error": "Invalid ZFS snapshot name"}
 		}
-		if out, ok := runSafe("zfs", "destroy", name); !ok {
-			return map[string]interface{}{"error": "Failed: " + out}
+		if errMsg, err := zfsSnapshotDestroy(name); err != nil {
+			return map[string]interface{}{"error": "Failed: " + errMsg}
 		}
 		return map[string]interface{}{"ok": true}
 
 	case "btrfs":
 		snapPath := fmt.Sprintf("%s/.snapshots/%s", source, name)
-		if out, ok := runSafe("btrfs", "subvolume", "delete", snapPath); !ok {
-			return map[string]interface{}{"error": "Failed: " + out}
+		if errMsg, err := btrfsSnapshotDestroy(snapPath); err != nil {
+			return map[string]interface{}{"error": "Failed: " + errMsg}
 		}
 		return map[string]interface{}{"ok": true}
 	}
@@ -2557,7 +2556,7 @@ func addNFSExport(path, clientIP string) error {
 	exportLine := fmt.Sprintf("%s %s(rw,sync,no_subtree_check,no_root_squash) %s", path, clientIP, nimosExportMarker)
 	if strings.Contains(content, fmt.Sprintf("%s %s(", path, clientIP)) {
 		// Already exported
-		run("exportfs -ra")
+		runSafe("exportfs", "-ra")
 		return nil
 	}
 
@@ -2572,12 +2571,12 @@ func addNFSExport(path, clientIP string) error {
 	}
 
 	// Apply exports
-	out, ok := run("exportfs -ra")
+	out, ok := runSafe("exportfs", "-ra")
 	if !ok {
 		logMsg("nfs: exportfs -ra failed: %s", out)
 		// Try starting the NFS server
 		run("systemctl start nfs-kernel-server 2>/dev/null || service nfs-kernel-server start 2>/dev/null")
-		run("exportfs -ra")
+		runSafe("exportfs", "-ra")
 	}
 
 	logMsg("nfs: exported %s for %s", path, clientIP)
@@ -2602,19 +2601,19 @@ func removeNFSExport(path, clientIP string) {
 	}
 
 	os.WriteFile(exportsFile, []byte(strings.Join(kept, "\n")), 0644)
-	run("exportfs -ra")
+	runSafe("exportfs", "-ra")
 	logMsg("nfs: unexported %s for %s", path, clientIP)
 }
 
 // ensureNFSServer makes sure NFS server is running.
 func ensureNFSServer() {
 	// Check if running
-	if out, _ := run("systemctl is-active nfs-kernel-server 2>/dev/null"); strings.TrimSpace(out) == "active" {
+	if out, _ := runSafe("systemctl", "is-active", "nfs-kernel-server"); strings.TrimSpace(out) == "active" {
 		return
 	}
 	// Start it
-	run("systemctl enable nfs-kernel-server 2>/dev/null")
-	run("systemctl start nfs-kernel-server 2>/dev/null")
+	runSafe("systemctl", "enable", "nfs-kernel-server")
+	runSafe("systemctl", "start", "nfs-kernel-server")
 	logMsg("nfs: started nfs-kernel-server")
 }
 

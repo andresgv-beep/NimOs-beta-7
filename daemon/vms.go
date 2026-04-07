@@ -55,12 +55,12 @@ func handleVMsRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func vmsStatus(w http.ResponseWriter) {
-	_, virshOk := run("which virsh 2>/dev/null")
-	_, qemuOk := run("which qemu-system-x86_64 2>/dev/null")
+	_, virshOk := runSafe("which", "virsh")
+	_, qemuOk := runSafe("which", "qemu-system-x86_64")
 	kvmCount, _ := run(`grep -Ec "(vmx|svm)" /proc/cpuinfo 2>/dev/null`)
 	_, kvmLoaded := run("lsmod 2>/dev/null | grep kvm")
-	libvirtStatus, _ := run("systemctl is-active libvirtd 2>/dev/null")
-	version, _ := run("virsh version --daemon 2>/dev/null | head -1")
+	libvirtStatus, _ := runSafe("systemctl", "is-active", "libvirtd")
+	version, _ := runSafe("virsh", "version", "--daemon")
 
 	os.MkdirAll(vmDir, 0755)
 	os.MkdirAll(isoDir, 0755)
@@ -75,7 +75,7 @@ func vmsStatus(w http.ResponseWriter) {
 }
 
 func vmsList(w http.ResponseWriter) {
-	raw, _ := run("virsh list --all 2>/dev/null")
+	raw, _ := runSafe("virsh", "list", "--all")
 	var vms []map[string]interface{}
 
 	for _, line := range strings.Split(raw, "\n") {
@@ -155,10 +155,10 @@ func vmsList(w http.ResponseWriter) {
 }
 
 func vmsOverview(w http.ResponseWriter) {
-	hostname, _ := run("hostname")
+	hostname, _ := runSafe("hostname")
 	cpuUsage, _ := run("top -bn1 | grep '%Cpu' | awk '{print $2}' 2>/dev/null")
 	memUsage, _ := run(`free -m | awk '/Mem:/{printf "%.0f", $3/$2*100}' 2>/dev/null`)
-	nodeInfo, _ := run("virsh nodeinfo 2>/dev/null")
+	nodeInfo, _ := runSafe("virsh", "nodeinfo")
 
 	totalCPUs := "?"
 	totalRAM := "?"
@@ -171,7 +171,7 @@ func vmsOverview(w http.ResponseWriter) {
 		totalRAM = m[1]
 	}
 
-	raw, _ := run("virsh list --all 2>/dev/null")
+	raw, _ := runSafe("virsh", "list", "--all")
 	running := 0
 	total := 0
 	for _, line := range strings.Split(raw, "\n") {
@@ -361,7 +361,7 @@ func fmtSizeVms(b int64) string {
 }
 
 func vmsNetworks(w http.ResponseWriter) {
-	raw, _ := run("virsh net-list --all 2>/dev/null")
+	raw, _ := runSafe("virsh", "net-list", "--all")
 	var networks []map[string]interface{}
 	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimSpace(line)
@@ -383,7 +383,7 @@ func vmsNetworks(w http.ResponseWriter) {
 	if networks == nil {
 		networks = []map[string]interface{}{}
 	}
-	bridges, _ := run("brctl show 2>/dev/null | tail -n +2")
+	bridges, _ := runSafe("brctl", "show")
 	jsonOk(w, map[string]interface{}{"networks": networks, "bridges": bridges})
 }
 
@@ -400,7 +400,7 @@ func vmsVnc(w http.ResponseWriter, r *http.Request) {
 }
 
 func vmsLogs(w http.ResponseWriter) {
-	logs, _ := run("journalctl -u libvirtd --no-pager -n 50 --output=short 2>/dev/null")
+	logs, _ := runSafe("journalctl", "-u", "libvirtd", "--no-pager", "-n", "50", "--output=short")
 	jsonOk(w, map[string]interface{}{"logs": logs})
 }
 

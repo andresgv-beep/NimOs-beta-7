@@ -147,7 +147,7 @@ func getDockerAppStatuses(dockerServiceID string) ([]DockerAppStatus, int) {
 	registeredApps := getInstalledApps()
 
 	// 1. docker ps -a (ALL containers, not just running)
-	out, _ := run(`docker ps -a --format '{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}' 2>/dev/null`)
+	out, _ := runSafe("docker", "ps", "-a", "--format", "{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}")
 	containers := map[string]dockerContainer{}
 	if out != "" {
 		for _, line := range strings.Split(strings.TrimSpace(out), "\n") {

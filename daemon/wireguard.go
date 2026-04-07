@@ -23,7 +23,7 @@ const (
 // ─── Key Generation ─────────────────────────────────────────────────────────
 
 func generateWGKeyPair() (privateKey, publicKey string, err error) {
-	privOut, ok := run("wg genkey")
+	privOut, ok := runSafe("wg", "genkey")
 	if !ok || privOut == "" {
 		return "", "", fmt.Errorf("wg genkey failed (is wireguard-tools installed?)")
 	}
@@ -301,7 +301,7 @@ func initiateWGPairing(deviceID, remoteAddr, remoteToken string) (map[string]int
 	}
 
 	// Get our own public IP to send as endpoint
-	ourPublicIP, _ := run("curl -fsSL --connect-timeout 5 https://api.ipify.org 2>/dev/null")
+	ourPublicIP, _ := runSafe("curl", "-fsSL", "--connect-timeout", "5", "https://api.ipify.org")
 	ourPublicIP = strings.TrimSpace(ourPublicIP)
 	ourEndpoint := ""
 	if ourPublicIP != "" {

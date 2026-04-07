@@ -89,12 +89,12 @@ func getDockerPath() (string, error) {
 }
 
 func isDockerInstalledGo() bool {
-	_, ok := run("docker --version 2>/dev/null")
+	_, ok := runSafe("docker", "--version")
 	return ok
 }
 
 func getRealContainersGo() []map[string]interface{} {
-	out, ok := run(`docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}|{{.State}}" 2>/dev/null`)
+	out, ok := runSafe("docker", "ps", "-a", "--format", `{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}|{{.State}}`)
 	if !ok || out == "" {
 		return []map[string]interface{}{}
 	}
@@ -545,7 +545,7 @@ func dockerInstalledApps(w http.ResponseWriter, r *http.Request) {
 	registeredApps := getInstalledApps()
 
 	// Get running containers
-	out, _ := run(`docker ps --format '{{.Names}}|{{.Image}}|{{.Ports}}|{{.Status}}' 2>/dev/null`)
+	out, _ := runSafe("docker", "ps", "--format", "{{.Names}}|{{.Image}}|{{.Ports}}|{{.Status}}")
 	runningContainers := map[string]map[string]interface{}{}
 	if out != "" {
 		for _, line := range strings.Split(out, "\n") {
@@ -720,7 +720,7 @@ func dockerInstall(w http.ResponseWriter, r *http.Request) {
 	dockerAvailable := isDockerInstalledGo()
 	if !dockerAvailable {
 		log.Println("Docker not found, installing...")
-		run("systemctl stop docker.socket docker containerd 2>/dev/null || true")
+		runSafe("systemctl", "stop", "docker.socket", "docker", "containerd")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 		defer cancel()
@@ -733,27 +733,27 @@ func dockerInstall(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Println("Docker engine installed")
-		run("usermod -aG docker nimbus 2>/dev/null || true")
-		run("usermod -aG docker nimos 2>/dev/null || true")
+		runSafe("usermod", "-aG", "docker", "nimbus")
+		runSafe("usermod", "-aG", "docker", "nimos")
 		dockerAvailable = true
 		// Stop whatever the installer started — we restart with our config
-		run("systemctl stop docker.socket docker containerd 2>/dev/null || true")
+		runSafe("systemctl", "stop", "docker.socket", "docker", "containerd")
 	} else {
 		// Docker exists — stop to reconfigure
-		run("systemctl stop docker.socket docker containerd 2>/dev/null || true")
+		runSafe("systemctl", "stop", "docker.socket", "docker", "containerd")
 	}
 
 	// ── 6. Kill /var/lib/docker — pool only ──
-	run("rm -rf /var/lib/docker 2>/dev/null || true")
+	runSafe("rm", "-rf", "/var/lib/docker")
 
 	// ── 7. Start Docker with correct config ──
 	if dockerAvailable {
-		run("systemctl enable docker.service docker.socket 2>/dev/null || true")
-		run("systemctl start docker 2>/dev/null || true")
+		runSafe("systemctl", "enable", "docker.service", "docker.socket")
+		runSafe("systemctl", "start", "docker")
 		time.Sleep(2 * time.Second)
 
 		// Verify
-		rootDir, _ := run("docker info --format '{{.DockerRootDir}}' 2>/dev/null")
+		rootDir, _ := runSafe("docker", "info", "--format", "{{.DockerRootDir}}")
 		rootDir = strings.TrimSpace(rootDir)
 		if rootDir != "" && rootDir != dockerDataPath {
 			log.Printf("WARNING: Docker Root Dir=%s expected=%s", rootDir, dockerDataPath)
@@ -835,10 +835,10 @@ func dockerUninstall(w http.ResponseWriter, r *http.Request) {
 	}
 	run("docker stop $(docker ps -aq) 2>/dev/null || true")
 	run("docker rm $(docker ps -aq) 2>/dev/null || true")
-	run("systemctl stop docker 2>/dev/null || true")
-	run("systemctl disable docker 2>/dev/null || true")
+	runSafe("systemctl", "stop", "docker")
+	runSafe("systemctl", "disable", "docker")
 	run("apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || true")
-	run("rm -f /etc/docker/daemon.json 2>/dev/null || true")
+	runSafe("rm", "-f", "/etc/docker/daemon.json")
 
 	// Deregister from service registry
 	conf := getDockerConfigGo()
@@ -1369,7 +1369,7 @@ func firewallAddRule(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, hasUfw := run("which ufw 2>/dev/null")
+	_, hasUfw := runSafe("which", "ufw")
 	if hasUfw {
 		proto := ""
 		if protocol != "both" {
@@ -1418,7 +1418,7 @@ func firewallToggle(w http.ResponseWriter, r *http.Request) {
 		result, _ := run(`echo "y" | ufw enable 2>&1`)
 		jsonOk(w, map[string]interface{}{"ok": true, "result": result})
 	} else {
-		result, _ := run("ufw disable 2>&1")
+		result, _ := runSafe("ufw", "disable")
 		jsonOk(w, map[string]interface{}{"ok": true, "result": result})
 	}
 }

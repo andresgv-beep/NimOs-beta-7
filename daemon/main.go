@@ -149,9 +149,15 @@ func checkPermission(perm string) error {
 // Helper: safe command execution with retry
 // ═══════════════════════════════════
 
-// run executes a command via shell (sh -c). Use ONLY for static commands
-// or shell pipelines that do NOT interpolate user/config data.
-// For anything with dynamic arguments, use runSafe() or runCmd().
+// run executes a command via shell (sh -c) with retry on lock contention.
+//
+// SECURITY NOTE: This function is intentionally retained for commands that
+// REQUIRE shell features (pipes, &&/||, redirects, subshells, Go template
+// format strings). All ~46 remaining callers use ONLY static string literals
+// or pre-validated internal variables — zero user input is ever interpolated.
+//
+// All user-facing input goes through runSafe() / runSafeInput() / runCmd()
+// which use exec.Command() directly without shell. See Sprint 1 migration.
 func run(command string) (string, bool) {
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		ctx := exec.Command("sh", "-c", command)

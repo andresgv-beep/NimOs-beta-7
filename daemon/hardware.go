@@ -32,20 +32,20 @@ var (
 )
 
 func detectHardwareTools() {
-	_, hasSmartctl = run("which smartctl 2>/dev/null")
-	_, hasSensors = run("which sensors 2>/dev/null")
-	_, hasDocker = run("which docker 2>/dev/null")
-	_, hasNvidia = run("which nvidia-smi 2>/dev/null")
+	_, hasSmartctl = runSafe("which", "smartctl")
+	_, hasSensors = runSafe("which", "sensors")
+	_, hasDocker = runSafe("which", "docker")
+	_, hasNvidia = runSafe("which", "nvidia-smi")
 	hasAmdDrm = detectAmdDrm()
 
 	// Storage backends
-	if zpoolOut, ok := run("which zpool 2>/dev/null"); ok && zpoolOut != "" {
+	if zpoolOut, ok := runSafe("which", "zpool"); ok && zpoolOut != "" {
 		// Verify ZFS module is loaded
 		if _, modOk := run("lsmod 2>/dev/null | grep -q '^zfs '"); modOk {
 			hasZfs = true
 		} else {
 			// Try loading it
-			run("modprobe zfs 2>/dev/null || true")
+			runSafe("modprobe", "zfs")
 			_, hasZfs = run("lsmod 2>/dev/null | grep -q '^zfs '")
 		}
 	}
@@ -54,7 +54,7 @@ func detectHardwareTools() {
 	detectBtrfs()
 
 	// System info
-	archOut, _ := run("uname -m 2>/dev/null")
+	archOut, _ := runSafe("uname", "-m")
 	systemArch = strings.TrimSpace(archOut)
 	if memInfo, ok := run("awk '/MemTotal/{printf \"%d\", $2/1024/1024}' /proc/meminfo"); ok {
 		systemRamGB = parseIntDefault(strings.TrimSpace(memInfo), 0)
@@ -357,7 +357,7 @@ func getGpu() []map[string]interface{} {
 	var gpus []map[string]interface{}
 
 	if hasNvidia {
-		out, ok := run("nvidia-smi --query-gpu=index,name,utilization.gpu,temperature.gpu,memory.used,memory.total --format=csv,noheader,nounits 2>/dev/null")
+		out, ok := runSafe("nvidia-smi", "--query-gpu=index,name,utilization.gpu,temperature.gpu,memory.used,memory.total", "--format=csv,noheader,nounits")
 		if ok && out != "" {
 			for _, line := range strings.Split(out, "\n") {
 				parts := strings.Split(line, ",")
@@ -470,7 +470,7 @@ func getHardwareGpuInfo() map[string]interface{} {
 
 	// ARM fallback
 	if len(gpuList) == 0 {
-		if vcgencmd, ok := run("vcgencmd get_mem gpu 2>/dev/null"); ok && vcgencmd != "" {
+		if vcgencmd, ok := runSafe("vcgencmd", "get_mem", "gpu"); ok && vcgencmd != "" {
 			model := readFileStr("/proc/device-tree/model")
 			if model == "" {
 				model = "Raspberry Pi"
@@ -491,7 +491,7 @@ func getHardwareGpuInfo() map[string]interface{} {
 
 	// NVIDIA driver
 	if hasNvidia {
-		if ver, ok := run("nvidia-smi --query-gpu=driver_version --format=csv,noheader,nounits 2>/dev/null"); ok && ver != "" {
+		if ver, ok := runSafe("nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader,nounits"); ok && ver != "" {
 			result["currentDriver"] = "nvidia"
 			result["driverVersion"] = strings.TrimSpace(strings.Split(ver, "\n")[0])
 		}
@@ -559,7 +559,7 @@ func getTemps(gpusCache []map[string]interface{}) map[string]interface{} {
 
 	// lm-sensors fallback
 	if len(temps) == 0 && hasSensors {
-		if out, ok := run("sensors -u 2>/dev/null"); ok {
+		if out, ok := runSafe("sensors", "-u"); ok {
 			re := regexp.MustCompile(`temp1_input:\s+([\d.]+)`)
 			if m := re.FindStringSubmatch(out); m != nil {
 				temps["cpu"] = int(math.Round(parseFloat(m[1])))
@@ -625,7 +625,7 @@ func getNetwork() []map[string]interface{} {
 
 	// Get all IPs
 	allIps := map[string]string{}
-	if ipOut, ok := run("ip -4 -o addr show 2>/dev/null"); ok {
+	if ipOut, ok := runSafe("ip", "-4", "-o", "addr", "show"); ok {
 		for _, line := range strings.Split(ipOut, "\n") {
 			re := regexp.MustCompile(`^\d+:\s+(\S+)\s+inet\s+([\d.]+)`)
 			if m := re.FindStringSubmatch(line); m != nil {
@@ -743,7 +743,7 @@ func getDisks() map[string]interface{} {
 	// Cache hardware info for 60s
 	if diskCache == nil || (now-diskCacheTime) > 60000 {
 		var disks []interface{}
-		if lsblk, ok := run("lsblk -Jbdo NAME,SIZE,MODEL,TYPE,TRAN 2>/dev/null"); ok && lsblk != "" {
+		if lsblk, ok := runSafe("lsblk", "-Jbdo", "NAME,SIZE,MODEL,TYPE,TRAN"); ok && lsblk != "" {
 			var data struct {
 				BlockDevices []struct {
 					Name  string `json:"name"`
@@ -823,7 +823,7 @@ func getDisks() map[string]interface{} {
 
 	// df always fresh
 	var mounts []interface{}
-	if df, ok := run("df -B1 --output=source,size,used,avail,target 2>/dev/null"); ok {
+	if df, ok := runSafe("df", "-B1", "--output=source,size,used,avail,target"); ok {
 		for _, line := range strings.Split(df, "\n")[1:] {
 			parts := strings.Fields(line)
 			if len(parts) < 5 || !strings.HasPrefix(parts[0], "/dev/") || strings.Contains(parts[0], "loop") {
@@ -903,7 +903,7 @@ func getContainers() []interface{} {
 		return containerCache
 	}
 
-	raw, ok := run(`docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}|{{.State}}|{{.CreatedAt}}" 2>/dev/null`)
+	raw, ok := runSafe("docker", "ps", "-a", "--format", "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}|{{.State}}|{{.CreatedAt}}")
 	if !ok || raw == "" {
 		return []interface{}{}
 	}
@@ -932,7 +932,7 @@ func getContainers() []interface{} {
 	}
 
 	// docker stats
-	if stats, ok := run(`docker stats --no-stream --format "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}" 2>/dev/null`); ok && stats != "" {
+	if stats, ok := runSafe("docker", "stats", "--no-stream", "--format", "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}"); ok && stats != "" {
 		statMap := map[string][3]string{}
 		for _, line := range strings.Split(stats, "\n") {
 			p := strings.SplitN(line, "|", 4)
@@ -1035,7 +1035,7 @@ func getSystemSummary() map[string]interface{} {
 		primaryNet = network[0]
 	}
 
-	uname, _ := run("uname -sr 2>/dev/null")
+	uname, _ := runSafe("uname", "-sr")
 
 	systemCache = map[string]interface{}{
 		"cpu":        cpu,
@@ -1153,19 +1153,19 @@ func handleSystemPost(w http.ResponseWriter, r *http.Request, session *DBSession
 		jsonOk(w, map[string]interface{}{"ok": true, "message": "NimOS restarting..."})
 		go func() {
 			time.Sleep(1 * time.Second)
-			run("sudo systemctl restart nimbusos")
+			runSafe("sudo", "systemctl", "restart", "nimbusos")
 		}()
 	case "/api/system/reboot":
 		jsonOk(w, map[string]interface{}{"ok": true, "message": "System rebooting..."})
 		go func() {
 			time.Sleep(1 * time.Second)
-			run("sudo reboot")
+			runSafe("sudo", "reboot")
 		}()
 	case "/api/system/shutdown":
 		jsonOk(w, map[string]interface{}{"ok": true, "message": "System shutting down..."})
 		go func() {
 			time.Sleep(1 * time.Second)
-			run("sudo shutdown -h now")
+			runSafe("sudo", "shutdown", "-h", "now")
 		}()
 	case "/api/system/update/apply":
 		handleUpdateApply(w)
@@ -1618,7 +1618,7 @@ func startSmartMonitor() {
 
 func checkAllDisksSmart() {
 	// Get all disks from lsblk
-	out, ok := run("lsblk -d -n -o NAME,TYPE 2>/dev/null")
+	out, ok := runSafe("lsblk", "-d", "-n", "-o", "NAME,TYPE")
 	if !ok || out == "" {
 		return
 	}

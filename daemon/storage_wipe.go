@@ -278,7 +278,7 @@ func preFlightCheck(diskPath string) error {
 	diskName := strings.TrimPrefix(diskPath, "/dev/")
 
 	// Boot disk?
-	lsblkRaw, _ := run("lsblk -J -b -o NAME,MOUNTPOINT,TYPE 2>/dev/null")
+	lsblkRaw, _ := runSafe("lsblk", "-J", "-b", "-o", "NAME,MOUNTPOINT,TYPE")
 	rootDisk := findRootDiskGo(lsblkRaw)
 	if diskName == rootDisk {
 		return ErrIsBoot

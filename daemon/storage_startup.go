@@ -19,7 +19,7 @@ func zfsAutoImportOnStartup() {
 		return
 	}
 	// Import all known ZFS pools
-	run("zpool import -a -N 2>/dev/null || true")
+	runSafe("zpool", "import", "-a", "-N")
 
 	conf := getStorageConfigFull()
 	confPools, _ := conf["pools"].([]interface{})
@@ -40,7 +40,7 @@ func zfsAutoImportOnStartup() {
 		}
 		// Set mount point and mount
 		runSafe("zfs", "set", "mountpoint="+mountPoint, zpoolName)
-		run("zfs mount -a 2>/dev/null || true")
+		runSafe("zfs", "mount", "-a")
 	}
 	logMsg("ZFS auto-import completed")
 }
@@ -110,7 +110,7 @@ func startZfsScheduler() {
 // ─── Detection (called from hardware.go) ─────────────────────────────────────
 
 func detectBtrfs() {
-	if _, ok := run("which mkfs.btrfs 2>/dev/null"); ok {
+	if _, ok := runSafe("which", "mkfs.btrfs"); ok {
 		hasBtrfs = true
 		logMsg("Btrfs: available")
 	} else {
@@ -130,7 +130,7 @@ func detectStorageDisksGo() map[string]interface{} {
 		"provisioned": []interface{}{},
 	}
 
-	lsblkRaw, ok := run("lsblk -J -b -o NAME,SIZE,TYPE,ROTA,MOUNTPOINT,MODEL,SERIAL,TRAN,RM,FSTYPE,LABEL,PKNAME 2>/dev/null")
+	lsblkRaw, ok := runSafe("lsblk", "-J", "-b", "-o", "NAME,SIZE,TYPE,ROTA,MOUNTPOINT,MODEL,SERIAL,TRAN,RM,FSTYPE,LABEL,PKNAME")
 	if !ok || lsblkRaw == "" {
 		return result
 	}
@@ -341,7 +341,7 @@ func rescanSCSIBuses() {
 		scanPath := filepath.Join("/sys/class/scsi_host", e.Name(), "scan")
 		os.WriteFile(scanPath, []byte("- - -"), 0200)
 	}
-	run("udevadm settle --timeout=5 2>/dev/null || true")
+	runSafe("udevadm", "settle", "--timeout=5")
 }
 
 func scanForRestorablePoolsGo() []map[string]interface{} {

@@ -13,6 +13,48 @@ import (
 	"time"
 )
 
+// ─── Core snapshot primitives (used by storage UI and backup) ────────────────
+
+// zfsSnapshotCreate creates a ZFS snapshot. Returns ("", nil) on success.
+func zfsSnapshotCreate(fullSnap string) (string, error) {
+	opts := CmdOptions{Timeout: 30 * time.Second}
+	res, err := runCmd("zfs", []string{"snapshot", fullSnap}, opts)
+	if err != nil {
+		return res.Stderr, err
+	}
+	return "", nil
+}
+
+// zfsSnapshotDestroy destroys a ZFS snapshot. Returns ("", nil) on success.
+func zfsSnapshotDestroy(fullSnap string) (string, error) {
+	opts := CmdOptions{Timeout: 30 * time.Second}
+	res, err := runCmd("zfs", []string{"destroy", fullSnap}, opts)
+	if err != nil {
+		return res.Stderr, err
+	}
+	return "", nil
+}
+
+// btrfsSnapshotCreate creates a readonly BTRFS snapshot.
+func btrfsSnapshotCreate(source, snapPath string) (string, error) {
+	opts := CmdOptions{Timeout: 30 * time.Second}
+	res, err := runCmd("btrfs", []string{"subvolume", "snapshot", "-r", source, snapPath}, opts)
+	if err != nil {
+		return res.Stderr, err
+	}
+	return "", nil
+}
+
+// btrfsSnapshotDestroy deletes a BTRFS subvolume/snapshot.
+func btrfsSnapshotDestroy(snapPath string) (string, error) {
+	opts := CmdOptions{Timeout: 30 * time.Second}
+	res, err := runCmd("btrfs", []string{"subvolume", "delete", snapPath}, opts)
+	if err != nil {
+		return res.Stderr, err
+	}
+	return "", nil
+}
+
 // ─── Resolve pool name to zpool name ─────────────────────────────────────────
 
 func resolveZpoolName(poolName string) string {
@@ -108,10 +150,8 @@ func createSnapshot(body map[string]interface{}) map[string]interface{} {
 
 	// Snapshot the main pool dataset — includes all children recursively
 	fullSnap := zpoolName + "@" + name
-	opts := CmdOptions{Timeout: 30 * time.Second}
-	_, err := runCmd("zfs", []string{"snapshot", "-r", fullSnap}, opts)
-	if err != nil {
-		return map[string]interface{}{"ok": false, "error": fmt.Sprintf("snapshot failed: %s", err)}
+	if errMsg, err := zfsSnapshotCreate(fullSnap); err != nil {
+		return map[string]interface{}{"ok": false, "error": fmt.Sprintf("snapshot failed: %s", errMsg)}
 	}
 
 	logMsg("ZFS snapshot created: %s", fullSnap)
@@ -130,10 +170,8 @@ func deleteSnapshot(body map[string]interface{}) map[string]interface{} {
 		return map[string]interface{}{"ok": false, "error": "Invalid snapshot format (forbidden characters)"}
 	}
 
-	opts := CmdOptions{Timeout: 30 * time.Second}
-	_, err := runCmd("zfs", []string{"destroy", "-r", snapshot}, opts)
-	if err != nil {
-		return map[string]interface{}{"ok": false, "error": fmt.Sprintf("delete failed: %s", err)}
+	if errMsg, err := zfsSnapshotDestroy(snapshot); err != nil {
+		return map[string]interface{}{"ok": false, "error": fmt.Sprintf("delete failed: %s", errMsg)}
 	}
 
 	logMsg("ZFS snapshot deleted: %s", snapshot)

@@ -621,39 +621,29 @@ func parseHumanBytes(s string) int64 {
 
 const storageConfigFile = "/var/lib/nimbusos/config/storage.json"
 
-type storageConfig struct {
-	Pools       []map[string]interface{} `json:"pools"`
-	PrimaryPool string                   `json:"primaryPool"`
-}
-
-func getStorageConfigGo() *storageConfig {
-	data, err := os.ReadFile(storageConfigFile)
-	if err != nil {
-		return &storageConfig{}
-	}
-	var conf storageConfig
-	json.Unmarshal(data, &conf)
-	return &conf
-}
-
 func findTargetPool(poolName string) map[string]interface{} {
-	conf := getStorageConfigGo()
-	if len(conf.Pools) == 0 {
+	conf := getStorageConfigFull()
+	confPools, _ := conf["pools"].([]interface{})
+	if len(confPools) == 0 {
 		return nil
 	}
+	primaryPool, _ := conf["primaryPool"].(string)
 	if poolName != "" {
-		for _, p := range conf.Pools {
+		for _, raw := range confPools {
+			p, _ := raw.(map[string]interface{})
 			if n, _ := p["name"].(string); n == poolName {
 				return p
 			}
 		}
 	}
 	// Return primary pool
-	for _, p := range conf.Pools {
-		if n, _ := p["name"].(string); n == conf.PrimaryPool {
+	for _, raw := range confPools {
+		p, _ := raw.(map[string]interface{})
+		if n, _ := p["name"].(string); n == primaryPool {
 			return p
 		}
 	}
 	// Return first pool
-	return conf.Pools[0]
+	first, _ := confPools[0].(map[string]interface{})
+	return first
 }
