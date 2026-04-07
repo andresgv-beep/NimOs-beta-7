@@ -3,7 +3,6 @@ package main
 // NimOS Storage — Pool info (ZFS + BTRFS), SMART enrichment
 
 import (
-	"net/http"
 	"strings"
 )
 

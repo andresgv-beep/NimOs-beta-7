@@ -1170,7 +1170,7 @@ func handleSystemPost(w http.ResponseWriter, r *http.Request, session *DBSession
 	case "/api/system/update/apply":
 		handleUpdateApply(w)
 	case "/api/terminal":
-		handleTerminal(w, r)
+		handleTerminal(w, r, session)
 	default:
 		jsonError(w, 404, "Not found")
 	}
@@ -1282,7 +1282,7 @@ func handleUpdateStatus(w http.ResponseWriter) {
 	jsonOk(w, map[string]interface{}{"done": false})
 }
 
-func handleTerminal(w http.ResponseWriter, r *http.Request) {
+func handleTerminal(w http.ResponseWriter, r *http.Request, session *DBSession) {
 	body, _ := readBody(r)
 	cmd := bodyStr(body, "cmd")
 	cwd := bodyStr(body, "cwd")
@@ -1301,12 +1301,8 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// SECURITY: Audit log EVERY terminal command with session info
-	session := getSession(r)
-	username := "unknown"
+	username := session.Username
 	ip := r.RemoteAddr
-	if session != nil {
-		username = session.Username
-	}
 	logMsg("TERMINAL [user=%s ip=%s cwd=%s]: %s", username, ip, cleanCwd, cmd)
 
 	// Execute: use sh -c for the command but set WorkDir safely

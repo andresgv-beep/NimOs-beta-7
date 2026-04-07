@@ -36,7 +36,7 @@ func zfsAutoImportOnStartup() {
 			continue
 		}
 		// Check if pool is imported
-		if out, _ := runSafe("zpool", "list", "-H", "-o", "name", zpoolName); strings.TrimSpace(out) == "" {
+		if _, ok := runSafe("zpool", "list", "-H", "-o", "name", zpoolName); !ok {
 			runSafe("zpool", "import", zpoolName)
 		}
 		// Set mount point and mount

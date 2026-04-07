@@ -8,26 +8,6 @@ import (
 	"sync"
 )
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// NimOS Storage — Stubs temporales
-// Estos stubs permiten compilar el daemon mientras se reescriben los módulos.
-// Se reemplazan uno a uno con la implementación real del plan v2.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-)
-
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const nimbusPoolsDir = "/nimbus/pools"

@@ -34,7 +34,7 @@ func createPoolZfs(body map[string]interface{}) map[string]interface{} {
 	}
 
 	// Check if zpool already exists
-	if out, _ := runSafe("zpool", "list", "-H", "-o", "name", "nimos-"+name); strings.TrimSpace(out) != "" {
+	if out, ok := runSafe("zpool", "list", "-H", "-o", "name", "nimos-"+name); ok && strings.TrimSpace(out) != "" {
 		return map[string]interface{}{"error": fmt.Sprintf(`ZFS pool "nimos-%s" already exists.`, name)}
 	}
 
