@@ -1187,7 +1187,7 @@ func handleUpdateCheck(w http.ResponseWriter) {
 		}
 	}
 	latestVersion := "0.0.0"
-	if out, ok := runSafe("curl", "-fsSL", "https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-6/main/package.json"); ok {
+	if out, ok := runSafe("curl", "-fsSL", "https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-7/main/package.json"); ok {
 		var pkg map[string]interface{}
 		if json.Unmarshal([]byte(out), &pkg) == nil {
 			if v, ok := pkg["version"].(string); ok {
@@ -1213,14 +1213,14 @@ func handleUpdateApply(w http.ResponseWriter) {
 		logMsg("update.sh not found, downloading from GitHub...")
 		// SECURITY: Download update script safely (no shell interpolation)
 		_, ok := runSafe("curl", "-fsSL",
-			"https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-6/main/scripts/update.sh",
+			"https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-7/main/scripts/update.sh",
 			"-o", "/opt/nimbusos/scripts/update.sh")
 		if !ok {
 			// curl returns "" on success sometimes
 		}
 		// Download checksum file for verification
 		checksumOut, csOk := runSafe("curl", "-fsSL",
-			"https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-6/main/scripts/update.sh.sha256")
+			"https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-7/main/scripts/update.sh.sha256")
 		if csOk && checksumOut != "" {
 			// Verify checksum: expected format "sha256hash  filename" or just hash
 			expectedHash := strings.Fields(checksumOut)[0]
