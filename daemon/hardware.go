@@ -31,6 +31,13 @@ var (
 	systemRamGB int
 )
 
+// Pre-compiled regexes for hot paths (avoid recompiling in loops)
+var (
+	reSdDisk   = regexp.MustCompile(`^sd[a-z]+$`)
+	reNvmeDisk = regexp.MustCompile(`^nvme\d+n\d+$`)
+	reVdDisk   = regexp.MustCompile(`^vd[a-z]+$`)
+)
+
 func detectHardwareTools() {
 	_, hasSmartctl = runSafe("which", "smartctl")
 	_, hasSensors = runSafe("which", "sensors")
@@ -41,12 +48,12 @@ func detectHardwareTools() {
 	// Storage backends
 	if zpoolOut, ok := runSafe("which", "zpool"); ok && zpoolOut != "" {
 		// Verify ZFS module is loaded
-		if _, modOk := run("lsmod 2>/dev/null | grep -q '^zfs '"); modOk {
+		if _, modOk := runShellStatic("lsmod 2>/dev/null | grep -q '^zfs '"); modOk {
 			hasZfs = true
 		} else {
 			// Try loading it
 			runSafe("modprobe", "zfs")
-			_, hasZfs = run("lsmod 2>/dev/null | grep -q '^zfs '")
+			_, hasZfs = runShellStatic("lsmod 2>/dev/null | grep -q '^zfs '")
 		}
 	}
 
@@ -56,7 +63,7 @@ func detectHardwareTools() {
 	// System info
 	archOut, _ := runSafe("uname", "-m")
 	systemArch = strings.TrimSpace(archOut)
-	if memInfo, ok := run("awk '/MemTotal/{printf \"%d\", $2/1024/1024}' /proc/meminfo"); ok {
+	if memInfo, ok := runShellStatic("awk '/MemTotal/{printf \"%d\", $2/1024/1024}' /proc/meminfo"); ok {
 		systemRamGB = parseIntDefault(strings.TrimSpace(memInfo), 0)
 	}
 
@@ -152,9 +159,9 @@ func getDiskIO() map[string]interface{} {
 		// Only whole disks, not partitions
 		// sd[a-z], nvme[0-9]n[0-9], vd[a-z], xvd[a-z]
 		isWholeDisk := false
-		if regexp.MustCompile(`^sd[a-z]$`).MatchString(dev) ||
-			regexp.MustCompile(`^nvme\d+n\d+$`).MatchString(dev) ||
-			regexp.MustCompile(`^vd[a-z]$`).MatchString(dev) {
+		if reSdDisk.MatchString(dev) ||
+			reNvmeDisk.MatchString(dev) ||
+			reVdDisk.MatchString(dev) {
 			isWholeDisk = true
 		}
 		if !isWholeDisk {
@@ -437,7 +444,7 @@ func getHardwareGpuInfo() map[string]interface{} {
 
 	// Detect GPUs via lspci
 	var gpuList []interface{}
-	lspci, ok := run(`lspci -nn 2>/dev/null | grep -iE "VGA|3D|Display"`)
+	lspci, ok := runShellStatic(`lspci -nn 2>/dev/null | grep -iE "VGA|3D|Display"`)
 	if ok && lspci != "" {
 		for _, line := range strings.Split(lspci, "\n") {
 			if line == "" {
@@ -498,14 +505,14 @@ func getHardwareGpuInfo() map[string]interface{} {
 	}
 
 	// AMD driver
-	if out, ok := run("lsmod 2>/dev/null | grep amdgpu"); ok && out != "" {
+	if out, ok := runShellStatic("lsmod 2>/dev/null | grep amdgpu"); ok && out != "" {
 		if result["currentDriver"] == nil {
 			result["currentDriver"] = "amdgpu"
 		}
 	}
 
 	// Intel driver
-	if out, ok := run("lsmod 2>/dev/null | grep i915"); ok && out != "" {
+	if out, ok := runShellStatic("lsmod 2>/dev/null | grep i915"); ok && out != "" {
 		if result["currentDriver"] == nil {
 			result["currentDriver"] = "i915"
 		}
@@ -513,7 +520,7 @@ func getHardwareGpuInfo() map[string]interface{} {
 
 	// Kernel modules
 	var modules []interface{}
-	if mods, ok := run(`lsmod 2>/dev/null | grep -iE "nvidia|amdgpu|radeon|i915|nouveau"`); ok && mods != "" {
+	if mods, ok := runShellStatic(`lsmod 2>/dev/null | grep -iE "nvidia|amdgpu|radeon|i915|nouveau"`); ok && mods != "" {
 		for _, line := range strings.Split(mods, "\n") {
 			if line == "" {
 				continue
@@ -1282,14 +1289,39 @@ func handleUpdateStatus(w http.ResponseWriter) {
 	jsonOk(w, map[string]interface{}{"done": false})
 }
 
+// WARNING: Admin-level RCE endpoint — intentional privileged shell access.
+// Protected by: admin session check, audit logging, cwd sanitization, cmd guards.
 func handleTerminal(w http.ResponseWriter, r *http.Request, session *DBSession) {
+	// SECURITY: Terminal can be disabled via config
+	if !isTerminalEnabled() {
+		jsonError(w, 403, "Terminal is disabled in system configuration")
+		return
+	}
+
 	body, _ := readBody(r)
 	cmd := bodyStr(body, "cmd")
 	cwd := bodyStr(body, "cwd")
-	if cmd == "" || len(cmd) > 10000 {
-		jsonError(w, 400, "Invalid cmd")
+	if cmd == "" || len(cmd) > 4096 {
+		jsonError(w, 400, "Invalid cmd (max 4096 chars)")
 		return
 	}
+
+	// SECURITY: Block obviously destructive commands
+	dangerousPatterns := []string{
+		"rm -rf /\n", "rm -rf / ", "rm -rf /\"", "rm -rf /'",
+		":(){ :|:& };:",  // fork bomb
+		"mkfs.", "dd if=", "wipefs",
+		"> /dev/sd",
+	}
+	cmdLower := strings.ToLower(cmd)
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(cmdLower, strings.ToLower(pattern)) {
+			logMsg("TERMINAL BLOCKED [user=%s ip=%s]: %s", session.Username, r.RemoteAddr, cmd)
+			jsonError(w, 403, "Command blocked by security policy")
+			return
+		}
+	}
+
 	if cwd == "" {
 		cwd = "/root"
 	}
@@ -1318,14 +1350,31 @@ func handleTerminal(w http.ResponseWriter, r *http.Request, session *DBSession) 
 	jsonOk(w, map[string]interface{}{"stdout": strings.TrimSpace(string(out)), "stderr": "", "code": code, "cwd": cleanCwd})
 }
 
+// isTerminalEnabled checks if terminal access is enabled in config.
+// Defaults to true if not set (backward compatible).
+func isTerminalEnabled() bool {
+	data, err := os.ReadFile("/var/lib/nimbusos/config/security.json")
+	if err != nil {
+		return true // default: enabled
+	}
+	var conf map[string]interface{}
+	if json.Unmarshal(data, &conf) != nil {
+		return true
+	}
+	if enabled, ok := conf["terminalEnabled"].(bool); ok {
+		return enabled
+	}
+	return true
+}
+
 func handleSystemInfo(w http.ResponseWriter) {
 	interfaces := getNetwork()
 	hostname, _ := os.Hostname()
-	gateway, _ := run("ip route | grep default | awk '{print $3}' | head -1")
+	gateway, _ := runShellStatic("ip route | grep default | awk '{print $3}' | head -1")
 	if gateway == "" {
 		gateway = "—"
 	}
-	dnsOut, _ := run("cat /etc/resolv.conf 2>/dev/null | grep nameserver | awk '{print $2}'")
+	dnsOut, _ := runShellStatic("cat /etc/resolv.conf 2>/dev/null | grep nameserver | awk '{print $2}'")
 	var dnsServers []string
 	for _, s := range strings.Split(dnsOut, "\n") {
 		if s != "" {

@@ -724,7 +724,21 @@ func dockerInstall(w http.ResponseWriter, r *http.Request) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, "bash", "-c", "curl -fsSL https://get.docker.com | sh")
+		// SECURITY: Download Docker install script to file first, then execute
+		// (avoids pipe-to-shell which can't be verified)
+		scriptPath := "/tmp/docker-install.sh"
+		if _, ok := runSafe("curl", "-fsSL", "https://get.docker.com", "-o", scriptPath); !ok {
+			jsonError(w, 500, "Failed to download Docker install script")
+			return
+		}
+		// Verify script was downloaded and is non-empty
+		if info, err := os.Stat(scriptPath); err != nil || info.Size() < 1000 {
+			os.Remove(scriptPath)
+			jsonError(w, 500, "Docker install script is invalid or empty")
+			return
+		}
+		defer os.Remove(scriptPath)
+		cmd := exec.CommandContext(ctx, "bash", scriptPath)
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		installOut, err := cmd.CombinedOutput()
 		if err != nil {
@@ -833,11 +847,11 @@ func dockerUninstall(w http.ResponseWriter, r *http.Request) {
 	if session == nil {
 		return
 	}
-	run("docker stop $(docker ps -aq) 2>/dev/null || true")
-	run("docker rm $(docker ps -aq) 2>/dev/null || true")
+	runShellStatic("docker stop $(docker ps -aq) 2>/dev/null || true")
+	runShellStatic("docker rm $(docker ps -aq) 2>/dev/null || true")
 	runSafe("systemctl", "stop", "docker")
 	runSafe("systemctl", "disable", "docker")
-	run("apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || true")
+	runShellStatic("apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || true")
 	runSafe("rm", "-f", "/etc/docker/daemon.json")
 
 	// Deregister from service registry
@@ -1371,17 +1385,17 @@ func firewallAddRule(w http.ResponseWriter, r *http.Request) {
 
 	_, hasUfw := runSafe("which", "ufw")
 	if hasUfw {
-		proto := ""
+		// Build ufw args safely — no shell interpolation
+		portProto := port
 		if protocol != "both" {
-			proto = "/" + protocol
+			portProto = port + "/" + protocol
 		}
-		src := ""
+		args := []string{action, portProto}
 		if source != "" && source != "any" && source != "Any" {
-			src = " from " + source
+			args = append(args, "from", source)
 		}
-		cmd := fmt.Sprintf("ufw %s %s%s%s 2>&1", action, port, proto, src)
-		result, _ := run(cmd)
-		jsonOk(w, map[string]interface{}{"ok": true, "command": cmd, "result": result})
+		result, _ := runSafe("ufw", args...)
+		jsonOk(w, map[string]interface{}{"ok": true, "command": "ufw " + strings.Join(args, " "), "result": result})
 	} else {
 		jsonError(w, 400, "ufw not installed")
 	}
@@ -1415,7 +1429,7 @@ func firewallToggle(w http.ResponseWriter, r *http.Request) {
 	body, _ := readBody(r)
 	enable, _ := body["enable"].(bool)
 	if enable {
-		result, _ := run(`echo "y" | ufw enable 2>&1`)
+		result, _ := runSafeInput("y\n", "ufw", "enable")
 		jsonOk(w, map[string]interface{}{"ok": true, "result": result})
 	} else {
 		result, _ := runSafe("ufw", "disable")
@@ -1449,9 +1463,11 @@ func hardwareInstallDriver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logFile := fmt.Sprintf("/tmp/nimbus-driver-%d.log", time.Now().UnixMilli())
-	cmd := fmt.Sprintf("apt-get %s -y %s", action, pkg)
 	go func() {
-		out, _ := exec.Command("bash", "-c", cmd).CombinedOutput()
+		// SECURITY: exec.Command directly, no shell interpolation
+		c := exec.Command("apt-get", action, "-y", pkg)
+		c.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
+		out, _ := c.CombinedOutput()
 		os.WriteFile(logFile, out, 0644)
 	}()
 	jsonOk(w, map[string]interface{}{"ok": true, "message": fmt.Sprintf("%s %s started", action, pkg), "logFile": logFile})

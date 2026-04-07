@@ -617,6 +617,18 @@ func authSetup(w http.ResponseWriter, r *http.Request) {
 	hToken := sha256Hex(token)
 	dbSessionCreate(hToken, username, "admin", clientIP(r))
 
+	// SECURITY: Set session cookie with proper flags
+	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	http.SetCookie(w, &http.Cookie{
+		Name:     "nimos_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isSecure,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400,
+	})
+
 	jsonOk(w, map[string]interface{}{
 		"ok":    true,
 		"token": token,
@@ -724,6 +736,21 @@ func authLogin(w http.ResponseWriter, r *http.Request) {
 	hToken := sha256Hex(token)
 	dbSessionCreate(hToken, username, user.Role, ip)
 
+	// SECURITY: Set session cookie from backend with proper flags
+	// HttpOnly prevents XSS from stealing the cookie
+	// Secure ensures it's only sent over HTTPS
+	// SameSite=Strict prevents CSRF
+	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	http.SetCookie(w, &http.Cookie{
+		Name:     "nimos_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isSecure,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400, // 24h matches session expiry
+	})
+
 	jsonOk(w, map[string]interface{}{
 		"ok":    true,
 		"token": token,
@@ -737,6 +764,14 @@ func authLogout(w http.ResponseWriter, r *http.Request) {
 	if token != "" {
 		dbSessionDelete(sha256Hex(token))
 	}
+	// Clear session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "nimos_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
 	jsonOk(w, map[string]interface{}{"ok": true})
 }
 

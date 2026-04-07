@@ -754,7 +754,7 @@ func executeBackupJob(job map[string]interface{}) map[string]interface{} {
 
 	// Execute the send/receive
 	logMsg("backup: executing job %s → %s", jobName, remoteAddr)
-	out, ok := run(cmdStr)
+	out, ok := runShellStatic(cmdStr)
 
 	elapsed := int(time.Since(startTime).Seconds())
 
@@ -2108,7 +2108,7 @@ func listBackupSnapshots(pool string) map[string]interface{} {
 	if pool != "" {
 		zfsCmd = fmt.Sprintf("zfs list -t snapshot -H -o name,used,creation -r nimos-%s 2>/dev/null | grep nimbackup", pool)
 	}
-	if out, ok := run(zfsCmd); ok && out != "" {
+	if out, ok := runShellStatic(zfsCmd); ok && out != "" {
 		for _, line := range strings.Split(out, "\n") {
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
@@ -2124,7 +2124,7 @@ func listBackupSnapshots(pool string) map[string]interface{} {
 
 	// Btrfs snapshots (search in known pool mounts)
 	btrfsCmd := "find /nimbus/pools -path '*/.snapshots/nimbackup-*' -maxdepth 4 -type d 2>/dev/null"
-	if out, ok := run(btrfsCmd); ok && out != "" {
+	if out, ok := runShellStatic(btrfsCmd); ok && out != "" {
 		for _, path := range strings.Split(strings.TrimSpace(out), "\n") {
 			if path == "" {
 				continue
@@ -2377,7 +2377,7 @@ func mountRemoteShare(deviceID, deviceName, deviceAddr, shareName, remotePath st
 	time.Sleep(500 * time.Millisecond)
 
 	// Step 2: Ensure NFS client is available locally
-	run("which mount.nfs >/dev/null 2>&1 || apt-get install -y -qq nfs-common 2>/dev/null")
+	runShellStatic("which mount.nfs >/dev/null 2>&1 || apt-get install -y -qq nfs-common 2>/dev/null")
 
 	// Step 3: Mount via NFS
 	out, ok := runSafe("mount", "-t", "nfs", "-o", "soft,timeo=50,retrans=3,nolock",
@@ -2543,7 +2543,7 @@ const nimosExportMarker = "# NimOS-managed"
 // Only adds if not already exported. Runs exportfs -ra to apply.
 func addNFSExport(path, clientIP string) error {
 	// Ensure NFS server is installed
-	run("which exportfs >/dev/null 2>&1 || apt-get install -y -qq nfs-kernel-server 2>/dev/null")
+	runShellStatic("which exportfs >/dev/null 2>&1 || apt-get install -y -qq nfs-kernel-server 2>/dev/null")
 
 	// Read current exports
 	data, err := os.ReadFile(exportsFile)
@@ -2575,7 +2575,7 @@ func addNFSExport(path, clientIP string) error {
 	if !ok {
 		logMsg("nfs: exportfs -ra failed: %s", out)
 		// Try starting the NFS server
-		run("systemctl start nfs-kernel-server 2>/dev/null || service nfs-kernel-server start 2>/dev/null")
+		runShellStatic("systemctl start nfs-kernel-server 2>/dev/null || service nfs-kernel-server start 2>/dev/null")
 		runSafe("exportfs", "-ra")
 	}
 

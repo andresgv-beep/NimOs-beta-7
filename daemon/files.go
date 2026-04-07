@@ -624,16 +624,19 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Legacy multipart upload — only for small files (Notes, etc.)
-	// Large files MUST use /api/files/upload-chunk to avoid RAM inflation.
-	// On RPi, /tmp is tmpfs (RAM), and ParseMultipartForm spills there.
-	if r.ContentLength > 100*1024*1024 {
-		jsonError(w, 413, "File too large for legacy upload. Use chunked upload.")
+	// Legacy multipart upload — ONLY for small files (Notes save, config import, etc.)
+	// Large files (20GB+) MUST use /api/files/upload-chunk which streams to disk
+	// via io.Copy without RAM buffering. Nginx has proxy_request_buffering off.
+	if r.ContentLength > 50*1024*1024 {
+		jsonError(w, 413, "File too large. Use chunked upload for files over 50MB.")
 		return
 	}
 
-	// Parse multipart — buffer 32MB in RAM, rest goes to temp files on disk
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	// Hard limit on request body to prevent RAM abuse
+	r.Body = http.MaxBytesReader(w, r.Body, 50*1024*1024)
+
+	// Parse multipart — buffer 8MB in RAM max, rest spills to temp files
+	if err := r.ParseMultipartForm(8 << 20); err != nil {
 		jsonError(w, 400, "Failed to parse upload")
 		return
 	}

@@ -139,20 +139,23 @@ func requireAppAccess(w http.ResponseWriter, r *http.Request, appId string) *DBS
 	return session
 }
 
-// Get client IP
+// Get client IP — only trusts proxy headers from localhost (nginx)
 func clientIP(r *http.Request) string {
-	// Check X-Forwarded-For (behind proxy)
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
 	// RemoteAddr is host:port
 	addr := r.RemoteAddr
 	if idx := strings.LastIndex(addr, ":"); idx != -1 {
-		return addr[:idx]
+		addr = addr[:idx]
+	}
+	// SECURITY: Only trust X-Forwarded-For/X-Real-IP if request comes from
+	// local proxy (nginx on 127.0.0.1). External clients can spoof these headers.
+	if addr == "127.0.0.1" || addr == "::1" || addr == "@" {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			return strings.TrimSpace(parts[0])
+		}
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			return xri
+		}
 	}
 	return addr
 }
@@ -183,7 +186,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		// Security headers
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; connect-src 'self' https://raw.githubusercontent.com; frame-src 'self' http://127.0.0.1:* http://localhost:*")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; connect-src 'self' https://raw.githubusercontent.com; frame-src 'self' http://127.0.0.1:* http://localhost:*")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")

@@ -57,8 +57,8 @@ func handleVMsRoutes(w http.ResponseWriter, r *http.Request) {
 func vmsStatus(w http.ResponseWriter) {
 	_, virshOk := runSafe("which", "virsh")
 	_, qemuOk := runSafe("which", "qemu-system-x86_64")
-	kvmCount, _ := run(`grep -Ec "(vmx|svm)" /proc/cpuinfo 2>/dev/null`)
-	_, kvmLoaded := run("lsmod 2>/dev/null | grep kvm")
+	kvmCount, _ := runShellStatic(`grep -Ec "(vmx|svm)" /proc/cpuinfo 2>/dev/null`)
+	_, kvmLoaded := runShellStatic("lsmod 2>/dev/null | grep kvm")
 	libvirtStatus, _ := runSafe("systemctl", "is-active", "libvirtd")
 	version, _ := runSafe("virsh", "version", "--daemon")
 
@@ -156,8 +156,8 @@ func vmsList(w http.ResponseWriter) {
 
 func vmsOverview(w http.ResponseWriter) {
 	hostname, _ := runSafe("hostname")
-	cpuUsage, _ := run("top -bn1 | grep '%Cpu' | awk '{print $2}' 2>/dev/null")
-	memUsage, _ := run(`free -m | awk '/Mem:/{printf "%.0f", $3/$2*100}' 2>/dev/null`)
+	cpuUsage, _ := runShellStatic("top -bn1 | grep '%Cpu' | awk '{print $2}' 2>/dev/null")
+	memUsage, _ := runShellStatic(`free -m | awk '/Mem:/{printf "%.0f", $3/$2*100}' 2>/dev/null`)
 	nodeInfo, _ := runSafe("virsh", "nodeinfo")
 
 	totalCPUs := "?"

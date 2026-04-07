@@ -359,7 +359,8 @@ func detectNativeApp(appId string) (installed bool, running bool) {
 	if !ok {
 		return false, false
 	}
-	out, ok := run(def.CheckCommand)
+	// SECURITY BOUNDARY: CheckCommand from hardcoded knownNativeApps only
+	out, ok := runShellStatic(def.CheckCommand)
 	if !ok {
 		return false, false
 	}
@@ -507,9 +508,16 @@ func nativeAppStart(w http.ResponseWriter, r *http.Request, appId string) {
 		jsonError(w, 404, "Unknown app")
 		return
 	}
-	// Try multiple service name patterns
-	cmd := fmt.Sprintf("sudo systemctl start %s-daemon 2>/dev/null || sudo systemctl start %sd 2>/dev/null || sudo systemctl start %s 2>/dev/null", appId, appId, appId)
-	if _, ok := run(cmd); !ok {
+	// Try multiple service name patterns — no shell needed
+	patterns := []string{appId + "-daemon", appId + "d", appId}
+	started := false
+	for _, svc := range patterns {
+		if _, ok := runSafe("sudo", "systemctl", "start", svc); ok {
+			started = true
+			break
+		}
+	}
+	if !started {
 		jsonError(w, 500, "Failed to start service")
 		return
 	}
@@ -525,8 +533,10 @@ func nativeAppStop(w http.ResponseWriter, r *http.Request, appId string) {
 		jsonError(w, 404, "Unknown app")
 		return
 	}
-	cmd := fmt.Sprintf("sudo systemctl stop %s-daemon 2>/dev/null || sudo systemctl stop %sd 2>/dev/null || sudo systemctl stop %s 2>/dev/null", appId, appId, appId)
-	run(cmd)
+	// Try multiple service name patterns — no shell needed
+	for _, svc := range []string{appId + "-daemon", appId + "d", appId} {
+		runSafe("sudo", "systemctl", "stop", svc)
+	}
 	jsonOk(w, map[string]interface{}{"ok": true, "appId": appId})
 }
 
@@ -558,6 +568,10 @@ func nativeAppInstall(w http.ResponseWriter, r *http.Request, appId string) {
 	os.WriteFile(statusFile, statusData, 0644)
 
 	// Run install asynchronously
+	// SECURITY BOUNDARY: InstallCommand comes ONLY from knownNativeApps (hardcoded
+	// in this file). If the app catalog ever moves to external JSON/DB, this MUST
+	// be replaced with structured CommandSpec (no shell strings). Shell is used here
+	// because install commands chain apt + systemctl + mkdir with && and ||.
 	go func() {
 		logFile := filepath.Join(logDir, fmt.Sprintf("install-%s.log", appId))
 		out, err := exec.Command("bash", "-c", def.InstallCommand).CombinedOutput()
@@ -624,7 +638,8 @@ func nativeAppUninstall(w http.ResponseWriter, r *http.Request, appId string) {
 		return
 	}
 	if def.UninstallCommand != "" {
-		if _, ok := run(def.UninstallCommand); !ok {
+		// SECURITY BOUNDARY: UninstallCommand from hardcoded knownNativeApps only
+		if _, ok := runShellStatic(def.UninstallCommand); !ok {
 			jsonError(w, 500, "Uninstall failed")
 			return
 		}

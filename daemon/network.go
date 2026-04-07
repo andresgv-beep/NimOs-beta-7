@@ -12,9 +12,13 @@ import (
 	"time"
 )
 
-// runLong executes a command with a custom timeout in seconds (no retry)
-// Use ONLY for static commands. For dynamic args use runSafeLong.
-func runLong(command string, timeoutSecs int) (string, bool) {
+// runShellLongStatic executes a STATIC command with a custom timeout (no retry).
+// SECURITY: Rejects interpolated commands. Use runSafeLong for dynamic args.
+func runShellLongStatic(command string, timeoutSecs int) (string, bool) {
+	if strings.Contains(command, "%s") || strings.Contains(command, "%d") || strings.Contains(command, "%v") {
+		logMsg("SECURITY: runShellLongStatic rejected interpolated command: %s", command)
+		return "", false
+	}
 	ctx := exec.Command("sh", "-c", command)
 	done := make(chan struct{})
 	var out []byte
@@ -265,6 +269,10 @@ func handleRemoteAccessRoutes(w http.ResponseWriter, r *http.Request) {
 			if !reAlphanumDash.MatchString(subdomain) {
 				jsonError(w, 400, "Invalid DuckDNS subdomain"); return
 			}
+			// SECURITY: dnsToken goes into a bash script — must be validated
+			if dnsToken == "" || len(dnsToken) > 256 || strings.ContainsAny(dnsToken, "\"'`;|&<>$\\(){}[]!#~") {
+				jsonError(w, 400, "Invalid DNS token format"); return
+			}
 			hookDir := filepath.Join(configDir, "certbot-hooks")
 			os.MkdirAll(hookDir, 0755)
 			authHook := filepath.Join(hookDir, "duckdns-auth.sh")
@@ -339,7 +347,7 @@ func handleRemoteAccessRoutes(w http.ResponseWriter, r *http.Request) {
 			os.WriteFile("/etc/nginx/sites-available/nimbusos-https.conf", []byte(nginxConf), 0644)
 			runSafe("ln", "-sf", "/etc/nginx/sites-available/nimbusos-https.conf", "/etc/nginx/sites-enabled/nimbusos-https.conf")
 			runSafe("sudo", "ufw", "allow", fmt.Sprintf("%d/tcp", httpsPort))
-			run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx")
+			runShellStatic("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx")
 			https := map[string]interface{}{"enabled": true, "port": httpsPort}
 			cfg["https"] = https
 			writeJSONConfig(remoteAccessConfigFile, cfg)
@@ -432,7 +440,7 @@ func getRemoteAccessStatusGo(cfg map[string]interface{}) map[string]interface{} 
 	}
 
 	// Local IP
-	if lip, ok := run("hostname -I 2>/dev/null | awk '{print $1}'"); ok {
+	if lip, ok := runShellStatic("hostname -I 2>/dev/null | awk '{print $1}'"); ok {
 		result["localIp"] = strings.TrimSpace(lip)
 	}
 	result["nimbusPort"] = 5000
@@ -448,14 +456,14 @@ func handleSshRoutes(w http.ResponseWriter, r *http.Request) {
 	if session == nil { return }
 	switch {
 	case r.URL.Path == "/api/ssh/status" && r.Method == "GET":
-		running, _ := run("systemctl is-active sshd 2>/dev/null || systemctl is-active ssh 2>/dev/null")
-		version, _ := run("ssh -V 2>&1 | head -1")
+		running, _ := runShellStatic("systemctl is-active sshd 2>/dev/null || systemctl is-active ssh 2>/dev/null")
+		version, _ := runShellStatic("ssh -V 2>&1 | head -1")
 		jsonOk(w, map[string]interface{}{"running": strings.TrimSpace(running) == "active", "version": version})
 	case r.URL.Path == "/api/ssh/start" && r.Method == "POST":
-		run("sudo systemctl enable ssh sshd 2>/dev/null; sudo systemctl start sshd 2>/dev/null || sudo systemctl start ssh 2>/dev/null")
+		runShellStatic("sudo systemctl enable ssh sshd 2>/dev/null; sudo systemctl start sshd 2>/dev/null || sudo systemctl start ssh 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 	case r.URL.Path == "/api/ssh/stop" && r.Method == "POST":
-		run("sudo systemctl stop sshd ssh 2>/dev/null; sudo systemctl disable ssh sshd 2>/dev/null")
+		runShellStatic("sudo systemctl stop sshd ssh 2>/dev/null; sudo systemctl disable ssh sshd 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 	default:
 		jsonError(w, 404, "Not found")
@@ -471,15 +479,15 @@ func handleFtpRoutes(w http.ResponseWriter, r *http.Request) {
 	if session == nil { return }
 	switch {
 	case r.URL.Path == "/api/ftp/status" && r.Method == "GET":
-		_, installed := run("which vsftpd 2>/dev/null || test -x /usr/sbin/vsftpd && echo yes")
+		_, installed := runShellStatic("which vsftpd 2>/dev/null || test -x /usr/sbin/vsftpd && echo yes")
 		running1, _ := runSafe("systemctl", "is-active", "vsftpd")
 		running := strings.TrimSpace(running1) == "active"
 		jsonOk(w, map[string]interface{}{"installed": installed, "running": running})
 	case r.URL.Path == "/api/ftp/start" && r.Method == "POST":
-		run("sudo systemctl enable vsftpd 2>/dev/null; sudo systemctl start vsftpd 2>/dev/null")
+		runShellStatic("sudo systemctl enable vsftpd 2>/dev/null; sudo systemctl start vsftpd 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 	case r.URL.Path == "/api/ftp/stop" && r.Method == "POST":
-		run("sudo systemctl stop vsftpd 2>/dev/null; sudo systemctl disable vsftpd 2>/dev/null")
+		runShellStatic("sudo systemctl stop vsftpd 2>/dev/null; sudo systemctl disable vsftpd 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 	default:
 		jsonError(w, 404, "Not found")
@@ -495,16 +503,16 @@ func handleNfsRoutes(w http.ResponseWriter, r *http.Request) {
 	if session == nil { return }
 	switch {
 	case r.URL.Path == "/api/nfs/status" && r.Method == "GET":
-		_, installed := run("dpkg -l nfs-kernel-server 2>/dev/null | grep -q '^ii' && echo yes")
+		_, installed := runShellStatic("dpkg -l nfs-kernel-server 2>/dev/null | grep -q '^ii' && echo yes")
 		running1, _ := runSafe("systemctl", "is-active", "nfs-server")
 		running := strings.TrimSpace(running1) == "active"
 		exports := readFileStr("/etc/exports")
 		jsonOk(w, map[string]interface{}{"installed": installed, "running": running, "exports": exports})
 	case r.URL.Path == "/api/nfs/start" && r.Method == "POST":
-		run("sudo systemctl enable nfs-server 2>/dev/null; sudo systemctl start nfs-server 2>/dev/null")
+		runShellStatic("sudo systemctl enable nfs-server 2>/dev/null; sudo systemctl start nfs-server 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 	case r.URL.Path == "/api/nfs/stop" && r.Method == "POST":
-		run("sudo systemctl stop nfs-server 2>/dev/null; sudo systemctl disable nfs-server 2>/dev/null")
+		runShellStatic("sudo systemctl stop nfs-server 2>/dev/null; sudo systemctl disable nfs-server 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 	default:
 		jsonError(w, 404, "Not found")
@@ -622,7 +630,7 @@ func handleProxyRoutes(w http.ResponseWriter, r *http.Request) {
 		body, _ := readBody(r)
 		rules, _ := body["rules"].([]interface{})
 		writeJSONConfig(proxyConfigFile, rules)
-		run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
+		runShellStatic("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true})
 		return
 	}
@@ -670,12 +678,12 @@ func handleWebdavRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 	if urlPath == "/api/webdav/start" && method == "POST" {
 		runSafe("sudo", "ln", "-sf", "/etc/nginx/sites-available/nimbusos-webdav.conf", "/etc/nginx/sites-enabled/")
-		run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
+		runShellStatic("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 	if urlPath == "/api/webdav/stop" && method == "POST" {
 		runSafe("sudo", "rm", "-f", "/etc/nginx/sites-enabled/nimbusos-webdav.conf")
-		run("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
+		runShellStatic("sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 	jsonError(w, 404, "Not found")
@@ -692,7 +700,7 @@ func handleSmbRoutes(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 
 	if urlPath == "/api/smb/status" && method == "GET" {
-		_, installed := run("which smbd 2>/dev/null || test -x /usr/sbin/smbd && echo yes")
+		_, installed := runShellStatic("which smbd 2>/dev/null || test -x /usr/sbin/smbd && echo yes")
 		running1, _ := runSafe("systemctl", "is-active", "smbd")
 		running := strings.TrimSpace(running1) == "active"
 		version, _ := runSafe("smbd", "--version")
@@ -712,13 +720,13 @@ func handleSmbRoutes(w http.ResponseWriter, r *http.Request) {
 
 	if urlPath == "/api/smb/start" && method == "POST" {
 		if session.Role != "admin" { jsonError(w, 403, "Admin required"); return }
-		run("sudo systemctl enable smbd nmbd 2>/dev/null; sudo systemctl start smbd nmbd 2>/dev/null")
+		runShellStatic("sudo systemctl enable smbd nmbd 2>/dev/null; sudo systemctl start smbd nmbd 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 
 	if urlPath == "/api/smb/stop" && method == "POST" {
 		if session.Role != "admin" { jsonError(w, 403, "Admin required"); return }
-		run("sudo systemctl stop smbd nmbd 2>/dev/null; sudo systemctl disable smbd nmbd 2>/dev/null")
+		runShellStatic("sudo systemctl stop smbd nmbd 2>/dev/null; sudo systemctl disable smbd nmbd 2>/dev/null")
 		jsonOk(w, map[string]interface{}{"ok": true}); return
 	}
 

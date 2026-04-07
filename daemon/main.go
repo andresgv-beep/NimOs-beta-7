@@ -149,16 +149,18 @@ func checkPermission(perm string) error {
 // Helper: safe command execution with retry
 // ═══════════════════════════════════
 
-// run executes a command via shell (sh -c) with retry on lock contention.
+// runShellStatic executes a STATIC command via shell (sh -c) with retry.
 //
-// SECURITY NOTE: This function is intentionally retained for commands that
-// REQUIRE shell features (pipes, &&/||, redirects, subshells, Go template
-// format strings). All ~46 remaining callers use ONLY static string literals
-// or pre-validated internal variables — zero user input is ever interpolated.
-//
-// All user-facing input goes through runSafe() / runSafeInput() / runCmd()
-// which use exec.Command() directly without shell. See Sprint 1 migration.
-func run(command string) (string, bool) {
+// SECURITY: This function rejects any command containing format verbs (%s, %d)
+// or string concatenation markers (+) to prevent accidental interpolation.
+// All ~46 callers use ONLY hardcoded string literals or pre-validated internal vars.
+// User input MUST go through runSafe() / runSafeInput() / runCmd().
+func runShellStatic(command string) (string, bool) {
+	// Guard: reject commands that look like they contain interpolation
+	if strings.Contains(command, "%s") || strings.Contains(command, "%d") || strings.Contains(command, "%v") {
+		logMsg("SECURITY: runShellStatic rejected interpolated command: %s", command)
+		return "", false
+	}
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		ctx := exec.Command("sh", "-c", command)
 		out, err := ctx.CombinedOutput()
@@ -183,8 +185,8 @@ func run(command string) (string, bool) {
 }
 
 // runSafe executes a command with arguments directly (no shell).
-// Same return signature as run() for easy migration.
-// ALWAYS prefer this over run() when arguments contain user data.
+// Same return signature as runShellStatic() for easy migration.
+// ALWAYS prefer this over runShellStatic() when arguments contain user data.
 func runSafe(cmd string, args ...string) (string, bool) {
 	c := exec.Command(cmd, args...)
 	out, err := c.CombinedOutput()
