@@ -1514,10 +1514,13 @@ func getDiskSmart(diskName string) map[string]interface{} {
 		// Extract the leading number
 		rawNum := parseRawSmartValue(rawVal)
 
+		// Per-attribute status for the UI table
+		// Only mark warning/critical based on REAL problems, not cosmetic thresholds
 		attrStatus := "ok"
-		if thresh > 0 && value <= thresh {
+		if thresh > 0 && value <= thresh && rawNum > 0 {
 			attrStatus = "critical"
-		} else if thresh > 0 && value <= thresh+10 {
+		} else if thresh > 0 && value <= thresh && rawNum == 0 {
+			// Value crossed threshold but raw is 0 — cosmetic, not real failure
 			attrStatus = "warning"
 		}
 
@@ -1533,42 +1536,35 @@ func getDiskSmart(diskName string) map[string]interface{} {
 		}
 		attrs = append(attrs, attr)
 
-		// Only propagate threshold warnings for health-critical attributes
-		// For threshold-based warnings (near threshold but raw=0), skip —
-		// attributes like Spin_Retry_Count start at 100 with thresh 97,
-		// triggering false warnings when raw is actually 0 (no retries ever)
-		criticalAttrs := map[string]bool{
-			"Reallocated_Sector_Ct":    true,
-			"Current_Pending_Sector":   true,
-			"Offline_Uncorrectable":    true,
-			"Reported_Uncorrect":       true,
-			"Runtime_Bad_Block":        true,
-			"Spin_Retry_Count":         true,
-			"End-to-End_Error":         true,
-			"Command_Timeout":          true,
-			"Reallocated_Event_Count":  true,
-			"UDMA_CRC_Error_Count":     true,
-		}
+		// ── Disk-level status escalation ──
+		// Philosophy: only alert when the user needs to ACT.
+		// Synology/TrueNAS approach: real sector problems and temperature, not
+		// historical counters or attributes "near threshold" with raw=0.
+		//
+		// RED (critical) — act now:
+		//   Offline_Uncorrectable > 0, Current_Pending rising, value <= thresh with raw > 0
+		// YELLOW (warning) — plan replacement:
+		//   Reallocated > 0, Pending > 0, temperature > 50°C sustained
+		// NO ALERT:
+		//   Reported_Uncorrect (historical counter, only goes up)
+		//   Spin_Retry_Count with raw=0 (cosmetic threshold)
+		//   End-to-End_Error with raw=0 (cosmetic)
+		//   Any attr "near threshold" with raw=0
 
-		if criticalAttrs[name] {
-			if attrStatus == "critical" && (rawNum > 0 || value <= thresh) {
-				result["status"] = "critical"
-				result["healthy"] = false
-			} else if attrStatus == "warning" && rawNum > 0 {
+		switch name {
+		case "Temperature_Celsius", "Temperature_Internal", "Airflow_Temperature_Cel":
+			result["temperature"] = rawNum
+			if rawNum > 55 {
 				if result["status"] == "ok" {
 					result["status"] = "warning"
 				}
 			}
-		}
-
-		// Extract key metrics
-		switch name {
-		case "Temperature_Celsius", "Temperature_Internal", "Airflow_Temperature_Cel":
-			result["temperature"] = rawNum
 		case "Power_On_Hours", "Power_On_Hours_and_Msec":
 			result["powerOnHours"] = rawNum
 		case "Power_Cycle_Count":
 			result["powerCycles"] = rawNum
+
+		// ── These indicate REAL problems — escalate disk status ──
 		case "Reallocated_Sector_Ct":
 			result["reallocated"] = rawNum
 			if rawNum > 0 {
@@ -1589,18 +1585,28 @@ func getDiskSmart(diskName string) map[string]interface{} {
 				result["status"] = "critical"
 				result["healthy"] = false
 			}
-		case "Reported_Uncorrect":
-			if rawNum > 0 {
-				if result["status"] == "ok" {
-					result["status"] = "warning"
-				}
-			}
 		case "Runtime_Bad_Block":
 			if rawNum > 0 {
 				if result["status"] == "ok" {
 					result["status"] = "warning"
 				}
 			}
+		case "Reallocated_Event_Count":
+			if rawNum > 0 {
+				if result["status"] == "ok" {
+					result["status"] = "warning"
+				}
+			}
+
+		// ── These are informational — do NOT escalate disk status ──
+		// Reported_Uncorrect: historical ECC counter, only goes up, common on
+		// desktop drives used in NAS. Not actionable.
+		// Spin_Retry_Count: raw=0 means no actual retries.
+		// End-to-End_Error: raw=0 means no actual errors.
+		// UDMA_CRC_Error_Count: cable issue, not disk failure.
+		case "Reported_Uncorrect", "Spin_Retry_Count", "End-to-End_Error",
+			"UDMA_CRC_Error_Count", "Command_Timeout":
+			// Tracked but not escalated — informational only
 		}
 	}
 
