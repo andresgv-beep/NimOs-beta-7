@@ -543,9 +543,10 @@ func getFileStatsByCategory(dirPath string) map[string]int64 {
 		"other":    0,
 	}
 
-	// Use find + stat for efficiency — avoid walking huge trees in Go
+	// HARD-010: Use find with maxdepth + timeout to prevent blocking on huge shares.
+	// Shares with millions of files will get a partial scan (top 5 levels) instead of hanging.
 	opts := CmdOptions{Timeout: 10 * time.Second}
-	res, err := runCmd("find", []string{dirPath, "-type", "f", "-printf", "%s %f\\n"}, opts)
+	res, err := runCmd("find", []string{dirPath, "-maxdepth", "5", "-type", "f", "-printf", "%s %f\\n"}, opts)
 	if err != nil {
 		return stats
 	}

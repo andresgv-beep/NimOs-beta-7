@@ -103,16 +103,19 @@ func handleAppProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Copy response headers (strip iframe blockers)
+	// Copy response headers (strip iframe blockers — apps run inside NimOS iframe)
+	// HARD-003: Replace with controlled CSP that only allows our own origin
 	for key, values := range resp.Header {
 		lower := strings.ToLower(key)
 		if lower == "x-frame-options" || lower == "content-security-policy" {
-			continue
+			continue // stripped — we add our own below
 		}
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
 	}
+	// Allow framing only from self (NimOS desktop)
+	w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
 
 	w.WriteHeader(resp.StatusCode)
 
