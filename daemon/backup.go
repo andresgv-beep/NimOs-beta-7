@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -32,6 +33,9 @@ func createBackupTables() error {
 		type         TEXT NOT NULL DEFAULT 'nas',
 		purposes     TEXT DEFAULT '[]',
 		sync_pairs   TEXT DEFAULT '[]',
+		pair_token_hash TEXT DEFAULT '',
+		pair_token_outbound TEXT DEFAULT '',
+		ssh_host_key TEXT DEFAULT '',
 		wg_active    INTEGER DEFAULT 0,
 		wg_public_key TEXT DEFAULT '',
 		wg_endpoint  TEXT DEFAULT '',
@@ -88,13 +92,132 @@ func createBackupTables() error {
 	);
 	`
 	_, err := db.Exec(schema)
-	return err
+	if err != nil {
+		return err
+	}
+	// Migration: add new columns if missing (upgrade from Beta 6)
+	db.Exec(`ALTER TABLE backup_devices ADD COLUMN pair_token_hash TEXT DEFAULT ''`)
+	db.Exec(`ALTER TABLE backup_devices ADD COLUMN pair_token_outbound TEXT DEFAULT ''`)
+	db.Exec(`ALTER TABLE backup_devices ADD COLUMN ssh_host_key TEXT DEFAULT ''`)
+	return nil
 }
 
 // ─── ID Generation ──────────────────────────────────────────────────────────
 
 func backupID(prefix string) string {
 	return fmt.Sprintf("%s_%d", prefix, time.Now().UnixNano()/1e6)
+}
+
+// ─── Pair Token Helpers ─────────────────────────────────────────────────────
+
+// generatePairToken creates a 32-byte hex token for device pairing.
+func generatePairToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", b), nil
+}
+
+// dbBackupDeviceSetPairToken stores the pair token hash for a device.
+func dbBackupDeviceSetPairToken(deviceID, tokenHash string) error {
+	_, err := db.Exec(`UPDATE backup_devices SET pair_token_hash = ? WHERE id = ?`, tokenHash, deviceID)
+	return err
+}
+
+// verifyPairToken checks if the X-Pair-Token header matches any paired device.
+// Returns the matched device map or nil if no match.
+func verifyPairToken(r *http.Request) map[string]interface{} {
+	token := r.Header.Get("X-Pair-Token")
+	if token == "" {
+		return nil
+	}
+	tokenHash := sha256Hex(token)
+	devices, _ := dbBackupDeviceList()
+	for _, d := range devices {
+		if h, _ := d["pairTokenHash"].(string); h != "" && h == tokenHash {
+			return d
+		}
+	}
+	return nil
+}
+
+// verifyPairedDevice checks if request comes from a paired device.
+// First checks X-Pair-Token header (preferred), then falls back to IP match.
+func verifyPairedDevice(r *http.Request) map[string]interface{} {
+	if dev := verifyPairToken(r); dev != nil {
+		return dev
+	}
+	// Fallback: IP-based (backward compatible with pre-token devices)
+	remoteIP := r.RemoteAddr
+	if idx := strings.LastIndex(remoteIP, ":"); idx > 0 {
+		remoteIP = remoteIP[:idx]
+	}
+	remoteIP = strings.Trim(remoteIP, "[]")
+	devices, _ := dbBackupDeviceList()
+	for _, d := range devices {
+		if addr, _ := d["addr"].(string); addr == remoteIP {
+			return d
+		}
+	}
+	return nil
+}
+
+// getOutboundPairToken retrieves the raw pair token to send when calling a remote device.
+// This is the token the remote gave us during pairing — we send it as X-Pair-Token.
+func getOutboundPairToken(deviceID string) string {
+	var token string
+	db.QueryRow(`SELECT pair_token_outbound FROM backup_devices WHERE id = ?`, deviceID).Scan(&token)
+	return token
+}
+
+// ─── SSH Host Key Helpers (LOGIC-021) ───────────────────────────────────────
+
+// fetchSSHHostKey retrieves the SSH host key from a remote host using ssh-keyscan.
+func fetchSSHHostKey(addr string) (string, error) {
+	out, ok := runSafe("ssh-keyscan", "-t", "ed25519,rsa", "-T", "5", addr)
+	if !ok || strings.TrimSpace(out) == "" {
+		return "", fmt.Errorf("ssh-keyscan failed for %s", addr)
+	}
+	return strings.TrimSpace(out), nil
+}
+
+// dbBackupDeviceSetSSHHostKey stores the SSH host key for a paired device.
+func dbBackupDeviceSetSSHHostKey(deviceID, hostKey string) error {
+	_, err := db.Exec(`UPDATE backup_devices SET ssh_host_key = ? WHERE id = ?`, hostKey, deviceID)
+	return err
+}
+
+// writeKnownHostsFile writes a per-device known_hosts file for SSH.
+// Returns the path to the file, or "" if no host key is stored.
+func writeKnownHostsFile(deviceID string) string {
+	devices, _ := dbBackupDeviceList()
+	for _, d := range devices {
+		if id, _ := d["id"].(string); id == deviceID {
+			hostKey, _ := d["sshHostKey"].(string)
+			if hostKey == "" {
+				return ""
+			}
+			khDir := "/var/lib/nimbusos/ssh"
+			os.MkdirAll(khDir, 0700)
+			khPath := fmt.Sprintf("%s/known_hosts_%s", khDir, deviceID)
+			os.WriteFile(khPath, []byte(hostKey+"\n"), 0600)
+			return khPath
+		}
+	}
+	return ""
+}
+
+// sshOptsForDevice returns SSH options string for a backup device.
+// If host key is stored, uses StrictHostKeyChecking=yes with per-device known_hosts.
+// Otherwise falls back to StrictHostKeyChecking=no (legacy/first-time).
+func sshOptsForDevice(deviceID string) string {
+	khPath := writeKnownHostsFile(deviceID)
+	if khPath != "" {
+		return fmt.Sprintf("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=%s -o ConnectTimeout=30", khPath)
+	}
+	// Fallback for devices without stored host key (paired before LOGIC-021)
+	return "-o StrictHostKeyChecking=no -o ConnectTimeout=30"
 }
 
 // ─── Device DB Operations ───────────────────────────────────────────────────
@@ -130,7 +253,7 @@ func dbBackupDeviceCreate(dev map[string]interface{}) error {
 }
 
 func dbBackupDeviceList() ([]map[string]interface{}, error) {
-	rows, err := db.Query(`SELECT id, name, addr, type, purposes, sync_pairs, wg_active,
+	rows, err := db.Query(`SELECT id, name, addr, type, purposes, sync_pairs, pair_token_hash, pair_token_outbound, ssh_host_key, wg_active,
 		wg_public_key, wg_endpoint, wg_allowed_ips, wg_local_ip, created_at FROM backup_devices ORDER BY created_at`)
 	if err != nil {
 		return nil, err
@@ -139,21 +262,24 @@ func dbBackupDeviceList() ([]map[string]interface{}, error) {
 
 	var devices []map[string]interface{}
 	for rows.Next() {
-		var id, name, addr, devType, purposesJSON, syncPairsJSON string
+		var id, name, addr, devType, purposesJSON, syncPairsJSON, pairTokenHash, pairTokenOutbound, sshHostKey string
 		var wgActive int
 		var wgPub, wgEndpoint, wgAllowed, wgLocal, createdAt string
 
-		if err := rows.Scan(&id, &name, &addr, &devType, &purposesJSON, &syncPairsJSON,
+		if err := rows.Scan(&id, &name, &addr, &devType, &purposesJSON, &syncPairsJSON, &pairTokenHash, &pairTokenOutbound, &sshHostKey,
 			&wgActive, &wgPub, &wgEndpoint, &wgAllowed, &wgLocal, &createdAt); err != nil {
 			continue
 		}
 
 		dev := map[string]interface{}{
-			"id":        id,
-			"name":      name,
-			"addr":      addr,
-			"type":      devType,
-			"createdAt": createdAt,
+			"id":                 id,
+			"name":               name,
+			"addr":               addr,
+			"type":               devType,
+			"pairTokenHash":      pairTokenHash,
+			"pairTokenOutbound":  pairTokenOutbound,
+			"sshHostKey":         sshHostKey,
+			"createdAt":          createdAt,
 		}
 
 		// Parse purposes JSON
@@ -705,6 +831,9 @@ func executeBackupJob(job map[string]interface{}) map[string]interface{} {
 	var cmdStr string
 	var snapName string
 
+	// LOGIC-021: Use per-device SSH options (host key verification if available)
+	sshOpts := sshOptsForDevice(deviceID)
+
 	switch fsType {
 	case "zfs":
 		snapName = fmt.Sprintf("nimbackup-%s", timestamp)
@@ -718,11 +847,11 @@ func executeBackupJob(job map[string]interface{}) map[string]interface{} {
 
 		// 2. Send (incremental if previous snapshot exists)
 		if lastSnap != "" {
-			cmdStr = fmt.Sprintf("zfs send -i %s@%s %s | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@%s 'zfs receive -F %s'",
-				source, lastSnap, fullSnap, remoteAddr, dest)
+			cmdStr = fmt.Sprintf("zfs send -i %s@%s %s | ssh %s root@%s 'zfs receive -F %s'",
+				source, lastSnap, fullSnap, sshOpts, remoteAddr, dest)
 		} else {
-			cmdStr = fmt.Sprintf("zfs send %s | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@%s 'zfs receive -F %s'",
-				fullSnap, remoteAddr, dest)
+			cmdStr = fmt.Sprintf("zfs send %s | ssh %s root@%s 'zfs receive -F %s'",
+				fullSnap, sshOpts, remoteAddr, dest)
 		}
 
 	case "btrfs":
@@ -741,11 +870,11 @@ func executeBackupJob(job map[string]interface{}) map[string]interface{} {
 		// 3. Send (incremental if previous snapshot exists)
 		if lastSnap != "" {
 			lastSnapPath := fmt.Sprintf("%s/.snapshots/%s", source, lastSnap)
-			cmdStr = fmt.Sprintf("btrfs send -p %s %s | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@%s 'btrfs receive %s'",
-				lastSnapPath, snapPath, remoteAddr, dest)
+			cmdStr = fmt.Sprintf("btrfs send -p %s %s | ssh %s root@%s 'btrfs receive %s'",
+				lastSnapPath, snapPath, sshOpts, remoteAddr, dest)
 		} else {
-			cmdStr = fmt.Sprintf("btrfs send %s | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@%s 'btrfs receive %s'",
-				snapPath, remoteAddr, dest)
+			cmdStr = fmt.Sprintf("btrfs send %s | ssh %s root@%s 'btrfs receive %s'",
+				snapPath, sshOpts, remoteAddr, dest)
 		}
 
 	default:
@@ -1434,6 +1563,12 @@ func handleBackupRoutes(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			enrichDevicesWithStatus(devices)
+			// SECURITY: Don't leak sensitive fields to the frontend
+			for _, d := range devices {
+				delete(d, "pairTokenHash")
+				delete(d, "pairTokenOutbound")
+				delete(d, "sshHostKey")
+			}
 			jsonOk(w, map[string]interface{}{"devices": devices})
 
 		// GET /api/backup/devices/:id/status
@@ -1591,7 +1726,33 @@ func handleBackupRoutes(w http.ResponseWriter, r *http.Request) {
 				jsonError(w, 500, err.Error())
 				return
 			}
-			jsonOk(w, map[string]interface{}{"ok": true, "id": id})
+
+			// LOGIC-023: Generate pair token for secure inter-device auth
+			pairToken, err := generatePairToken()
+			if err != nil {
+				jsonError(w, 500, "Failed to generate pair token")
+				return
+			}
+			dbBackupDeviceSetPairToken(id, sha256Hex(pairToken))
+
+			// If the remote sent us their pair token (mutual pairing), store it
+			// so we can send it as X-Pair-Token when calling them
+			if incomingToken := bodyStr(body, "pairToken"); incomingToken != "" {
+				db.Exec(`UPDATE backup_devices SET pair_token_outbound = ? WHERE id = ?`, incomingToken, id)
+			}
+
+			// LOGIC-021: Fetch SSH host key for MITM protection during backup
+			go func() {
+				if hostKey, err := fetchSSHHostKey(addr); err == nil {
+					dbBackupDeviceSetSSHHostKey(id, hostKey)
+					logMsg("backup: stored SSH host key for %s (%s)", name, addr)
+				} else {
+					logMsg("backup: could not fetch SSH host key for %s: %v", addr, err)
+				}
+			}()
+
+			// Return our token to caller — they store it and send it as X-Pair-Token
+			jsonOk(w, map[string]interface{}{"ok": true, "id": id, "pairToken": pairToken})
 
 		// DELETE /api/backup/devices/:id
 		case strings.HasPrefix(urlPath, "/api/backup/devices/") && method == "DELETE":
@@ -1981,23 +2142,42 @@ func pairWithRemote(addr, username, password, totpCode string) map[string]interf
 		return map[string]interface{}{"error": "Failed to save device: " + err.Error()}
 	}
 
+	// LOGIC-023: Generate a pair token for verifying our outbound requests
+	localPairToken, _ := generatePairToken()
+	dbBackupDeviceSetPairToken(id, sha256Hex(localPairToken))
+
 	// Step 3b: Register ourselves on the remote NAS (mutual pairing)
+	// Send our local pair token so the remote can verify our future requests
 	localName := getLocalHostname()
 	localAddr := getLocalLANAddr(addr)
 	remoteDevPayload, _ := json.Marshal(map[string]interface{}{
-		"name": localName,
-		"addr": localAddr,
-		"type": "nas",
+		"name":      localName,
+		"addr":      localAddr,
+		"type":      "nas",
+		"pairToken": localPairToken,
 	})
 	regReq, _ := http.NewRequest("POST", baseURL+"/api/backup/devices", strings.NewReader(string(remoteDevPayload)))
 	regReq.Header.Set("Authorization", "Bearer "+token)
 	regReq.Header.Set("Content-Type", "application/json")
 	regResp, regErr := client.Do(regReq)
+	var remotePairToken string
 	if regErr != nil {
 		logMsg("backup: mutual pairing failed: %v (one-way pairing still valid)", regErr)
 	} else {
+		// Capture the remote's pair token for our outbound requests to them
+		var regData map[string]interface{}
+		json.NewDecoder(regResp.Body).Decode(&regData)
 		regResp.Body.Close()
+		if pt, ok := regData["pairToken"].(string); ok && pt != "" {
+			remotePairToken = pt
+		}
 		logMsg("backup: mutual pairing OK — registered '%s' on remote %s", localName, addr)
+	}
+
+	// Store the remote's pair token so we can send it in X-Pair-Token header
+	if remotePairToken != "" {
+		db.Exec(`UPDATE backup_devices SET pair_token_outbound = ? WHERE id = ?`,
+			remotePairToken, id)
 	}
 
 	result := map[string]interface{}{
@@ -2040,6 +2220,16 @@ func pairWithRemote(addr, username, password, totpCode string) map[string]interf
 			}
 		}
 	}
+
+	// LOGIC-021: Fetch SSH host key for MITM protection during backup
+	go func() {
+		if hostKey, err := fetchSSHHostKey(addr); err == nil {
+			dbBackupDeviceSetSSHHostKey(id, hostKey)
+			logMsg("backup: stored SSH host key for %s (%s)", remoteName, addr)
+		} else {
+			logMsg("backup: could not fetch SSH host key for %s: %v", addr, err)
+		}
+	}()
 
 	return result
 }
@@ -2232,8 +2422,13 @@ func fetchRemoteShares(device map[string]interface{}) ([]map[string]interface{},
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	// Query the remote's public-shares endpoint (verified by paired device IP)
-	resp, err := client.Get(fmt.Sprintf("%s://%s:%s/api/backup/public-shares", proto, addr, port))
+	// LOGIC-023: Send pair token for authentication
+	url := fmt.Sprintf("%s://%s:%s/api/backup/public-shares", proto, addr, port)
+	req, _ := http.NewRequest("GET", url, nil)
+	if outToken, _ := device["pairTokenOutbound"].(string); outToken != "" {
+		req.Header.Set("X-Pair-Token", outToken)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("cannot reach remote: %v", err)
 	}
@@ -2290,25 +2485,9 @@ func fetchRemoteShares(device map[string]interface{}) ([]map[string]interface{},
 }
 
 // getPublicShares returns this NAS's shares in a simplified format for paired devices.
-// No full auth required — but we verify the request comes from a paired device IP.
+// Auth: verifies pair token (preferred) or falls back to IP check for legacy devices.
 func getPublicShares(r *http.Request) map[string]interface{} {
-	// Verify requester is a paired device
-	remoteIP := r.RemoteAddr
-	if idx := strings.LastIndex(remoteIP, ":"); idx > 0 {
-		remoteIP = remoteIP[:idx]
-	}
-	remoteIP = strings.Trim(remoteIP, "[]") // IPv6 brackets
-
-	devices, _ := dbBackupDeviceList()
-	isPaired := false
-	for _, d := range devices {
-		if addr, _ := d["addr"].(string); addr == remoteIP {
-			isPaired = true
-			break
-		}
-	}
-
-	if !isPaired {
+	if dev := verifyPairedDevice(r); dev == nil {
 		return map[string]interface{}{"error": "not a paired device"}
 	}
 
@@ -2380,11 +2559,15 @@ func mountRemoteShare(deviceID, deviceName, deviceAddr, shareName, remotePath st
 		"path":     remotePath,
 		"clientIP": ourIP,
 	})
-	exportResp, exportErr := client.Post(
+	// LOGIC-023: Send pair token for authentication
+	exportReq, _ := http.NewRequest("POST",
 		fmt.Sprintf("%s://%s:%s/api/backup/nfs-export", proto, deviceAddr, port),
-		"application/json",
-		strings.NewReader(string(exportPayload)),
-	)
+		strings.NewReader(string(exportPayload)))
+	exportReq.Header.Set("Content-Type", "application/json")
+	if outToken := getOutboundPairToken(deviceID); outToken != "" {
+		exportReq.Header.Set("X-Pair-Token", outToken)
+	}
+	exportResp, exportErr := client.Do(exportReq)
 	if exportErr != nil {
 		logMsg("remote-share: failed to request NFS export from %s: %v", deviceAddr, exportErr)
 	} else {
@@ -2660,25 +2843,9 @@ func ensureNFSServer() {
 
 // handleNFSExport handles the /api/backup/nfs-export endpoint.
 // Called by a paired device requesting us to export a path for their IP.
-// Verifies the requester is a paired device by checking their IP.
+// Auth: verifies pair token (preferred) or falls back to IP check for legacy devices.
 func handleNFSExport(w http.ResponseWriter, r *http.Request) {
-	// Verify requester is a paired device
-	remoteIP := r.RemoteAddr
-	if idx := strings.LastIndex(remoteIP, ":"); idx > 0 {
-		remoteIP = remoteIP[:idx]
-	}
-	remoteIP = strings.Trim(remoteIP, "[]")
-
-	devices, _ := dbBackupDeviceList()
-	isPaired := false
-	for _, d := range devices {
-		if addr, _ := d["addr"].(string); addr == remoteIP {
-			isPaired = true
-			break
-		}
-	}
-
-	if !isPaired {
+	if dev := verifyPairedDevice(r); dev == nil {
 		jsonError(w, 403, "not a paired device")
 		return
 	}
