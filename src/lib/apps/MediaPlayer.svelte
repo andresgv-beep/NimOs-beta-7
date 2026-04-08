@@ -34,8 +34,21 @@
   function getExt(n) { const d = n.lastIndexOf('.'); return d >= 0 ? n.slice(d+1).toLowerCase() : ''; }
   function isMedia(n)     { return MEDIA_EXT.includes(getExt(n)); }
   function isVideoFile(n) { return VIDEO_EXT.includes(getExt(n)); }
-  function streamUrl(share, path) {
-    return `/api/files/download?share=${encodeURIComponent(share)}&path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`;
+  // Generate a one-time download token for streaming (avoids session token in URL)
+  async function streamUrl(share, path) {
+    try {
+      const r = await fetch('/api/files/download-token', {
+        method: 'POST',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ share, path }),
+      });
+      const d = await r.json();
+      if (d.token) {
+        return `/api/files/download?share=${encodeURIComponent(share)}&path=${encodeURIComponent(path)}&dl=${encodeURIComponent(d.token)}`;
+      }
+    } catch {}
+    // Fallback: use session token (shouldn't happen)
+    return `/api/files/download?share=${encodeURIComponent(share)}&path=${encodeURIComponent(path)}&token=${encodeURIComponent(getToken())}`;
   }
   function fmtTime(s) {
     if (!s || isNaN(s)) return '0:00';
@@ -106,9 +119,9 @@
   }
 
   // ── Reproducción ──
-  function playItem(item) {
+  async function playItem(item) {
     currentFile = item;
-    currentSrc = streamUrl(item._share, item._path);
+    currentSrc = await streamUrl(item._share, item._path);
     isVideo = isVideoFile(item.name);
     playing = true;
     playlistIdx = playlist.findIndex(p => p._share === item._share && p._path === item._path);

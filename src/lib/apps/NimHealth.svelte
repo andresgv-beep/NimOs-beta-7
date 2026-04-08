@@ -1,7 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { getToken, hdrs } from '$lib/stores/auth.js';
-
+  import { token, hdrs } from '$lib/stores/auth.js';
 
   let view = 'dashboard'; // 'dashboard' | 'detail'
   let services = [];
@@ -165,9 +164,15 @@
     return 'dot-ok';
   }
 
-  onMount(() => {
-    loadServices();
-    loadMetrics();
+  onMount(async () => {
+    // Wait for auth token to be ready (fixes race condition on app open)
+    let attempts = 0;
+    while (!$token && attempts < 10) {
+      await new Promise(r => setTimeout(r, 200));
+      attempts++;
+    }
+    await loadServices();
+    await loadMetrics();
     pollInterval = setInterval(() => {
       loadServices();
       loadMetrics();
