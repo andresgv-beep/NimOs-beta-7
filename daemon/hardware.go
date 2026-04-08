@@ -1585,12 +1585,6 @@ func getDiskSmart(diskName string) map[string]interface{} {
 				result["status"] = "critical"
 				result["healthy"] = false
 			}
-		case "Runtime_Bad_Block":
-			if rawNum > 0 {
-				if result["status"] == "ok" {
-					result["status"] = "warning"
-				}
-			}
 		case "Reallocated_Event_Count":
 			if rawNum > 0 {
 				if result["status"] == "ok" {
@@ -1601,11 +1595,12 @@ func getDiskSmart(diskName string) map[string]interface{} {
 		// ── These are informational — do NOT escalate disk status ──
 		// Reported_Uncorrect: historical ECC counter, only goes up, common on
 		// desktop drives used in NAS. Not actionable.
+		// Runtime_Bad_Block: low counts are normal wear, not actionable.
 		// Spin_Retry_Count: raw=0 means no actual retries.
 		// End-to-End_Error: raw=0 means no actual errors.
 		// UDMA_CRC_Error_Count: cable issue, not disk failure.
-		case "Reported_Uncorrect", "Spin_Retry_Count", "End-to-End_Error",
-			"UDMA_CRC_Error_Count", "Command_Timeout":
+		case "Reported_Uncorrect", "Runtime_Bad_Block", "Spin_Retry_Count",
+			"End-to-End_Error", "UDMA_CRC_Error_Count", "Command_Timeout":
 			// Tracked but not escalated — informational only
 		}
 	}
