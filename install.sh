@@ -486,9 +486,24 @@ pam_service_name=vsftpd
 pasv_enable=YES
 pasv_min_port=55000
 pasv_max_port=55999
-# Security
-ssl_enable=NO
+# Security — enable SSL to protect credentials on the wire
+ssl_enable=YES
+rsa_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+rsa_private_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+allow_anon_ssl=NO
+force_local_data_ssl=YES
+force_local_logins_ssl=YES
+ssl_tlsv1=NO
+ssl_sslv2=NO
+ssl_sslv3=NO
+ssl_tlsv1_1=NO
+ssl_tlsv1_2=YES
 EOF
+
+  # Ensure self-signed cert exists (Ubuntu ships ssl-cert package)
+  if [ ! -f /etc/ssl/certs/ssl-cert-snakeoil.pem ]; then
+    apt-get install -y -qq ssl-cert 2>/dev/null || true
+  fi
 
   systemctl disable vsftpd 2>/dev/null || true
   systemctl stop vsftpd 2>/dev/null || true
@@ -506,6 +521,10 @@ setup_nginx() {
   # Hide nginx version globally (only if not already set)
   grep -q 'server_tokens off' /etc/nginx/nginx.conf 2>/dev/null || \
     sed -i '/http {/a \\tserver_tokens off;' /etc/nginx/nginx.conf 2>/dev/null || true
+
+  # LOGIC-039: Add rate limit zone for auth endpoints (brute force protection)
+  grep -q 'limit_req_zone' /etc/nginx/nginx.conf 2>/dev/null || \
+    sed -i '/http {/a \\tlimit_req_zone $binary_remote_addr zone=auth:10m rate=5r/s;' /etc/nginx/nginx.conf 2>/dev/null || true
 
   cat > /etc/nginx/sites-available/nimbusos << EOF
 server {
@@ -525,6 +544,17 @@ server {
     # ── Security headers (Nginx layer — extra on top of daemon) ──
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+
+    # ── Rate limit on auth endpoints (LOGIC-039) ──
+    location /api/auth/login {
+        limit_req zone=auth burst=10 nodelay;
+        proxy_pass http://127.0.0.1:$NIMBUS_PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
 
     # ── Proxy to NimOS daemon ──
     location / {
