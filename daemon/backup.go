@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/user"
 	"regexp"
 	"sort"
 	"strconv"
@@ -2043,12 +2044,29 @@ func pairWithRemote(addr, username, password, totpCode string) map[string]interf
 	return result
 }
 
+// isLocalAddr reports whether addr is in an RFC 1918 private range or localhost.
+// Previous versions accepted all 172.* which is incorrect — only 172.16-31.*
+// is actually private (172.16.0.0/12).
 func isLocalAddr(addr string) bool {
-	return strings.HasPrefix(addr, "192.168.") ||
-		strings.HasPrefix(addr, "10.") ||
-		strings.HasPrefix(addr, "172.") ||
-		addr == "localhost" ||
-		addr == "127.0.0.1"
+	if addr == "localhost" || addr == "127.0.0.1" {
+		return true
+	}
+	if strings.HasPrefix(addr, "192.168.") || strings.HasPrefix(addr, "10.") {
+		return true
+	}
+	if strings.HasPrefix(addr, "172.") {
+		rest := strings.TrimPrefix(addr, "172.")
+		dotIdx := strings.IndexByte(rest, '.')
+		if dotIdx <= 0 {
+			return false
+		}
+		second, err := strconv.Atoi(rest[:dotIdx])
+		if err != nil {
+			return false
+		}
+		return second >= 16 && second <= 31
+	}
+	return false
 }
 
 // getLocalHostname returns this machine's hostname.
@@ -2113,10 +2131,10 @@ func listBackupSnapshots(pool string) map[string]interface{} {
 			fields := strings.Fields(line)
 			if len(fields) >= 2 {
 				allSnaps = append(allSnaps, map[string]interface{}{
-					"name":   fields[0],
-					"used":   fields[1],
-					"type":   "zfs",
-					"time":   extractTimestamp(fields[0]).Format(time.RFC3339),
+					"name": fields[0],
+					"used": fields[1],
+					"type": "zfs",
+					"time": extractTimestamp(fields[0]).Format(time.RFC3339),
 				})
 			}
 		}
@@ -2539,6 +2557,22 @@ func remountAllOnStartup() {
 const exportsFile = "/etc/exports"
 const nimosExportMarker = "# NimOS-managed"
 
+// lookupNimbusIDs returns the UID/GID of the nimbus user, falling back to
+// safe defaults (1000/1000) if the user doesn't exist. Used for NFS
+// anonymous user mapping so remote devices never get root on our shares.
+func lookupNimbusIDs() (int, int) {
+	uid, gid := 1000, 1000
+	if u, err := user.Lookup("nimbus"); err == nil {
+		if parsed, err := strconv.Atoi(u.Uid); err == nil {
+			uid = parsed
+		}
+		if parsed, err := strconv.Atoi(u.Gid); err == nil {
+			gid = parsed
+		}
+	}
+	return uid, gid
+}
+
 // addNFSExport adds a path to /etc/exports for a specific client IP.
 // Only adds if not already exported. Runs exportfs -ra to apply.
 func addNFSExport(path, clientIP string) error {
@@ -2552,8 +2586,15 @@ func addNFSExport(path, clientIP string) error {
 	}
 	content := string(data)
 
-	// Check if this exact export already exists
-	exportLine := fmt.Sprintf("%s %s(rw,sync,no_subtree_check,no_root_squash) %s", path, clientIP, nimosExportMarker)
+	// SECURITY (LOGIC-022): use root_squash + all_squash with anonymous mapping
+	// to the nimbus user. Previous versions used no_root_squash which gave the
+	// remote device root privileges over our exported files — if the paired
+	// device was compromised it would have full root on our shares. all_squash
+	// maps every remote user (including root) to the unprivileged nimbus user,
+	// which is the same user that owns the share directories.
+	nimbusUID, nimbusGID := lookupNimbusIDs()
+	exportLine := fmt.Sprintf("%s %s(rw,sync,no_subtree_check,root_squash,all_squash,anonuid=%d,anongid=%d) %s",
+		path, clientIP, nimbusUID, nimbusGID, nimosExportMarker)
 	if strings.Contains(content, fmt.Sprintf("%s %s(", path, clientIP)) {
 		// Already exported
 		runSafe("exportfs", "-ra")
