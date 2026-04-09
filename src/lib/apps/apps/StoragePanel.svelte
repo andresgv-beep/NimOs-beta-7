@@ -684,16 +684,24 @@
     scanning = false;
   }
 
-  async function restorePool(name) {
+  async function restorePool(pool) {
     restoring = true; restoreMsg = '';
     try {
       const res = await fetch('/api/storage/pool/restore', {
         method: 'POST',
         headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ zpoolName: pool.zpoolName, name: pool.name, restoreConfig: pool.hasBackup }),
       });
       const data = await res.json();
-      if (data.ok) { restoreMsg = `Pool "${name}" restaurado`; restoreMsgError = false; load(); }
+      if (data.ok) {
+        const parts = [];
+        if (data.shares > 0) parts.push(`${data.shares} carpetas`);
+        if (data.dockerRestored) parts.push('Docker');
+        if (data.dbRestored) parts.push('configuración');
+        restoreMsg = `Pool "${pool.name}" restaurado` + (parts.length ? ` (${parts.join(', ')})` : '');
+        restoreMsgError = false;
+        load();
+      }
       else { restoreMsg = data.error || 'Error restaurando'; restoreMsgError = true; }
     } catch (e) { restoreMsg = 'Error de conexión'; restoreMsgError = true; }
     restoring = false;
@@ -1735,16 +1743,21 @@
         {#if restorable.length === 0}
           <p class="coming-soon" style="margin-top:12px">No se encontraron pools restaurables</p>
         {:else}
-          <div style="margin-top:14px">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
             {#each restorable as pool}
-              <div class="pool-row">
-                <div class="pool-led"></div>
-                <div class="pool-info">
+              <div class="pool-row" style="padding:12px;border-radius:8px;background:var(--ibtn-bg);border:1px solid var(--border)">
+                <div class="pool-led" style="background:{pool.health === 'ONLINE' ? 'var(--green)' : 'var(--amber)'}"></div>
+                <div class="pool-info" style="flex:1">
                   <div class="pool-name">{pool.name}</div>
-                  <div class="pool-meta">{pool.raidLevel || '—'} · {pool.disks?.length || 0} discos · {pool.filesystem || '—'}</div>
+                  <div class="pool-meta">{pool.type?.toUpperCase()} {pool.vdevType?.toUpperCase()} · {pool.size} · {pool.identity?.disks?.length || 0} discos</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:4px">
+                    {#if pool.hasBackup}<span style="color:var(--green)">✓ Config backup disponible</span>{/if}
+                    {#if pool.hasDocker}<span style="margin-left:8px">🐳 Docker data</span>{/if}
+                    {#if pool.shares?.length > 0}<span style="margin-left:8px">📁 {pool.shares.length} carpeta{pool.shares.length > 1 ? 's' : ''}</span>{/if}
+                  </div>
                 </div>
-                <button class="btn-accent" style="margin-left:auto;padding:4px 10px;font-size:10px" on:click={() => restorePool(pool.name)} disabled={restoring}>
-                  {restoring ? '...' : 'Restaurar'}
+                <button class="btn-accent" style="margin-left:auto;padding:6px 14px;font-size:11px" on:click={() => restorePool(pool)} disabled={restoring}>
+                  {restoring ? 'Restaurando...' : 'Restaurar'}
                 </button>
               </div>
             {/each}
