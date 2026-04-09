@@ -783,35 +783,25 @@ func handleFirewallRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ── UPnP Router endpoints ──
-	if urlPath == "/api/router/status" && method == "GET" {
-		session := requireAdmin(w, r)
-		if session == nil { return }
+	if urlPath == "/api/router/status" && r.Method == "GET" {
 		jsonOk(w, getRouterStatus())
 		return
 	}
-	if urlPath == "/api/router/ports" && method == "GET" {
-		session := requireAdmin(w, r)
-		if session == nil { return }
+	if urlPath == "/api/router/ports" && r.Method == "GET" {
 		jsonOk(w, getRouterPorts())
 		return
 	}
-	if urlPath == "/api/router/port" && method == "POST" {
-		session := requireAdmin(w, r)
-		if session == nil { return }
+	if urlPath == "/api/router/port" && r.Method == "POST" {
 		body, _ := readBody(r)
 		jsonOk(w, addRouterPort(body))
 		return
 	}
-	if urlPath == "/api/router/port" && method == "DELETE" {
-		session := requireAdmin(w, r)
-		if session == nil { return }
+	if urlPath == "/api/router/port" && r.Method == "DELETE" {
 		body, _ := readBody(r)
 		jsonOk(w, removeRouterPort(body))
 		return
 	}
-	if urlPath == "/api/router/test" && method == "POST" {
-		session := requireAdmin(w, r)
-		if session == nil { return }
+	if urlPath == "/api/router/test" && r.Method == "POST" {
 		body, _ := readBody(r)
 		jsonOk(w, testRouterPort(body))
 		return
