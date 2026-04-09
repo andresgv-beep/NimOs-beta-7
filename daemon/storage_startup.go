@@ -345,11 +345,176 @@ func rescanSCSIBuses() {
 }
 
 func scanForRestorablePoolsGo() []map[string]interface{} {
-	return []map[string]interface{}{}
+	var restorable []map[string]interface{}
+
+	// Step 1: Import any ZFS pools not yet imported
+	if hasZfs {
+		runSafe("zpool", "import", "-a", "-N")
+	}
+
+	// Step 2: Get list of imported ZFS pools
+	zpoolList, _ := runSafe("zpool", "list", "-H", "-o", "name,size,health")
+
+	// Step 3: Get pools already in storage.json
+	conf := getStorageConfigFull()
+	confPools, _ := conf["pools"].([]interface{})
+	knownPools := map[string]bool{}
+	for _, raw := range confPools {
+		pm, _ := raw.(map[string]interface{})
+		if zn, _ := pm["zpoolName"].(string); zn != "" {
+			knownPools[zn] = true
+		}
+		if n, _ := pm["name"].(string); n != "" {
+			knownPools["nimos-"+n] = true
+		}
+	}
+
+	// Step 4: For each imported ZFS pool, check if it has .nimbus-pool.json
+	for _, line := range strings.Split(zpoolList, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		zpoolName := fields[0]
+		zpoolSize := fields[1]
+		zpoolHealth := fields[2]
+
+		// Skip if already known
+		if knownPools[zpoolName] {
+			continue
+		}
+
+		// Try to find mount point or use default
+		mountPoint := "/nimbus/pools/" + strings.TrimPrefix(zpoolName, "nimos-")
+
+		// Try to mount temporarily to read identity
+		runSafe("zfs", "set", "mountpoint="+mountPoint, zpoolName)
+		runSafe("zfs", "mount", zpoolName)
+
+		// Read identity file
+		identityPath := filepath.Join(mountPoint, ".nimbus-pool.json")
+		data, err := os.ReadFile(identityPath)
+		if err != nil {
+			// No identity file — not a NimOS pool, unmount
+			runSafe("zfs", "unmount", zpoolName)
+			continue
+		}
+
+		var identity map[string]interface{}
+		if json.Unmarshal(data, &identity) != nil {
+			runSafe("zfs", "unmount", zpoolName)
+			continue
+		}
+
+		// Check if there's a config backup
+		hasBackup := false
+		backupDir := filepath.Join(mountPoint, "system-backup", "config")
+		if _, err := os.Stat(filepath.Join(backupDir, "nimos.db")); err == nil {
+			hasBackup = true
+		}
+
+		// Check what shares exist on this pool
+		sharesDir := filepath.Join(mountPoint, "shares")
+		var shareNames []string
+		if entries, err := os.ReadDir(sharesDir); err == nil {
+			for _, e := range entries {
+				if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
+					shareNames = append(shareNames, e.Name())
+				}
+			}
+		}
+
+		// Check if docker data exists
+		hasDocker := false
+		if _, err := os.Stat(filepath.Join(mountPoint, "docker", "data")); err == nil {
+			hasDocker = true
+		}
+
+		poolName, _ := identity["name"].(string)
+		poolType, _ := identity["type"].(string)
+		vdevType, _ := identity["vdevType"].(string)
+
+		restorable = append(restorable, map[string]interface{}{
+			"zpoolName":  zpoolName,
+			"name":       poolName,
+			"type":       poolType,
+			"vdevType":   vdevType,
+			"size":       zpoolSize,
+			"health":     zpoolHealth,
+			"mountPoint": mountPoint,
+			"hasBackup":  hasBackup,
+			"hasDocker":  hasDocker,
+			"shares":     shareNames,
+			"identity":   identity,
+		})
+
+		// Unmount — user decides whether to restore
+		runSafe("zfs", "unmount", zpoolName)
+	}
+
+	return restorable
 }
 
 func backupConfigToPoolGo() {
-	// TODO: reimplement
+	conf := getStorageConfigFull()
+	confPools, _ := conf["pools"].([]interface{})
+	if len(confPools) == 0 {
+		return
+	}
+
+	// Files to back up — these are everything needed to reconstruct NimOS after reinstall
+	configFiles := []string{
+		"/var/lib/nimbusos/config/nimos.db",
+		"/var/lib/nimbusos/config/storage.json",
+		"/var/lib/nimbusos/config/docker.json",
+		"/var/lib/nimbusos/config/remote-access.json",
+		"/var/lib/nimbusos/config/security.json",
+		"/etc/docker/daemon.json",
+	}
+
+	backed := 0
+	for _, poolRaw := range confPools {
+		pm, _ := poolRaw.(map[string]interface{})
+		mountPoint, _ := pm["mountPoint"].(string)
+		if mountPoint == "" {
+			continue
+		}
+
+		backupDir := filepath.Join(mountPoint, "system-backup", "config")
+		os.MkdirAll(backupDir, 0755)
+
+		for _, src := range configFiles {
+			data, err := os.ReadFile(src)
+			if err != nil {
+				continue // file doesn't exist, skip
+			}
+			dst := filepath.Join(backupDir, filepath.Base(src))
+			if err := os.WriteFile(dst, data, 0600); err != nil {
+				logMsg("config backup: failed to write %s → %s: %v", src, dst, err)
+			}
+		}
+		backed++
+	}
+
+	if backed > 0 {
+		logMsg("config backup: saved to %d pool(s)", backed)
+	}
+}
+
+// startConfigBackupLoop runs backupConfigToPoolGo periodically (every 30 min)
+// and once at startup after a delay.
+func startConfigBackupLoop() {
+	// Wait for system to settle
+	time.Sleep(60 * time.Second)
+
+	// Initial backup
+	backupConfigToPoolGo()
+
+	ticker := time.NewTicker(30 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		backupConfigToPoolGo()
+	}
 }
 
 func appendFstab(uuid, mountPoint, filesystem string) {
@@ -372,6 +537,178 @@ func appendFstab(uuid, mountPoint, filesystem string) {
 }
 
 // ─── ZFS Pool Info (needed by getStoragePoolsGo) ────────────────────────────
+
+// restorePoolFromIdentity restores a pool found by scanForRestorablePoolsGo.
+// Re-adds it to storage.json, recreates shares from the shares/ directory,
+// optionally restores Docker config, and restores the DB from backup.
+func restorePoolFromIdentity(body map[string]interface{}) map[string]interface{} {
+	zpoolName := bodyStr(body, "zpoolName")
+	poolName := bodyStr(body, "name")
+	restoreConfig, _ := body["restoreConfig"].(bool)
+
+	if zpoolName == "" || poolName == "" {
+		return map[string]interface{}{"error": "zpoolName and name required"}
+	}
+
+	mountPoint := "/nimbus/pools/" + poolName
+
+	// 1. Mount the pool
+	os.MkdirAll(mountPoint, 0755)
+	runSafe("zfs", "set", "mountpoint="+mountPoint, zpoolName)
+	runSafe("zfs", "mount", "-a")
+
+	// 2. Read identity
+	identityPath := filepath.Join(mountPoint, ".nimbus-pool.json")
+	identityData, err := os.ReadFile(identityPath)
+	if err != nil {
+		return map[string]interface{}{"error": "Cannot read pool identity: " + err.Error()}
+	}
+	var identity map[string]interface{}
+	json.Unmarshal(identityData, &identity)
+
+	poolType, _ := identity["type"].(string)
+	vdevType, _ := identity["vdevType"].(string)
+	disksRaw, _ := identity["disks"].([]interface{})
+
+	// 3. Add pool to storage.json
+	conf := getStorageConfigFull()
+	confPools, _ := conf["pools"].([]interface{})
+
+	// Check if already exists
+	for _, raw := range confPools {
+		pm, _ := raw.(map[string]interface{})
+		if zn, _ := pm["zpoolName"].(string); zn == zpoolName {
+			return map[string]interface{}{"error": "Pool already registered in config"}
+		}
+	}
+
+	isFirst := len(confPools) == 0
+	confPools = append(confPools, map[string]interface{}{
+		"name":       poolName,
+		"type":       poolType,
+		"zpoolName":  zpoolName,
+		"mountPoint": mountPoint,
+		"vdevType":   vdevType,
+		"disks":      disksRaw,
+		"createdAt":  identity["createdAt"],
+	})
+	conf["pools"] = confPools
+	if isFirst {
+		conf["primaryPool"] = poolName
+		conf["configuredAt"] = time.Now().UTC().Format(time.RFC3339)
+	}
+	saveStorageConfigFull(conf)
+	logMsg("restore: pool '%s' (%s) added to storage.json", poolName, zpoolName)
+
+	// 4. Recreate shares from the shares/ directory
+	sharesDir := filepath.Join(mountPoint, "shares")
+	restoredShares := 0
+	if entries, err := os.ReadDir(sharesDir); err == nil {
+		for _, e := range entries {
+			if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+				continue
+			}
+			shareName := e.Name()
+			sharePath := filepath.Join(sharesDir, shareName)
+
+			// Check if share already exists in DB
+			existing, _ := dbSharesListRaw()
+			found := false
+			for _, s := range existing {
+				if s.Name == shareName {
+					found = true
+					break
+				}
+			}
+			if found {
+				continue
+			}
+
+			// Create share in DB
+			err := dbSharesCreate(shareName, shareName, "", sharePath, poolName, poolName, "restore")
+			if err != nil {
+				logMsg("restore: failed to create share '%s': %v", shareName, err)
+				continue
+			}
+			restoredShares++
+			logMsg("restore: recreated share '%s' → %s", shareName, sharePath)
+		}
+	}
+
+	// 5. Restore Docker config if docker data exists
+	dockerRestored := false
+	dockerDataDir := filepath.Join(mountPoint, "docker", "data")
+	if _, err := os.Stat(dockerDataDir); err == nil {
+		// Write daemon.json pointing to this pool
+		daemonJSON := fmt.Sprintf(`{"data-root":"%s"}`, dockerDataDir)
+		os.WriteFile("/etc/docker/daemon.json", []byte(daemonJSON), 0644)
+
+		// Write NimOS docker config
+		dockerConf := map[string]interface{}{
+			"pool":     poolName,
+			"dataRoot": dockerDataDir,
+		}
+		dockerConfData, _ := json.MarshalIndent(dockerConf, "", "  ")
+		os.WriteFile("/var/lib/nimbusos/config/docker.json", dockerConfData, 0644)
+
+		// Restart Docker to pick up new data root
+		runSafe("systemctl", "restart", "docker")
+		dockerRestored = true
+		logMsg("restore: Docker reconfigured → %s", dockerDataDir)
+	}
+
+	// 6. Optionally restore DB from backup
+	dbRestored := false
+	if restoreConfig {
+		backupDir := filepath.Join(mountPoint, "system-backup", "config")
+		backupDB := filepath.Join(backupDir, "nimos.db")
+		if _, err := os.Stat(backupDB); err == nil {
+			// Close current DB, replace with backup, reopen
+			db.Close()
+			if err := copyFile(backupDB, "/var/lib/nimbusos/config/nimos.db"); err != nil {
+				logMsg("restore: failed to restore DB: %v", err)
+			} else {
+				dbRestored = true
+				logMsg("restore: database restored from pool backup")
+			}
+			// Reopen DB
+			openDB()
+		}
+
+		// Restore other config files
+		for _, name := range []string{"remote-access.json", "security.json"} {
+			src := filepath.Join(backupDir, name)
+			dst := filepath.Join("/var/lib/nimbusos/config", name)
+			if data, err := os.ReadFile(src); err == nil {
+				os.WriteFile(dst, data, 0644)
+				logMsg("restore: restored %s", name)
+			}
+		}
+	}
+
+	// 7. Ensure standard dirs exist
+	createPoolDirs(mountPoint)
+
+	// 8. Register services
+	reconcileServices()
+
+	return map[string]interface{}{
+		"ok":             true,
+		"poolName":       poolName,
+		"shares":         restoredShares,
+		"dockerRestored": dockerRestored,
+		"dbRestored":     dbRestored,
+	}
+}
+
+// copyFile copies src to dst
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
+}
 
 // enrichDisksWithSmart takes a flat disk name list and returns enriched objects
 // with SMART status from the cached monitor data. Does NOT run smartctl — only

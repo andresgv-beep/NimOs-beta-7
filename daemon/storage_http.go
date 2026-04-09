@@ -125,7 +125,7 @@ func handleStorageRoutes(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		case "/api/storage/pool/restore":
-			jsonError(w, 503, "Pool restore pending implementation")
+			jsonOk(w, restorePoolFromIdentity(body))
 		case "/api/storage/pool/replace-disk":
 			jsonOk(w, handleReplaceDisk(body))
 		case "/api/storage/pool/detach-disk":

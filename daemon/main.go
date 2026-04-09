@@ -715,6 +715,10 @@ func main() {
 	// Start SMART monitor — checks disk health every 30 min, alerts on changes
 	go startSmartMonitor()
 
+	// Start config backup — saves NimOS config to each pool every 30 min
+	// This enables pool restore after system disk failure + NimOS reinstall
+	go startConfigBackupLoop()
+
 	// Clean up stale socket
 	os.Remove(socketPath)
 
