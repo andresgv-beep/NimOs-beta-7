@@ -8,16 +8,18 @@
   import MobileApp from '$lib/components/MobileApp.svelte';
 
   let isMobile = false;
+  let prefsReady = false;
 
   onMount(async () => {
     isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
-    // Auth init first — token must be ready before loading user preferences
+    // Auth first, then prefs — Desktop won't render until both are done
     await init();
     await loadPrefs();
+    prefsReady = true;
   });
 </script>
 
-{#if $appState === 'loading'}
+{#if $appState === 'loading' || ($appState === 'desktop' && !prefsReady)}
   <div class="loading">
     <div class="spinner"></div>
   </div>
