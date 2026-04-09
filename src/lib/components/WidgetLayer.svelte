@@ -68,9 +68,23 @@
   }
 
   let prevLayoutJson = '';
+  // React to prefs changes (including initial load from server)
   $: { const lj = JSON.stringify($prefs.widgetLayout); if (lj !== prevLayoutJson && !dragging) { prevLayoutJson = lj; if (typeof window !== 'undefined') loadLayout(); } }
 
-  onMount(() => { computeGrid(); loadLayout(); startPolling(); window.addEventListener('resize', onResize); });
+  onMount(() => {
+    computeGrid();
+    // Only load layout now if prefs already have data (from localStorage cache).
+    // If widgetLayout is null (first visit, no cache), the reactive block above
+    // will fire when loadPrefs() fetches from server and updates the store.
+    if ($prefs.widgetLayout) {
+      loadLayout();
+    } else {
+      // Fallback: if prefs haven't loaded after 2s, use defaults
+      setTimeout(() => { if (!layoutLoaded) loadLayout(); }, 2000);
+    }
+    startPolling();
+    window.addEventListener('resize', onResize);
+  });
   onDestroy(() => { stopPolling(); window.removeEventListener('resize', onResize); clearInterval(clockInterval); });
 
   function onResize() {
