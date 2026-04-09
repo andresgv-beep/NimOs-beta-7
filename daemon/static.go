@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -428,7 +429,9 @@ func injectUserPrefs(r *http.Request, html []byte) []byte {
 		return html
 	}
 
-	// Inject as <script type="application/json"> with versioned ID
-	injection := fmt.Sprintf(`<script type="application/json" id="%s">%s</script>`, prefsTagID, prefsJSON)
+	// Inject as <meta> tag with base64-encoded JSON — immune to CSP,
+	// immune to quote/character escaping issues in HTML attributes
+	b64 := base64.StdEncoding.EncodeToString(prefsJSON)
+	injection := fmt.Sprintf(`<meta id="%s" content="%s">`, prefsTagID, b64)
 	return bytes.Replace(html, []byte("</head>"), []byte(injection+"</head>"), 1)
 }
