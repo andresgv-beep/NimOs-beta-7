@@ -102,7 +102,9 @@ export async function login(username, password, totpCode) {
   if (data.error) throw new Error(data.error);
   saveToken(data.token);
   user.set(data.user);
-  appState.set('desktop');
+  // Reload page so the daemon serves HTML with user prefs injected server-side.
+  // This eliminates the flash of default theme/layout after login.
+  window.location.reload();
   return data;
 }
 
