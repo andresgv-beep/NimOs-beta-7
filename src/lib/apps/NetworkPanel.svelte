@@ -23,6 +23,70 @@
   let certMsg     = '';
   let certMsgError = false;
   let httpsPort   = 5009;
+
+  // ── Router (UPnP) ──
+  let routerStatus = {};
+  let routerPorts = [];
+  let routerLoading = false;
+  let routerMsg = '';
+  let routerMsgError = false;
+  let newPort = '';
+  let newPortProto = 'TCP';
+  let newPortDesc = '';
+  let routerTesting = {};
+
+  async function loadRouter() {
+    routerLoading = true;
+    try {
+      const [statusRes, portsRes] = await Promise.all([
+        fetch('/api/router/status', { headers: hdrs() }),
+        fetch('/api/router/ports', { headers: hdrs() }),
+      ]);
+      routerStatus = await statusRes.json();
+      const portsData = await portsRes.json();
+      routerPorts = portsData.ports || [];
+    } catch { routerStatus = { error: 'Error de conexión' }; }
+    routerLoading = false;
+  }
+
+  async function addPort() {
+    if (!newPort) return;
+    routerMsg = '';
+    try {
+      const res = await fetch('/api/router/port', {
+        method: 'POST', headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port: parseInt(newPort), protocol: newPortProto, description: newPortDesc || 'NimOS' }),
+      });
+      const d = await res.json();
+      if (d.ok) { routerMsg = `Puerto ${newPort}/${newPortProto} abierto`; routerMsgError = false; newPort = ''; newPortDesc = ''; loadRouter(); }
+      else { routerMsg = d.error || 'Error'; routerMsgError = true; }
+    } catch { routerMsg = 'Error de conexión'; routerMsgError = true; }
+  }
+
+  async function removePort(port, protocol) {
+    try {
+      const res = await fetch('/api/router/port', {
+        method: 'DELETE', headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port: parseInt(port), protocol }),
+      });
+      const d = await res.json();
+      if (d.ok) loadRouter();
+      else { routerMsg = d.error || 'Error'; routerMsgError = true; }
+    } catch { routerMsg = 'Error'; routerMsgError = true; }
+  }
+
+  async function testPort(port) {
+    routerTesting = { ...routerTesting, [port]: true };
+    try {
+      const res = await fetch('/api/router/test', {
+        method: 'POST', headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port: parseInt(port) }),
+      });
+      const d = await res.json();
+      routerTesting = { ...routerTesting, [port]: d.reachable ? 'ok' : 'fail' };
+    } catch { routerTesting = { ...routerTesting, [port]: 'fail' }; }
+    setTimeout(() => { routerTesting = { ...routerTesting, [port]: false }; }, 5000);
+  }
   let httpsSaving = false;
   let loading     = false;
 
@@ -222,7 +286,7 @@
         </div>
       {:else if activeTab === 'remoteaccess'}
         <div class="sub-tabs">
-          {#each [['ports','Port Exposure'],['ddns','DDNS'],['proxy','Reverse Proxy'],['certs','Certificates']] as [id, label]}
+          {#each [['ports','Port Exposure'],['router','Router'],['ddns','DDNS'],['proxy','Reverse Proxy'],['certs','Certificates']] as [id, label]}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div class="sub-tab" class:active={activeSub === id} on:click={() => activeSub = id}>{label}</div>
@@ -404,6 +468,119 @@
             {/if}
           {/if}
         </div>
+
+      {:else if activeSub === 'router'}
+        <div class="section-label">Configuración de enrutador (UPnP)</div>
+        <p style="font-size:11px;color:var(--text-3);margin-bottom:14px">
+          Abrir puertos en el router automáticamente via UPnP. El router debe tener UPnP habilitado.
+        </p>
+
+        {#if !routerStatus.available && !routerLoading}
+          <button class="btn-secondary" on:click={loadRouter}>Detectar router</button>
+        {/if}
+
+        {#if routerLoading}
+          <div style="font-size:11px;color:var(--text-3)">Detectando router...</div>
+        {:else if routerStatus.detected}
+          <!-- Router info -->
+          <div class="ddns-info-cards" style="margin-bottom:16px">
+            <div class="ddns-info-card">
+              <span class="ddns-info-label">Estado</span>
+              <span class="ddns-info-value" style="color:var(--green)">Detectado</span>
+            </div>
+            <div class="ddns-info-card">
+              <span class="ddns-info-label">IP Local</span>
+              <span class="ddns-info-value">{routerStatus.localIP || '—'}</span>
+            </div>
+            <div class="ddns-info-card">
+              <span class="ddns-info-label">IP Externa</span>
+              <span class="ddns-info-value">{routerStatus.externalIP || '—'}</span>
+            </div>
+          </div>
+
+          <!-- Port forwarding table -->
+          <div class="section-label">Puertos abiertos</div>
+          {#if routerPorts.length === 0}
+            <p style="font-size:11px;color:var(--text-3)">No hay puertos configurados via UPnP</p>
+          {:else}
+            <div style="overflow-x:auto;margin-bottom:14px">
+              <table style="width:100%;border-collapse:collapse;font-size:11px">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border);color:var(--text-3);text-align:left">
+                    <th style="padding:6px 8px">Puerto</th>
+                    <th style="padding:6px 8px">Protocolo</th>
+                    <th style="padding:6px 8px">Destino</th>
+                    <th style="padding:6px 8px">Descripción</th>
+                    <th style="padding:6px 8px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each routerPorts as p}
+                    <tr style="border-bottom:1px solid var(--border)">
+                      <td style="padding:6px 8px;font-family:var(--mono, monospace);color:var(--text-1)">{p.externalPort}</td>
+                      <td style="padding:6px 8px;color:var(--text-2)">{p.protocol}</td>
+                      <td style="padding:6px 8px;font-family:var(--mono, monospace);color:var(--text-2)">{p.target}</td>
+                      <td style="padding:6px 8px;color:var(--text-3)">{p.description}</td>
+                      <td style="padding:6px 8px;display:flex;gap:6px">
+                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px" on:click={() => testPort(p.externalPort)}>
+                          {#if routerTesting[p.externalPort] === true}...
+                          {:else if routerTesting[p.externalPort] === 'ok'}✓
+                          {:else if routerTesting[p.externalPort] === 'fail'}✗
+                          {:else}Test{/if}
+                        </button>
+                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;color:var(--red, #e05a5a)" on:click={() => removePort(p.externalPort, p.protocol)}>✕</button>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
+
+          <!-- Add port -->
+          <div class="section-label" style="margin-top:14px">Abrir puerto</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="form-input" style="width:100px" type="number" bind:value={newPort} placeholder="Puerto" />
+            <select class="form-input" style="width:80px" bind:value={newPortProto}>
+              <option value="TCP">TCP</option>
+              <option value="UDP">UDP</option>
+            </select>
+            <input class="form-input" style="width:160px" bind:value={newPortDesc} placeholder="Descripción" />
+            <button class="btn-accent" style="padding:6px 14px;font-size:11px" on:click={addPort}>Abrir</button>
+          </div>
+
+          <!-- Presets -->
+          <div class="section-label" style="margin-top:14px">Presets</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            {#each [
+              {port:5000, desc:'NimOS HTTP'},
+              {port:5009, desc:'NimOS HTTPS'},
+              {port:8096, desc:'Jellyfin'},
+              {port:32400, desc:'Plex'},
+              {port:443, desc:'HTTPS'},
+              {port:80, desc:'HTTP'},
+              {port:22, desc:'SSH'},
+            ] as preset}
+              <button class="btn-secondary" style="padding:4px 10px;font-size:10px" on:click={() => { newPort = preset.port; newPortDesc = preset.desc; }}>
+                {preset.desc} ({preset.port})
+              </button>
+            {/each}
+          </div>
+
+          {#if routerMsg}
+            <div class="pool-msg" class:error={routerMsgError} style="margin-top:10px">{routerMsg}</div>
+          {/if}
+
+          <div style="margin-top:14px">
+            <button class="btn-secondary" on:click={loadRouter}>Refrescar</button>
+          </div>
+
+        {:else if routerStatus.error}
+          <div style="font-size:12px;color:var(--amber, #f59e0b);margin-top:8px">{routerStatus.error}</div>
+          <button class="btn-secondary" style="margin-top:10px" on:click={loadRouter}>Reintentar</button>
+        {:else}
+          <button class="btn-secondary" on:click={loadRouter}>Detectar router</button>
+        {/if}
 
       {:else if activeSub === 'ddns'}
         <div class="section-label">Dynamic DNS</div>
