@@ -89,8 +89,9 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 				cacheControl = "no-store, no-cache, must-revalidate"
 				// ── Security Headers ──
 				// CSP: pragmatic policy compatible with SvelteKit SPA
-				// unsafe-inline needed for SvelteKit hydration scripts
-				// Trusted Types block dangerous sinks (innerHTML, eval) even with inline
+				// Note: Trusted Types incompatible with SvelteKit (uses innerHTML internally)
+				// Note: script-src 'unsafe-inline' required for SvelteKit hydration
+				// Future: migrate to nonce-based CSP when SvelteKit supports it
 				w.Header().Set("Content-Security-Policy",
 					"default-src 'self'; "+
 						"script-src 'self' 'unsafe-inline'; "+
@@ -101,9 +102,7 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 						"frame-src 'self'; "+
 						"frame-ancestors 'self'; "+
 						"object-src 'none'; "+
-						"base-uri 'self'; "+
-						"require-trusted-types-for 'script'; "+
-						"trusted-types default svelte-trusted-html")
+						"base-uri 'self'")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				w.Header().Set("X-Frame-Options", "DENY")
 				w.Header().Set("Referrer-Policy", "no-referrer")
