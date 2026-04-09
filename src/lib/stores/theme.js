@@ -91,15 +91,21 @@ function applyToDOM(p) {
 // Load from server
 export async function loadPrefs() {
   // Step 0: Read server-injected prefs (instant, synchronous)
-  // The daemon injects window.__NIMOS_PREFS__ into the HTML if user has a valid session.
-  // This is the fastest path — no fetch, no localStorage, zero latency.
-  if (typeof window !== 'undefined' && window.__NIMOS_PREFS__) {
-    const p = { ...DEFAULTS, ...window.__NIMOS_PREFS__ };
-    prefs.set(p);
-    applyToDOM(p);
-    localStorage.setItem('nimos-prefs', JSON.stringify(p));
-    delete window.__NIMOS_PREFS__; // Clean up — only use once
-    return; // Done — no need for fetch
+  // The daemon injects <script type="application/json" id="__nimos_prefs">
+  // into the HTML if user has a valid session. No window global, CSP-safe.
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById('__nimos_prefs_v1');
+    if (el) {
+      try {
+        const serverPrefs = JSON.parse(el.textContent);
+        const p = { ...DEFAULTS, ...serverPrefs };
+        prefs.set(p);
+        applyToDOM(p);
+        localStorage.setItem('nimos-prefs', JSON.stringify(p));
+        el.remove(); // Clean up — only use once
+        return; // Done — no need for fetch
+      } catch {}
+    }
   }
 
   // Step 1: Apply DEFAULTS immediately
