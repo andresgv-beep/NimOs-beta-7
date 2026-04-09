@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -84,6 +85,10 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 			cacheControl := "public, max-age=31536000, immutable"
 			if ext == ".html" {
 				cacheControl = "no-cache"
+				// Server-side prefs injection: read user session from cookie,
+				// load preferences, inject as window.__NIMOS_PREFS__ so the
+				// frontend has them instantly without an async fetch.
+				data = injectUserPrefs(r, data)
 			}
 			w.Header().Set("Content-Type", ct)
 			w.Header().Set("Cache-Control", cacheControl)
@@ -235,4 +240,59 @@ func handleTorrentUploadGo(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write([]byte(`{"ok":true}`))
 	}
+}
+
+// injectUserPrefs reads the session cookie, loads the user's preferences,
+// and injects them as window.__NIMOS_PREFS__ into the HTML before </head>.
+// This gives the frontend instant access to prefs without an async fetch,
+// eliminating the flash of default theme/layout on first load.
+//
+// SECURITY:
+// - Only whitelisted visual keys are injected (theme, colors, layout)
+// - No tokens, passwords, usernames, or session data
+// - JSON is marshalled by Go's json.Marshal which escapes </script> etc.
+// - If anything fails, returns original HTML (safe fallback)
+func injectUserPrefs(r *http.Request, html []byte) []byte {
+	// Try to get session from cookie
+	cookie, err := r.Cookie("nimos_token")
+	if err != nil || cookie.Value == "" {
+		return html
+	}
+
+	session, err := dbSessionGet(sha256Hex(cookie.Value))
+	if err != nil || session == nil {
+		return html
+	}
+
+	// Load user preferences
+	allPrefs := getUserPreferences(session.Username)
+	if len(allPrefs) == 0 {
+		return html
+	}
+
+	// WHITELIST: only inject safe visual preferences
+	// This prevents any future sensitive field from leaking into HTML
+	safeKeys := map[string]bool{
+		"theme": true, "accentColor": true, "glowIntensity": true,
+		"taskbarSize": true, "taskbarPosition": true, "autoHideTaskbar": true,
+		"clock24": true, "showDesktopIcons": true, "textScale": true,
+		"wallpaper": true, "showWidgets": true, "widgetScale": true,
+		"visibleWidgets": true, "pinnedApps": true, "widgetLayout": true,
+		"playlistName": true,
+	}
+	safePrefs := map[string]interface{}{}
+	for k, v := range allPrefs {
+		if safeKeys[k] {
+			safePrefs[k] = v
+		}
+	}
+
+	prefsJSON, err := json.Marshal(safePrefs)
+	if err != nil {
+		return html
+	}
+
+	// Inject before </head> as a synchronous script
+	injection := fmt.Sprintf(`<script>window.__NIMOS_PREFS__=%s</script>`, prefsJSON)
+	return bytes.Replace(html, []byte("</head>"), []byte(injection+"</head>"), 1)
 }
