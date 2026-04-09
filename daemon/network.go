@@ -781,6 +781,42 @@ func handleFirewallRoutes(w http.ResponseWriter, r *http.Request) {
 	if urlPath == "/api/firewall/ports" {
 		jsonOk(w, getListeningPortsGo()); return
 	}
+
+	// ── UPnP Router endpoints ──
+	if urlPath == "/api/router/status" && method == "GET" {
+		session := requireAdmin(w, r)
+		if session == nil { return }
+		jsonOk(w, getRouterStatus())
+		return
+	}
+	if urlPath == "/api/router/ports" && method == "GET" {
+		session := requireAdmin(w, r)
+		if session == nil { return }
+		jsonOk(w, getRouterPorts())
+		return
+	}
+	if urlPath == "/api/router/port" && method == "POST" {
+		session := requireAdmin(w, r)
+		if session == nil { return }
+		body, _ := readBody(r)
+		jsonOk(w, addRouterPort(body))
+		return
+	}
+	if urlPath == "/api/router/port" && method == "DELETE" {
+		session := requireAdmin(w, r)
+		if session == nil { return }
+		body, _ := readBody(r)
+		jsonOk(w, removeRouterPort(body))
+		return
+	}
+	if urlPath == "/api/router/test" && method == "POST" {
+		session := requireAdmin(w, r)
+		if session == nil { return }
+		body, _ := readBody(r)
+		jsonOk(w, testRouterPort(body))
+		return
+	}
+
 	jsonError(w, 404, "Not found")
 }
 
@@ -818,5 +854,226 @@ func registerNetworkRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/smb/", handleSmbRoutes)
 	mux.HandleFunc("/api/firewall", handleFirewallRoutes)
 	mux.HandleFunc("/api/firewall/", handleFirewallRoutes)
+	mux.HandleFunc("/api/router/", handleFirewallRoutes)
 	mux.HandleFunc("/api/vms/", handleVMsRoutes)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPnP Router — Port forwarding via miniupnpc
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// getRouterStatus detects the router via UPnP and returns its info.
+func getRouterStatus() map[string]interface{} {
+	_, hasUpnpc := runSafe("which", "upnpc")
+	if !hasUpnpc {
+		return map[string]interface{}{
+			"available": false,
+			"error":     "miniupnpc not installed. Install with: apt install miniupnpc",
+		}
+	}
+
+	out, ok := runSafe("upnpc", "-s")
+	if !ok {
+		return map[string]interface{}{
+			"available": true,
+			"detected":  false,
+			"error":     "No UPnP router detected. Check if UPnP is enabled in your router settings.",
+		}
+	}
+
+	result := map[string]interface{}{
+		"available": true,
+		"detected":  true,
+		"raw":       out,
+	}
+
+	// Parse useful info from upnpc -s output
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Local LAN ip address") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				result["localIP"] = strings.TrimSpace(parts[1])
+			}
+		} else if strings.HasPrefix(line, "ExternalIPAddress") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				result["externalIP"] = strings.TrimSpace(parts[1])
+			}
+		} else if strings.Contains(line, "desc:") {
+			// Router description URL often contains model info
+			result["desc"] = strings.TrimSpace(line)
+		}
+	}
+
+	return result
+}
+
+// getRouterPorts lists current UPnP port forwardings on the router.
+func getRouterPorts() map[string]interface{} {
+	out, ok := runSafe("upnpc", "-l")
+	if !ok {
+		return map[string]interface{}{"error": "Cannot list port forwardings", "ports": []interface{}{}}
+	}
+
+	var ports []map[string]interface{}
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		// Format: " N TCP  PORT->IP:PORT  'description' '' 0"
+		if !strings.Contains(line, "->") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 4 {
+			continue
+		}
+
+		// Parse protocol and external port
+		proto := ""
+		extPort := ""
+		intTarget := ""
+		desc := ""
+
+		for i, f := range fields {
+			if f == "TCP" || f == "UDP" {
+				proto = f
+			}
+			if strings.Contains(f, "->") {
+				parts := strings.SplitN(f, "->", 2)
+				extPort = parts[0]
+				if len(parts) > 1 {
+					intTarget = parts[1]
+				}
+			}
+			if strings.HasPrefix(f, "'") && i > 0 {
+				// Collect description between quotes
+				desc = strings.Trim(strings.Join(fields[i:], " "), "' ")
+				break
+			}
+		}
+
+		if extPort != "" {
+			ports = append(ports, map[string]interface{}{
+				"protocol":    proto,
+				"externalPort": extPort,
+				"target":      intTarget,
+				"description": desc,
+			})
+		}
+	}
+
+	if ports == nil {
+		ports = []map[string]interface{}{}
+	}
+	return map[string]interface{}{"ports": ports}
+}
+
+// addRouterPort opens a port forwarding on the router via UPnP.
+func addRouterPort(body map[string]interface{}) map[string]interface{} {
+	portF, _ := body["port"].(float64)
+	port := fmt.Sprintf("%d", int(portF))
+	protocol := bodyStr(body, "protocol")
+	description := bodyStr(body, "description")
+
+	if port == "0" || port == "" {
+		return map[string]interface{}{"error": "Port required"}
+	}
+	// Validate port is numeric
+	if matched, _ := regexp.MatchString(`^\d{1,5}$`, port); !matched {
+		return map[string]interface{}{"error": "Invalid port number"}
+	}
+	if protocol == "" {
+		protocol = "TCP"
+	}
+	protocol = strings.ToUpper(protocol)
+	if protocol != "TCP" && protocol != "UDP" {
+		return map[string]interface{}{"error": "Protocol must be TCP or UDP"}
+	}
+	if description == "" {
+		description = "NimOS"
+	}
+
+	// Get local IP for the mapping
+	localIP := ""
+	if lip, ok := runSafe("hostname", "-I"); ok {
+		parts := strings.Fields(lip)
+		if len(parts) > 0 {
+			localIP = parts[0]
+		}
+	}
+	if localIP == "" {
+		return map[string]interface{}{"error": "Cannot determine local IP"}
+	}
+
+	// upnpc -a LOCAL_IP PORT PORT PROTOCOL [DURATION] [DESCRIPTION]
+	out, ok := runSafe("upnpc", "-a", localIP, port, port, protocol, "0", description)
+	if !ok {
+		return map[string]interface{}{"error": "Failed to add port forwarding: " + out}
+	}
+
+	logMsg("UPnP: opened port %s/%s → %s:%s (%s)", port, protocol, localIP, port, description)
+	return map[string]interface{}{"ok": true, "port": port, "protocol": protocol, "localIP": localIP}
+}
+
+// removeRouterPort removes a port forwarding from the router.
+func removeRouterPort(body map[string]interface{}) map[string]interface{} {
+	portF, _ := body["port"].(float64)
+	port := fmt.Sprintf("%d", int(portF))
+	protocol := bodyStr(body, "protocol")
+
+	if port == "0" || port == "" {
+		return map[string]interface{}{"error": "Port required"}
+	}
+	if protocol == "" {
+		protocol = "TCP"
+	}
+	protocol = strings.ToUpper(protocol)
+
+	out, ok := runSafe("upnpc", "-d", port, protocol)
+	if !ok {
+		return map[string]interface{}{"error": "Failed to remove port forwarding: " + out}
+	}
+
+	logMsg("UPnP: closed port %s/%s", port, protocol)
+	return map[string]interface{}{"ok": true}
+}
+
+// testRouterPort tests if a port is reachable from outside using an external service.
+func testRouterPort(body map[string]interface{}) map[string]interface{} {
+	portF, _ := body["port"].(float64)
+	port := fmt.Sprintf("%d", int(portF))
+
+	if port == "0" || port == "" {
+		return map[string]interface{}{"error": "Port required"}
+	}
+
+	// Get external IP
+	extIP, _ := runSafe("curl", "-fsSL", "--connect-timeout", "5", "https://api.ipify.org")
+	if extIP == "" {
+		return map[string]interface{}{"error": "Cannot determine external IP"}
+	}
+
+	// Try to connect to ourselves from outside using a port check service
+	checkURL := fmt.Sprintf("https://portchecker.co/check?port=%s&host=%s", port, extIP)
+	out, ok := runSafe("curl", "-fsSL", "--connect-timeout", "10", checkURL)
+
+	// Fallback: try simple TCP connect via our own external IP
+	if !ok || out == "" {
+		// Try direct TCP connect (works if no NAT hairpin issue)
+		_, tcpOk := runSafe("bash", "-c", fmt.Sprintf("echo | timeout 5 nc -z %s %s 2>/dev/null", extIP, port))
+		return map[string]interface{}{
+			"externalIP": extIP,
+			"port":       port,
+			"reachable":  tcpOk,
+			"method":     "tcp-direct",
+		}
+	}
+
+	reachable := strings.Contains(strings.ToLower(out), "open") || strings.Contains(strings.ToLower(out), "reachable")
+	return map[string]interface{}{
+		"externalIP": extIP,
+		"port":       port,
+		"reachable":  reachable,
+		"method":     "portchecker",
+	}
 }
