@@ -87,10 +87,10 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 			if ext == ".html" {
 				// No caching for HTML with user-specific prefs
 				cacheControl = "no-store, no-cache, must-revalidate"
-				// CSP: restrict all resource sources
-				// Note: script-src needs 'unsafe-inline' because SvelteKit generates
-				// inline scripts for hydration. Nonce-based CSP requires SvelteKit
-				// server-side config changes — tracked for future hardening.
+				// ── Security Headers ──
+				// CSP: pragmatic policy compatible with SvelteKit SPA
+				// unsafe-inline needed for SvelteKit hydration scripts
+				// Trusted Types block dangerous sinks (innerHTML, eval) even with inline
 				w.Header().Set("Content-Security-Policy",
 					"default-src 'self'; "+
 						"script-src 'self' 'unsafe-inline'; "+
@@ -101,7 +101,12 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 						"frame-src 'self'; "+
 						"frame-ancestors 'self'; "+
 						"object-src 'none'; "+
-						"base-uri 'self'")
+						"base-uri 'self'; "+
+						"require-trusted-types-for 'script'; "+
+						"trusted-types default")
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				w.Header().Set("X-Frame-Options", "DENY")
+				w.Header().Set("Referrer-Policy", "no-referrer")
 				// Server-side prefs injection
 				data = injectUserPrefs(r, data)
 			}
