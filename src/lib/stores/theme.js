@@ -97,13 +97,13 @@ export async function loadPrefs() {
     const el = document.getElementById('__nimos_prefs_v1');
     if (el) {
       try {
-        const serverPrefs = JSON.parse(el.textContent);
+        const serverPrefs = JSON.parse(atob(el.getAttribute('content')));
         const p = { ...DEFAULTS, ...serverPrefs };
         prefs.set(p);
         applyToDOM(p);
         localStorage.setItem('nimos-prefs', JSON.stringify(p));
-        el.remove(); // Clean up — only use once
-        return; // Done — no need for fetch
+        el.remove();
+        return;
       } catch {}
     }
   }
