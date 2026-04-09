@@ -103,7 +103,7 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 						"object-src 'none'; "+
 						"base-uri 'self'; "+
 						"require-trusted-types-for 'script'; "+
-						"trusted-types default")
+						"trusted-types default svelte-trusted-html")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				w.Header().Set("X-Frame-Options", "DENY")
 				w.Header().Set("Referrer-Policy", "no-referrer")
