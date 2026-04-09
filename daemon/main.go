@@ -719,6 +719,10 @@ func main() {
 	// This enables pool restore after system disk failure + NimOS reinstall
 	go startConfigBackupLoop()
 
+	// Start NimShield security engine — honeypots, rules, blocklist
+	go startShieldEngine()
+	go startShieldCleanup()
+
 	// Clean up stale socket
 	os.Remove(socketPath)
 

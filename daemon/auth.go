@@ -674,12 +674,14 @@ func authLogin(w http.ResponseWriter, r *http.Request) {
 		verifyPassword(password, "$2a$10$0000000000000000000000uDummyHashToPreventTimingAttack0000")
 		recordFailedAttempt("ip:" + ip)
 		recordFailedAttempt("user:" + username)
+		ShieldAuthFail(ip, username, r.UserAgent())
 		jsonError(w, 401, "Invalid credentials")
 		return
 	}
 	if !verifyPassword(password, storedPwd) {
 		recordFailedAttempt("ip:" + ip)
 		recordFailedAttempt("user:" + username)
+		ShieldAuthFail(ip, username, r.UserAgent())
 		jsonError(w, 401, "Invalid credentials")
 		return
 	}

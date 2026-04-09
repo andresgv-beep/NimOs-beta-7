@@ -163,6 +163,11 @@ func clientIP(r *http.Request) string {
 // CORS middleware + security headers
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ── NimShield: check blocks, honeypots, payloads ──
+		if shieldMiddleware(w, r) {
+			return // request handled (blocked)
+		}
+
 		// Block TRACE method (prevents XST attacks)
 		if r.Method == "TRACE" {
 			w.WriteHeader(405)
@@ -401,6 +406,10 @@ func startHTTPServer() {
 	// ── Torrent proxy to NimTorrent ──
 	mux.HandleFunc("/api/torrent/", handleTorrentProxy)
 	mux.HandleFunc("/api/torrent", handleTorrentProxy)
+
+	// ── NimShield security module ──
+	mux.HandleFunc("/api/shield/", handleShieldRoutes)
+	mux.HandleFunc("/api/shield", handleShieldRoutes)
 
 	// ── App reverse proxy (Docker apps via /app/{id}/) ──
 	mux.HandleFunc("/app/", handleAppProxy)
