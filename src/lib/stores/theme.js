@@ -90,11 +90,22 @@ function applyToDOM(p) {
 
 // Load from server
 export async function loadPrefs() {
-  // Paso 1: aplicar DEFAULTS inmediatamente (sin esperar nada)
-  // Esto evita el flash en equipos nuevos sin localStorage
+  // Step 0: Read server-injected prefs (instant, synchronous)
+  // The daemon injects window.__NIMOS_PREFS__ into the HTML if user has a valid session.
+  // This is the fastest path — no fetch, no localStorage, zero latency.
+  if (typeof window !== 'undefined' && window.__NIMOS_PREFS__) {
+    const p = { ...DEFAULTS, ...window.__NIMOS_PREFS__ };
+    prefs.set(p);
+    applyToDOM(p);
+    localStorage.setItem('nimos-prefs', JSON.stringify(p));
+    delete window.__NIMOS_PREFS__; // Clean up — only use once
+    return; // Done — no need for fetch
+  }
+
+  // Step 1: Apply DEFAULTS immediately
   applyToDOM({ ...DEFAULTS });
 
-  // Paso 2: aplicar localStorage si existe (instantáneo)
+  // Step 2: Apply localStorage cache if available (instant)
   try {
     const cached = localStorage.getItem('nimos-prefs');
     if (cached) {
@@ -104,7 +115,7 @@ export async function loadPrefs() {
     }
   } catch {}
 
-  // Paso 3: sincronizar desde el servidor (fuente de verdad)
+  // Step 3: Fetch from server (async fallback when no injection available)
   const token = getToken();
   if (!token) return;
 
