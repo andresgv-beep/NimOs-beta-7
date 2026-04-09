@@ -84,10 +84,21 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 			}
 			cacheControl := "public, max-age=31536000, immutable"
 			if ext == ".html" {
-				cacheControl = "no-cache"
-				// Server-side prefs injection: read user session from cookie,
-				// load preferences, inject as window.__NIMOS_PREFS__ so the
-				// frontend has them instantly without an async fetch.
+				// No caching for HTML with user-specific prefs
+				cacheControl = "no-store, no-cache, must-revalidate"
+				// CSP: restrict all resource sources
+				w.Header().Set("Content-Security-Policy",
+					"default-src 'self'; "+
+						"script-src 'self'; "+
+						"style-src 'self' 'unsafe-inline'; "+
+						"img-src 'self' data: blob:; "+
+						"connect-src 'self'; "+
+						"font-src 'self'; "+
+						"frame-src 'self'; "+
+						"frame-ancestors 'self'; "+
+						"object-src 'none'; "+
+						"base-uri 'self'")
+				// Server-side prefs injection
 				data = injectUserPrefs(r, data)
 			}
 			w.Header().Set("Content-Type", ct)
@@ -243,17 +254,39 @@ func handleTorrentUploadGo(w http.ResponseWriter, r *http.Request) {
 }
 
 // injectUserPrefs reads the session cookie, loads the user's preferences,
-// and injects them as window.__NIMOS_PREFS__ into the HTML before </head>.
-// This gives the frontend instant access to prefs without an async fetch,
-// eliminating the flash of default theme/layout on first load.
+// and injects them as a JSON tag into the HTML before </head>.
 //
-// SECURITY:
-// - Only whitelisted visual keys are injected (theme, colors, layout)
-// - No tokens, passwords, usernames, or session data
-// - JSON is marshalled by Go's json.Marshal which escapes </script> etc.
-// - If anything fails, returns original HTML (safe fallback)
+// SECURITY HARDENING:
+// 1. Whitelist: only 16 visual keys pass through
+// 2. Value validation: type + range + charset checks per key
+// 3. Size limit: JSON > 8KB = use defaults (prevent DoS)
+// 4. Injection method: <script type="application/json"> not window global
+// 5. Go json.Marshal escapes <, >, & as \u003c etc (prevents script breakout)
+// 6. Double injection guard: checks if tag already present
+// 7. Safe fallback: any error = return original HTML unmodified
+// 8. Telemetry: logs when prefs are discarded for security reasons
+
+const prefsTagID = "__nimos_prefs_v1"
+
+// safeString strips control characters and enforces max length.
+func safeString(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return ""
+	}
+	return strings.Map(func(r rune) rune {
+		if r < 32 {
+			return -1 // strip control characters
+		}
+		return r
+	}, s)
+}
+
 func injectUserPrefs(r *http.Request, html []byte) []byte {
-	// Try to get session from cookie
+	// Double injection guard
+	if bytes.Contains(html, []byte(prefsTagID)) {
+		return html
+	}
+
 	cookie, err := r.Cookie("nimos_token")
 	if err != nil || cookie.Value == "" {
 		return html
@@ -264,27 +297,124 @@ func injectUserPrefs(r *http.Request, html []byte) []byte {
 		return html
 	}
 
-	// Load user preferences
 	allPrefs := getUserPreferences(session.Username)
 	if len(allPrefs) == 0 {
 		return html
 	}
 
-	// WHITELIST: only inject safe visual preferences
-	// This prevents any future sensitive field from leaking into HTML
-	safeKeys := map[string]bool{
-		"theme": true, "accentColor": true, "glowIntensity": true,
-		"taskbarSize": true, "taskbarPosition": true, "autoHideTaskbar": true,
-		"clock24": true, "showDesktopIcons": true, "textScale": true,
-		"wallpaper": true, "showWidgets": true, "widgetScale": true,
-		"visibleWidgets": true, "pinnedApps": true, "widgetLayout": true,
-		"playlistName": true,
-	}
+	// WHITELIST + VALIDATE each key
 	safePrefs := map[string]interface{}{}
-	for k, v := range allPrefs {
-		if safeKeys[k] {
-			safePrefs[k] = v
+	discarded := 0
+
+	// String enums
+	if v, ok := allPrefs["theme"].(string); ok && (v == "dark" || v == "light") {
+		safePrefs["theme"] = v
+	}
+	if v, ok := allPrefs["accentColor"].(string); ok {
+		if s := safeString(v, 20); s != "" {
+			safePrefs["accentColor"] = s
 		}
+	}
+	if v, ok := allPrefs["taskbarSize"].(string); ok && (v == "small" || v == "medium" || v == "large") {
+		safePrefs["taskbarSize"] = v
+	}
+	if v, ok := allPrefs["taskbarPosition"].(string); ok && (v == "bottom" || v == "top" || v == "left" || v == "right") {
+		safePrefs["taskbarPosition"] = v
+	}
+	// Wallpaper: path only, no protocols, max 200 chars, no control chars
+	if v, ok := allPrefs["wallpaper"].(string); ok {
+		s := safeString(v, 200)
+		if s != "" && !strings.Contains(s, "javascript:") && !strings.Contains(s, "data:") &&
+			!strings.Contains(s, "<") && !strings.Contains(s, ">") {
+			safePrefs["wallpaper"] = s
+		} else if v != "" {
+			discarded++
+		}
+	}
+	if v, ok := allPrefs["playlistName"].(string); ok {
+		if s := safeString(v, 100); s != "" {
+			safePrefs["playlistName"] = s
+		}
+	}
+
+	// Booleans
+	for _, key := range []string{"autoHideTaskbar", "clock24", "showDesktopIcons", "showWidgets"} {
+		if v, ok := allPrefs[key].(bool); ok {
+			safePrefs[key] = v
+		}
+	}
+
+	// Numbers with range
+	for _, spec := range []struct {
+		key      string
+		min, max float64
+	}{
+		{"glowIntensity", 0, 100},
+		{"textScale", 50, 200},
+		{"widgetScale", 50, 200},
+	} {
+		if v, ok := allPrefs[spec.key].(float64); ok && v >= spec.min && v <= spec.max {
+			safePrefs[spec.key] = v
+		} else if ok {
+			discarded++
+		}
+	}
+
+	// Complex objects: visibleWidgets
+	if v, ok := allPrefs["visibleWidgets"].(map[string]interface{}); ok && len(v) <= 20 {
+		clean := map[string]interface{}{}
+		for k, val := range v {
+			if len(k) <= 30 {
+				if b, ok := val.(bool); ok {
+					clean[k] = b
+				}
+			}
+		}
+		safePrefs["visibleWidgets"] = clean
+	}
+	// pinnedApps
+	if v, ok := allPrefs["pinnedApps"].([]interface{}); ok && len(v) <= 30 {
+		clean := []interface{}{}
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				if cs := safeString(s, 50); cs != "" {
+					clean = append(clean, cs)
+				}
+			}
+		}
+		safePrefs["pinnedApps"] = clean
+	}
+	// Widget layout: array of position objects, clamped
+	if v, ok := allPrefs["widgetLayout"].([]interface{}); ok && len(v) <= 30 {
+		clean := []interface{}{}
+		for _, item := range v {
+			if m, ok := item.(map[string]interface{}); ok {
+				w := map[string]interface{}{}
+				if id, ok := m["id"].(string); ok {
+					if cs := safeString(id, 50); cs != "" {
+						w["id"] = cs
+					}
+				}
+				if t, ok := m["type"].(string); ok {
+					if cs := safeString(t, 50); cs != "" {
+						w["type"] = cs
+					}
+				}
+				for _, posKey := range []string{"col", "row", "cols", "rows"} {
+					if n, ok := m[posKey].(float64); ok && n >= 0 && n <= 50 {
+						w[posKey] = n
+					}
+				}
+				if len(w) > 0 {
+					clean = append(clean, w)
+				}
+			}
+		}
+		safePrefs["widgetLayout"] = clean
+	}
+
+	if discarded > 0 {
+		logMsg("prefs injection: discarded %d invalid values for user %s", discarded, session.Username)
 	}
 
 	prefsJSON, err := json.Marshal(safePrefs)
@@ -292,7 +422,13 @@ func injectUserPrefs(r *http.Request, html []byte) []byte {
 		return html
 	}
 
-	// Inject before </head> as a synchronous script
-	injection := fmt.Sprintf(`<script>window.__NIMOS_PREFS__=%s</script>`, prefsJSON)
+	// Size limit: prevent inflated prefs from bloating the HTML
+	if len(prefsJSON) > 8192 {
+		logMsg("prefs injection: JSON too large (%d bytes) for user %s, skipping", len(prefsJSON), session.Username)
+		return html
+	}
+
+	// Inject as <script type="application/json"> with versioned ID
+	injection := fmt.Sprintf(`<script type="application/json" id="%s">%s</script>`, prefsTagID, prefsJSON)
 	return bytes.Replace(html, []byte("</head>"), []byte(injection+"</head>"), 1)
 }
