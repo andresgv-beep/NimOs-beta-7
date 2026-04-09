@@ -88,9 +88,12 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 				// No caching for HTML with user-specific prefs
 				cacheControl = "no-store, no-cache, must-revalidate"
 				// CSP: restrict all resource sources
+				// Note: script-src needs 'unsafe-inline' because SvelteKit generates
+				// inline scripts for hydration. Nonce-based CSP requires SvelteKit
+				// server-side config changes — tracked for future hardening.
 				w.Header().Set("Content-Security-Policy",
 					"default-src 'self'; "+
-						"script-src 'self'; "+
+						"script-src 'self' 'unsafe-inline'; "+
 						"style-src 'self' 'unsafe-inline'; "+
 						"img-src 'self' data: blob:; "+
 						"connect-src 'self'; "+
