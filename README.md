@@ -9,7 +9,7 @@ NimOS is a custom NAS operating system built from scratch with a Go daemon backe
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-6/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/andresgv-beep/NimOs-beta-7/main/install.sh | sudo bash
 ```
 
 ## Update
