@@ -750,7 +750,7 @@
   .ss-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); }
 
   /* Inner */
-  .inner-wrap { flex:1; padding:8px; display:flex; }
+  .inner-wrap { flex:1; display:flex; }
   .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
 
   /* Titlebar */

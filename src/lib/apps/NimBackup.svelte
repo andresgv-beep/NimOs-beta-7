@@ -335,7 +335,7 @@
   .sn-time { font-size:13px; font-weight:600; color:var(--accent); margin-top:2px; }
 
   /* Inner wrap — the NimOS app frame pattern */
-  .inner-wrap { flex:1; padding:8px; display:flex; }
+  .inner-wrap { flex:1; display:flex; }
   .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
 
   /* Titlebar */

@@ -438,7 +438,7 @@
   .btn-sm:hover { color:var(--text-1); border-color:var(--border-hi); }
   .btn-sm.danger { border-color:rgba(239,68,68,0.25); color:var(--red); } .btn-sm.danger:hover { background:rgba(239,68,68,0.10); }
 
-  .inner-wrap { flex:1; padding:8px; display:flex; }
+  .inner-wrap { flex:1; display:flex; }
   .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
   .inner-titlebar { display:flex; align-items:center; gap:8px; padding:10px 14px 9px; background:var(--bg-bar); flex-shrink:0; }
   .tabs { display:flex; gap:4px; flex:1; }

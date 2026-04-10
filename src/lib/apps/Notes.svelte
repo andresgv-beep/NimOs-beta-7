@@ -414,7 +414,7 @@
   .sb-tree-file { padding:3px 8px; }
   .sb-folder { display:flex; align-items:center; gap:6px; padding:5px 8px; margin:0 4px; font-size:11px; color:var(--text-2); white-space:nowrap; }
   .sb-folder-name { font-size:11px; }
-  .inner-wrap { flex:1; padding:8px; display:flex; min-width:0; }
+  .inner-wrap { flex:1; display:flex; min-width:0; }
   .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; min-width:0; }
   .inner-titlebar { display:flex; align-items:center; gap:6px; padding:9px 12px; background:var(--bg-bar); flex-shrink:0; border-bottom:1px solid var(--border); }
   .tb-filename { font-size:13px; font-weight:600; color:var(--text-1); }

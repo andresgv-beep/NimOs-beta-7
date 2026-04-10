@@ -157,9 +157,9 @@
   .sb-user-role { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; }
 
   /* ── INNER ── */
-  .inner-wrap { flex:1; padding:8px; display:flex; }
+  .inner-wrap { flex:1; display:flex; }
   .inner {
-    flex:1; border-radius:10px; border:1px solid var(--border);
+    flex:1;
     background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden;
   }
   .inner-titlebar {

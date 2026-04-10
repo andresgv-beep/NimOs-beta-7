@@ -454,7 +454,7 @@
   .sb-item.active{background:var(--active-bg);color:var(--text-1);border-color:var(--border-hi)}
   .sb-ico{font-size:12px;width:16px;text-align:center;flex-shrink:0}
   .sb-badge{margin-left:auto;font-size:9px;font-weight:700;font-family:var(--mono);padding:1px 6px;border-radius:8px;background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.25);color:var(--green)}
-  .inner-wrap{flex:1;padding:8px;display:flex}
+  .inner-wrap{flex:1;display:flex}
   .inner{flex:1;background:var(--bg-inner);display:flex;flex-direction:column;overflow:hidden}
   .inner-titlebar{display:flex;align-items:center;gap:8px;padding:10px 16px 9px;background:var(--bg-bar);flex-shrink:0}
   .tb-title{font-size:13px;font-weight:600;color:var(--text-1)}

@@ -488,8 +488,8 @@
   .mp-pl-empty span { font-size:10px; color:var(--text-3); text-align:center; }
 
   /* Inner */
-  .mp-inner-wrap { flex:1; padding:8px; display:flex; }
-  .mp-inner { flex:1; border-radius:10px; border:1px solid var(--border); background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; position:relative; }
+  .mp-inner-wrap { flex:1; display:flex; }
+  .mp-inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; position:relative; }
   .mp-content { flex:1; position:relative; overflow:hidden; }
 
   /* Video */
