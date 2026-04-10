@@ -148,7 +148,7 @@
   .cd-icon svg { width:18px; height:18px; stroke-linecap:round; stroke-linejoin:round; }
   .cd.danger  .cd-icon { background:rgba(248,113,113,0.12); color:var(--red); }
   .cd.warning .cd-icon { background:rgba(251,191,36,0.12); color:var(--amber); }
-  .cd.default .cd-icon { background:rgba(124,111,255,0.12); color:var(--accent); }
+  .cd.default .cd-icon { background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
 
   .cd-title { font-size:15px; font-weight:600; color:var(--text-1); line-height:1.3; }
 
@@ -199,18 +199,18 @@
   .cd-confirm-field { margin-top:14px; padding-left:48px; }
   .cd-confirm-label { font-size:11px; color:var(--text-2); margin-bottom:6px; line-height:1.5; }
   .cd-confirm-label span {
-    font-family:'DM Mono',monospace; font-size:11px;
+    font-family:var(--mono); font-size:11px;
     padding:1px 6px; border-radius:4px;
   }
   .cd.danger  .cd-confirm-label span { background:rgba(248,113,113,0.12); color:var(--red); }
   .cd.warning .cd-confirm-label span { background:rgba(251,191,36,0.12); color:var(--amber); }
-  .cd.default .cd-confirm-label span { background:rgba(124,111,255,0.12); color:var(--accent); }
+  .cd.default .cd-confirm-label span { background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
 
   .cd-confirm-input {
     width:100%; background:rgba(0,0,0,0.3);
     border:1px solid rgba(255,255,255,0.1); border-radius:8px;
     padding:9px 12px; font-size:13px;
-    font-family:'DM Mono',monospace; color:var(--text-1);
+    font-family:var(--mono); color:var(--text-1);
     outline:none; transition:border-color .15s, box-shadow .15s;
   }
   .cd-confirm-input::placeholder { color:rgba(255,255,255,0.18); }

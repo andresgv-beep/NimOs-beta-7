@@ -195,7 +195,7 @@
     border: 1px solid var(--window-border);
     box-shadow: var(--window-shadow);
     display: flex; flex-direction: column;
-    background: var(--bg-frame, #111028);
+    background: var(--bg-frame, #09090b);
     animation: winIn 0.42s cubic-bezier(0.16,1,0.3,1) both;
   }
   .window.dragging { user-select: none; }
@@ -250,7 +250,7 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     gap: 8px; color: rgba(255,255,255,0.3);
-    background: var(--bg-inner, #1c1b3a);
+    background: var(--bg-inner, #111114);
   }
   .placeholder p { font-size: 14px; font-weight: 500; }
   .placeholder small { font-size: 11px; }

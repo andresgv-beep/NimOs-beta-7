@@ -145,7 +145,7 @@
             <div class="app-lbl">Torrent</div>
           </div>
           <div class="app-btn">
-            <div class="app-ico" style="--ico-color:#a855f7">
+            <div class="app-ico" style="--ico-color:var(--accent2)">
               <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             </div>
             <div class="app-lbl">Docker</div>
@@ -243,8 +243,8 @@
         <div class="section-title">Preferencias</div>
         <div class="more-list">
           <div class="more-item">
-            <div class="more-item-ico" style="background:rgba(124,111,255,0.15)">
-              <svg viewBox="0 0 24 24" style="stroke:#7c6fff"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <div class="more-item-ico" style="background:rgba(var(--accent-rgb),0.15)">
+              <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
             </div>
             <div class="more-item-label">Tema</div>
             <div class="theme-picker">
@@ -326,7 +326,7 @@
   .mobile-root {
     width: 100%; height: 100vh;
     display: flex; flex-direction: column;
-    font-family: -apple-system, 'SF Pro Display', 'DM Sans', sans-serif;
+    font-family: var(--font);
     overflow: hidden;
     zoom: 1 !important;
     -webkit-text-size-adjust: 100%;
@@ -402,8 +402,8 @@
   .share-item { display:flex; align-items:center; gap:12px; padding:14px 18px; cursor:pointer; }
   .dark .share-item  { border-bottom:1px solid rgba(255,255,255,0.05); }
   .light .share-item { border-bottom:1px solid rgba(0,0,0,0.05); }
-  .share-ico { width:40px; height:40px; border-radius:10px; background:rgba(124,111,255,0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .share-ico svg { width:20px; height:20px; stroke:#7c6fff; fill:none; stroke-width:1.8; }
+  .share-ico { width:40px; height:40px; border-radius:10px; background:rgba(var(--accent-rgb),0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .share-ico svg { width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:1.8; }
   .share-info { flex:1; min-width:0; }
   .share-name { font-size:14px; font-weight:500; }
   .share-meta { font-size:11px; margin-top:2px; }

@@ -248,10 +248,10 @@
   .inp::placeholder { color: rgba(255,255,255,0.22); }
   .inp.totp {
     text-align: center; font-size: 26px; letter-spacing: 10px;
-    font-family: 'DM Mono', monospace; font-weight: 500;
+    font-family: var(--mono); font-weight: 500;
     margin-bottom: 4px;
   }
-  .inp.totp:focus { border-color: #7c6fff; background: rgba(124,111,255,0.08); }
+  .inp.totp:focus { border-color: var(--accent); background: rgba(var(--accent-rgb),0.08); }
 
   /* ── 2FA ── */
   .tfa-wrap {
@@ -260,13 +260,13 @@
   }
   .shield {
     width: 72px; height: 72px; border-radius: 50%;
-    background: rgba(124,111,255,0.12);
-    border: 1px solid rgba(124,111,255,0.25);
+    background: rgba(var(--accent-rgb),0.12);
+    border: 1px solid rgba(var(--accent-rgb),0.25);
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 16px;
     animation: fadeIn .5s ease .05s both;
   }
-  .shield svg { width: 30px; height: 30px; stroke: #7c6fff; }
+  .shield svg { width: 30px; height: 30px; stroke: var(--accent); }
   .tfa-title {
     font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.92);
     margin-bottom: 6px;
@@ -278,7 +278,7 @@
     animation: fadeIn .4s ease .2s both;
   }
   .tfa-wrap .inp { animation: fadeIn .4s ease .3s both; width: 100%; margin-bottom: 12px; }
-  .tfa-btn { background: #7c6fff !important; animation: fadeIn .4s ease .4s both; }
+  .tfa-btn { background: var(--accent) !important; animation: fadeIn .4s ease .4s both; }
 
   /* ── SHARED ── */
   .login-btn {

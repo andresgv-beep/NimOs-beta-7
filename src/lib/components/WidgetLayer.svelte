@@ -359,7 +359,7 @@
   function drawNetCharts() {
     document.querySelectorAll('.wg-net-canvas').forEach(canvas => {
       const role = canvas.dataset.role;
-      drawNetChart(canvas, role==='dl' ? dlHist : ulHist, role==='dl' ? '#3b82f6' : '#a855f7');
+      drawNetChart(canvas, role==='dl' ? dlHist : ulHist, role==='dl' ? '#3b82f6' : 'var(--accent2)');
     });
   }
 
@@ -860,11 +860,11 @@
   }
   .wg-clock-t {
     font-size: 30px; font-weight: 300; letter-spacing: -.02em;
-    color: var(--text-1); font-family: 'DM Mono', monospace; line-height: 1;
+    color: var(--text-1); font-family: var(--mono); line-height: 1;
   }
   .wg-clock-d {
     font-size: 10px; color: var(--text-3); text-transform: capitalize;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font);
   }
 
   /* Bars */
@@ -876,19 +876,19 @@
     background: var(--ibtn-bg); overflow: hidden;
   }
   .wg-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
-  .wg-fill.cpu { background: linear-gradient(90deg, var(--accent), var(--accent2, #c054f0)); }
+  .wg-fill.cpu { background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent2))); }
   .wg-fill.ram { background: linear-gradient(90deg, #60a5fa, #818cf8); }
   .wg-fill.sto { background: linear-gradient(90deg, #4ade80, #22d3ee); }
-  .wg-val { font-size: 10px; color: var(--text-2); font-family: 'DM Mono', monospace; width: 32px; text-align: right; flex-shrink: 0; }
+  .wg-val { font-size: 10px; color: var(--text-2); font-family: var(--mono); width: 32px; text-align: right; flex-shrink: 0; }
 
   .wg-footer {
     display: flex; gap: 12px; margin-top: auto;
     padding-top: 8px; border-top: 1px solid var(--border);
-    font-size: 10px; color: var(--text-3); font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--text-3); font-family: var(--mono);
     flex-shrink: 0;
   }
 
-  .wg-sub { font-size: 9px; color: var(--text-3); font-family: 'DM Mono', monospace; margin: 1px 0 4px 38px; }
+  .wg-sub { font-size: 9px; color: var(--text-3); font-family: var(--mono); margin: 1px 0 4px 38px; }
   .wg-empty { font-size: 11px; color: var(--text-3); flex: 1; display: flex; align-items: center; }
 
   /* KV */
@@ -898,13 +898,13 @@
   }
   .wg-kv:last-child { border-bottom: none; }
   .wg-kv span:first-child { font-size: 10px; color: var(--text-3); }
-  .wg-kv span:last-child  { font-size: 11px; color: var(--text-1); font-family: 'DM Mono', monospace; }
+  .wg-kv span:last-child  { font-size: 11px; color: var(--text-1); font-family: var(--mono); }
 
   /* Drag ghost */
   .snap-ghost {
     position: fixed; border-radius: 14px;
     border: 2px dashed var(--accent);
-    background: rgba(124,111,255,0.06);
+    background: rgba(var(--accent-rgb),0.06);
     pointer-events: none; z-index: 0;
     transition: left .12s ease, top .12s ease;
   }
@@ -948,7 +948,7 @@
   .ctx-item.danger:hover { background: rgba(248,113,113,0.10); }
   .ctx-ico { font-size: 11px; width: 14px; text-align: center; color: var(--text-3); flex-shrink: 0; }
   .ctx-item.danger .ctx-ico { color: var(--red); }
-  .ctx-size-hint { margin-left: auto; font-size: 9px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+  .ctx-size-hint { margin-left: auto; font-size: 9px; color: var(--text-3); font-family: var(--mono); }
   .ctx-back {
     display: flex; align-items: center; gap: 6px;
     padding: 8px 12px; font-size: 11px; color: var(--accent);
@@ -967,7 +967,7 @@
   .wg-sto-select {
     width:100%; font-size:9px; padding:3px 8px; border-radius:6px;
     border:1px solid var(--border); background:var(--ibtn-bg);
-    color:var(--text-2); font-family:'DM Sans',sans-serif;
+    color:var(--text-2); font-family:var(--font);
     cursor:pointer; appearance:none; text-align:center; outline:none;
   }
   .wg-sto-select:focus { border-color:var(--border-hi); }
@@ -975,7 +975,7 @@
   .wg-sto-bar-row { display:flex; flex-direction:column; gap:5px; }
   .wg-sto-bar-info { display:flex; justify-content:space-between; align-items:baseline; }
   .wg-sto-bar-name { font-size:11px; font-weight:500; color:var(--text-1); }
-  .wg-sto-bar-size { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; }
+  .wg-sto-bar-size { font-size:10px; color:var(--text-3); font-family:var(--mono); }
   .wg-sto-track { height:8px; border-radius:4px; background:var(--ibtn-bg); overflow:hidden; }
   :global([data-theme="light"]) .wg-sto-track { background:rgba(0,0,0,0.07); }
   .wg-sto-fill { height:100%; border-radius:4px; transition:width .5s ease; }
@@ -984,8 +984,8 @@
   .wg-sto-card-top { display:flex; justify-content:space-between; align-items:center; }
   .wg-sto-card-name { font-size:12px; font-weight:500; color:var(--text-1); }
   .wg-sto-card-raid { font-size:9px; color:var(--text-3); letter-spacing:.04em; margin-top:1px; }
-  .wg-sto-card-pct  { font-size:14px; font-weight:500; font-family:'DM Mono',monospace; }
-  .wg-sto-card-meta { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; }
+  .wg-sto-card-pct  { font-size:14px; font-weight:500; font-family:var(--mono); }
+  .wg-sto-card-meta { font-size:10px; color:var(--text-3); font-family:var(--mono); }
 
   /* ── NETWORK WIDGET ── */
   .wg-net-wrap {
@@ -1005,10 +1005,10 @@
     font-size: 11px; font-weight: 700;
   }
   .wg-net-arrow.dl { color: #3b82f6; }
-  .wg-net-arrow.ul { color: #a855f7; }
+  .wg-net-arrow.ul { color: var(--accent2); }
   .wg-net-val {
     font-size: 11px; color: var(--text-1);
-    font-family: 'DM Mono', monospace;
+    font-family: var(--mono);
   }
   .wg-net-canvas { display: block; width: 100%; border-radius: 4px; }
 
@@ -1035,7 +1035,7 @@
     align-items: center; gap: 2px;
   }
   :global(.wg-day-item) {
-    font-size: 8px; font-family: 'DM Sans', sans-serif;
+    font-size: 8px; font-family: var(--font);
     letter-spacing: .05em; color: var(--text-3);
     padding: 1px 5px; border-radius: 10px;
     border: 1px solid transparent;
@@ -1052,12 +1052,12 @@
   }
   .wg-lcd-datenum {
     font-size: 18px; font-weight: 500;
-    color: var(--text-1); font-family: 'DM Sans', sans-serif;
+    color: var(--text-1); font-family: var(--font);
     line-height: 1;
   }
   .wg-lcd-datemon {
     font-size: 8px; color: var(--text-3);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font);
     letter-spacing: .06em; text-transform: uppercase;
   }
 
@@ -1067,16 +1067,16 @@
 
   .ring-pct {
     font-size: 17px; font-weight: 500;
-    fill: var(--text-1); font-family: 'DM Sans', sans-serif;
+    fill: var(--text-1); font-family: var(--font);
   }
   .ring-sub {
     font-size: 12px; fill: var(--text-3);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font);
   }
   .ring-label {
     font-size: 9px; font-weight: 600;
     text-transform: uppercase; letter-spacing: .08em;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font);
   }
 
   /* 1×1 double ring */
@@ -1123,17 +1123,17 @@
   .arc-pct {
     font-size: 18px; font-weight: 700;
     fill: var(--text-1);
-    font-family: 'DM Mono', monospace;
+    font-family: var(--mono);
   }
   .arc-label {
     font-size: 9px; font-weight: 600;
     fill: var(--text-3);
     text-transform: uppercase; letter-spacing: .06em;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font);
   }
   .arc-temp {
     font-size: 8px; fill: var(--text-3);
-    font-family: 'DM Mono', monospace;
+    font-family: var(--mono);
   }
   .wa-wrap {
     position: fixed; bottom: 68px; right: 16px;
@@ -1175,8 +1175,8 @@
   .wg-net-label { display:flex; justify-content:space-between; align-items:baseline; }
   .wg-net-arrow { font-size:12px; font-weight:700; }
   .wg-net-arrow.dl { color:#3b82f6; }
-  .wg-net-arrow.ul { color:#a855f7; }
-  .wg-net-val { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .wg-net-arrow.ul { color:var(--accent2); }
+  .wg-net-val { font-size:11px; color:var(--text-1); font-family:var(--mono); }
   .wg-net-canvas { display:block; width:100%; border-radius:4px; }
 
   /* ── LCD CLOCK ── */
@@ -1184,10 +1184,10 @@
   .wg-lcd-left { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; flex:1; }
   .wg-lcd-right { display:flex; flex-direction:column; align-items:center; justify-content:space-between; height:100%; padding:6px 0; }
   .wg-lcd-days { display:flex; flex-direction:column; align-items:center; gap:2px; }
-  :global(.wg-day-item) { font-size:8px; font-family:'DM Sans',sans-serif; letter-spacing:.05em; color:var(--text-3); padding:1px 5px; border-radius:10px; border:1px solid transparent; }
+  :global(.wg-day-item) { font-size:8px; font-family:var(--font); letter-spacing:.05em; color:var(--text-3); padding:1px 5px; border-radius:10px; border:1px solid transparent; }
   :global(.wg-day-item.today) { color:var(--text-1); font-weight:600; background:var(--ibtn-bg); border-color:var(--border-hi); }
   .wg-lcd-date { display:flex; flex-direction:column; align-items:center; gap:1px; }
-  .wg-lcd-datenum { font-size:18px; font-weight:500; color:var(--text-1); font-family:'DM Sans',sans-serif; line-height:1; }
+  .wg-lcd-datenum { font-size:18px; font-weight:500; color:var(--text-1); font-family:var(--font); line-height:1; }
   /* ── TORRENT WIDGET ── */
   .wg-tor-header {
     display: flex; align-items: center; gap: 8px;
@@ -1212,14 +1212,14 @@
     color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .wg-tor-row.done .wg-tor-name { color: var(--text-3); }
-  .wg-tor-spd { font-size: 10px; font-family: 'DM Mono', monospace; color: #5ba8ff; flex-shrink: 0; }
-  .wg-tor-done { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-3); flex-shrink: 0; }
+  .wg-tor-spd { font-size: 10px; font-family: var(--mono); color: #5ba8ff; flex-shrink: 0; }
+  .wg-tor-done { font-size: 10px; font-family: var(--mono); color: var(--text-3); flex-shrink: 0; }
   .wg-tor-track { height: 4px; background: var(--ibtn-bg); border-radius: 2px; overflow: hidden; }
   .wg-tor-fill { height: 100%; border-radius: 2px; transition: width .8s ease; }
   .wg-tor-footer {
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 6px; flex-shrink: 0;
-    font-size: 9px; color: var(--text-3); font-family: 'DM Sans', sans-serif;
+    font-size: 9px; color: var(--text-3); font-family: var(--font);
   }
   .wg-tor-dot {
     width: 5px; height: 5px; border-radius: 50%;

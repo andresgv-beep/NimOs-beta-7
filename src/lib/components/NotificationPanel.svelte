@@ -202,7 +202,7 @@
   .np-ititle { font-size:11px; font-weight:700; color:var(--text-1); }
   .np-imsg { font-size:10px; color:var(--text-2); margin-top:2px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
   .np-imsg.solo { font-weight:600; color:var(--text-1); margin-top:0; font-size:11px; }
-  .np-itime { font-size:9px; color:var(--text-3); font-family:'DM Mono',monospace; margin-top:4px; }
+  .np-itime { font-size:9px; color:var(--text-3); font-family:var(--mono); margin-top:4px; }
 
   .np-x { width:16px; height:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; color:var(--text-3); border-radius:4px; transition:color .15s; margin-top:1px; }
   .np-x:hover { color:var(--red); }
