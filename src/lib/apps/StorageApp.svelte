@@ -112,6 +112,7 @@
     display:flex; overflow:hidden;
     font-family:var(--font);
     color:var(--text-1);
+    background:var(--bg-frame);
   }
 
   /* ── SIDEBAR ── */

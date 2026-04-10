@@ -453,7 +453,7 @@
 {/if}
 
 <style>
-  .mp-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
+  .mp-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); background:var(--bg-frame); }
 
   /* Sidebar */
   .mp-sidebar { width:200px; flex-shrink:0; padding:12px 8px; background:var(--bg-sidebar); display:flex; flex-direction:column; overflow:hidden; }

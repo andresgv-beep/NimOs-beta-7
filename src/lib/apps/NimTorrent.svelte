@@ -408,7 +408,7 @@
 {/if}
 
 <style>
-  .nt-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
+  .nt-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); background:var(--bg-frame); }
 
   .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; padding:12px 8px; background:var(--bg-sidebar); border-right:1px solid var(--border); overflow-y:auto; }
   .sidebar::-webkit-scrollbar { width:3px; } .sidebar::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }

@@ -439,7 +439,7 @@
 {/if}
 
 <style>
-  .store-root{width:100%;height:100%;display:flex;overflow:hidden;font-family:var(--font);color:var(--text-1)}
+  .store-root{width:100%;height:100%;display:flex;overflow:hidden;font-family:var(--font);color:var(--text-1);background:var(--bg-frame)}
   .sidebar{width:186px;flex-shrink:0;display:flex;flex-direction:column;padding:12px 8px;background:var(--bg-sidebar);border-right:1px solid var(--border)}
   .sb-header{display:flex;align-items:center;gap:9px;padding:14px 8px 14px}
   .sb-logo{color:var(--accent);flex-shrink:0}

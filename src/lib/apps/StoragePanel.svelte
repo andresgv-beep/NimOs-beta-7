@@ -2044,7 +2044,7 @@
 />
 
 <style>
-  .storage-root { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; }
+  .storage-root { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-frame); }
   .s-body { flex:1; overflow-y:auto; padding:18px 20px; }
   .s-body::-webkit-scrollbar { width:3px; }
   .s-body::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }

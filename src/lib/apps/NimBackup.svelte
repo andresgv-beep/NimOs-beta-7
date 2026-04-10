@@ -312,7 +312,7 @@
 </div>
 
 <style>
-  .backup-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
+  .backup-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); background:var(--bg-frame); }
 
   /* Sidebar — matches FileManager/NimTorrent */
   .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; gap:2px; padding:12px 8px; overflow-y:auto; background:var(--bg-sidebar); border-right:1px solid var(--border); }

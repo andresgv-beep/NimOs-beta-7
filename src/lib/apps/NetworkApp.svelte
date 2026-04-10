@@ -103,7 +103,7 @@
   .network-app-root {
     width:100%; height:100%;
     display:flex; overflow:hidden;
-    font-family:var(--font);
+    font-family:var(--font); background:var(--bg-frame);
     color:var(--text-1);
   }
 

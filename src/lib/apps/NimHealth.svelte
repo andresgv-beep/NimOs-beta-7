@@ -431,7 +431,7 @@
 </div>
 
 <style>
-  .health-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
+  .health-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); background:var(--bg-frame); }
 
   /* Sidebar */
   .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; gap:2px; padding:12px 8px; overflow-y:auto; background:var(--bg-sidebar); border-right:1px solid var(--border); }

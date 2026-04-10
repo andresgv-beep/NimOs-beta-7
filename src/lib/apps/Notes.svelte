@@ -399,7 +399,7 @@
 {/if}
 
 <style>
-  .notes-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
+  .notes-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); background:var(--bg-frame); }
   .sidebar { width:220px; flex-shrink:0; background:var(--bg-sidebar); display:flex; flex-direction:column; overflow:hidden; transition:width .2s cubic-bezier(0.4,0,0.2,1); border-right:1px solid var(--border); }
   .sidebar.collapsed { width:0; border-right:none; }
   .sb-header { display:flex; align-items:center; gap:8px; padding:28px 12px 14px; color:var(--text-1); white-space:nowrap; }

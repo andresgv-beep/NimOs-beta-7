@@ -810,7 +810,7 @@
 </div>
 
 <style>
-  .net-root { width:100%; height:100%; display:flex; overflow:hidden; }
+  .net-root { width:100%; height:100%; display:flex; overflow:hidden; background:var(--bg-frame); }
   .net-content { flex:1; overflow-y:auto; padding:18px 20px; }
   .net-content::-webkit-scrollbar { width:3px; }
   .net-content::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }
