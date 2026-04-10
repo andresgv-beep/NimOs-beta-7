@@ -511,7 +511,7 @@
   .mp-empty-desc { font-size:11px; color:var(--text-3); }
 
   /* Controles flotantes */
-  .mp-controls { position:absolute; bottom:0; left:0; right:0; padding:20px 20px 16px; background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.45) 60%,transparent 100%); display:flex; flex-direction:column; gap:10px; transition:opacity .35s ease; z-index:10; border-radius:0 0 10px 10px; }
+  .mp-controls { position:absolute; bottom:0; left:0; right:0; padding:20px 20px 16px; background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.45) 60%,transparent 100%); display:flex; flex-direction:column; gap:10px; transition:opacity .35s ease; z-index:10; border-radius:0 0 11px 11px; }
   .mp-controls.hidden { opacity:0; pointer-events:none; }
   .mp-progress-row { display:flex; align-items:center; gap:8px; }
   .mp-time { font-size:10px; color:rgba(255,255,255,0.55); font-family:var(--mono); min-width:32px; text-align:center; }

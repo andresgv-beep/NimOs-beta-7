@@ -787,7 +787,7 @@
   @keyframes spin { to{transform:rotate(360deg)} }
 
   /* Statusbar */
-  .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; }
+  .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; }
   .path { display:flex; align-items:center; gap:4px; font-family:var(--mono); }
   .path-part { color:var(--text-2); cursor:pointer; transition:color .1s; }
   .path-part:hover { color:var(--text-1); }

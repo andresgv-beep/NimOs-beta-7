@@ -485,7 +485,7 @@
   .t-action:hover { background:rgba(128,128,128,0.10); color:var(--text-1); }
   .t-action.danger:hover { background:rgba(248,113,113,0.12); color:var(--red); }
 
-  .statusbar { display:flex; align-items:center; gap:10px; padding:7px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:var(--mono); }
+  .statusbar { display:flex; align-items:center; gap:10px; padding:7px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }
   .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); flex-shrink:0; }
   .status-sep { width:1px; height:10px; background:var(--border); }
   .spinner { width:24px; height:24px; border-radius:50%; border:2px solid rgba(255,255,255,0.08); border-top-color:var(--accent); animation:spin .7s linear infinite; }

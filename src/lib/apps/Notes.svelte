@@ -459,7 +459,7 @@
   .empty-icon svg { width:26px; height:26px; color:var(--accent); opacity:.4; }
   .empty-title { font-size:13px; font-weight:600; color:var(--text-2); }
   .empty-desc { font-size:11px; color:var(--text-3); }
-  .statusbar { display:flex; align-items:center; gap:8px; padding:6px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:var(--mono); }
+  .statusbar { display:flex; align-items:center; gap:8px; padding:6px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }
   .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
   .st-sep { color:var(--border); }
   .st-right { margin-left:auto; display:flex; gap:8px; }

@@ -524,7 +524,7 @@
   .btn-danger:hover{opacity:.8}
   .btn-danger:disabled{opacity:.4;cursor:not-allowed}
   .btn-secondary{padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--ibtn-bg);color:var(--text-2);font-size:11px;cursor:pointer;font-family:inherit}
-  .statusbar{display:flex;align-items:center;gap:10px;padding:7px 16px;border-top:1px solid var(--border);background:var(--bg-bar);flex-shrink:0;font-size:10px;color:var(--text-3);border-radius:0 0 10px 10px;font-family:var(--mono)}
+  .statusbar{display:flex;align-items:center;gap:10px;padding:7px 16px;border-top:1px solid var(--border);background:var(--bg-bar);flex-shrink:0;font-size:10px;color:var(--text-3);border-radius:0 0 11px 11px;font-family:var(--mono)}
   .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px rgba(74,222,128,0.6)}
   .status-sep{width:1px;height:10px;background:var(--border)}
   .setup-screen{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px}
