@@ -283,7 +283,7 @@
   }
 
   // ── Ring gauge helpers ──
-  function stoColor(pct) { return pct < 70 ? '#4ade80' : pct < 85 ? '#fbbf24' : '#f87171'; }
+  function stoColor(pct) { return pct < 70 ? '#22c55e' : pct < 85 ? '#f59e0b' : '#ef4444'; }
 
   function ringDash(r)       { return (2*Math.PI*r).toFixed(1); }
   function ringOffset(r,pct) { return (2*Math.PI*r*(1-Math.min(100,pct)/100)).toFixed(1); }
@@ -359,7 +359,7 @@
   function drawNetCharts() {
     document.querySelectorAll('.wg-net-canvas').forEach(canvas => {
       const role = canvas.dataset.role;
-      drawNetChart(canvas, role==='dl' ? dlHist : ulHist, role==='dl' ? '#3b82f6' : 'var(--accent2)');
+      drawNetChart(canvas, role==='dl' ? dlHist : ulHist, role==='dl' ? '#3b82f6' : '#ff7847');
     });
   }
 
@@ -387,7 +387,7 @@
       const pts = torDlHist.map((v, i) => [(i/(torDlHist.length-1||1))*W, H-(v/max)*(H-3)-1]);
       ctx.beginPath();
       pts.forEach(([x,y], i) => i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
-      ctx.strokeStyle = '#5ba8ff'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.strokeStyle = 'var(--blue)'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
       ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
       ctx.fillStyle = 'rgba(91,168,255,0.10)'; ctx.fill();
     });
@@ -493,7 +493,7 @@
                       stroke-dasharray={ringDash(52)} stroke-dashoffset={ringOffset(52,memPct)}
                       style="transition:stroke-dashoffset .6s ease"/>
                     <text x="65" y="60" text-anchor="middle" dominant-baseline="middle" class="ring-pct">{memPct.toFixed(0)}%</text>
-                    <text x="65" y="77" text-anchor="middle" class="ring-label" style="fill:#3b82f6">RAM</text>
+                    <text x="65" y="77" text-anchor="middle" class="ring-label" style="fill:var(--blue)">RAM</text>
                   </svg>
                 </div>
               </div>
@@ -531,7 +531,7 @@
                       stroke-dasharray={ringDash(44)} stroke-dashoffset={ringOffset(44,memPct)}
                       style="transition:stroke-dashoffset .6s ease"/>
                     <text x="56" y="51" text-anchor="middle" dominant-baseline="middle" class="ring-pct">{memPct.toFixed(0)}%</text>
-                    <text x="56" y="66" text-anchor="middle" class="ring-label" style="fill:#3b82f6">RAM</text>
+                    <text x="56" y="66" text-anchor="middle" class="ring-label" style="fill:var(--blue)">RAM</text>
                   </svg>
                   <div class="wg-ring-info">
                     <div class="wg-kv"><span>Used</span><span>{fmtBytes(memUsed)}</span></div>
@@ -716,7 +716,7 @@
                       {/if}
                     </div>
                     <div class="wg-tor-track">
-                      <div class="wg-tor-fill" style="width:{Math.min(100,t.progress||0)}%;background:{done?'rgba(74,222,128,0.4)':'#5ba8ff'}"></div>
+                      <div class="wg-tor-fill" style="width:{Math.min(100,t.progress||0)}%;background:{done?'rgba(34,197,94,0.4)':'var(--blue)'}"></div>
                     </div>
                   </div>
                 {/each}
@@ -877,8 +877,8 @@
   }
   .wg-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
   .wg-fill.cpu { background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent2))); }
-  .wg-fill.ram { background: linear-gradient(90deg, #60a5fa, #818cf8); }
-  .wg-fill.sto { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+  .wg-fill.ram { background: linear-gradient(90deg, var(--blue), #818cf8); }
+  .wg-fill.sto { background: linear-gradient(90deg, var(--green), #22d3ee); }
   .wg-val { font-size: 10px; color: var(--text-2); font-family: var(--mono); width: 32px; text-align: right; flex-shrink: 0; }
 
   .wg-footer {
@@ -945,7 +945,7 @@
   .ctx-item:hover { background: var(--active-bg); color: var(--text-1); }
   .ctx-item.active { color: var(--accent); }
   .ctx-item.danger { color: var(--red); }
-  .ctx-item.danger:hover { background: rgba(248,113,113,0.10); }
+  .ctx-item.danger:hover { background: rgba(239,68,68,0.10); }
   .ctx-ico { font-size: 11px; width: 14px; text-align: center; color: var(--text-3); flex-shrink: 0; }
   .ctx-item.danger .ctx-ico { color: var(--red); }
   .ctx-size-hint { margin-left: auto; font-size: 9px; color: var(--text-3); font-family: var(--mono); }
@@ -1004,7 +1004,7 @@
   .wg-net-arrow {
     font-size: 11px; font-weight: 700;
   }
-  .wg-net-arrow.dl { color: #3b82f6; }
+  .wg-net-arrow.dl { color: var(--blue); }
   .wg-net-arrow.ul { color: var(--accent2); }
   .wg-net-val {
     font-size: 11px; color: var(--text-1);
@@ -1174,7 +1174,7 @@
   .wg-net-row { display:flex; flex-direction:column; gap:3px; flex:1; }
   .wg-net-label { display:flex; justify-content:space-between; align-items:baseline; }
   .wg-net-arrow { font-size:12px; font-weight:700; }
-  .wg-net-arrow.dl { color:#3b82f6; }
+  .wg-net-arrow.dl { color:var(--blue); }
   .wg-net-arrow.ul { color:var(--accent2); }
   .wg-net-val { font-size:11px; color:var(--text-1); font-family:var(--mono); }
   .wg-net-canvas { display:block; width:100%; border-radius:4px; }
@@ -1212,7 +1212,7 @@
     color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .wg-tor-row.done .wg-tor-name { color: var(--text-3); }
-  .wg-tor-spd { font-size: 10px; font-family: var(--mono); color: #5ba8ff; flex-shrink: 0; }
+  .wg-tor-spd { font-size: 10px; font-family: var(--mono); color: var(--blue); flex-shrink: 0; }
   .wg-tor-done { font-size: 10px; font-family: var(--mono); color: var(--text-3); flex-shrink: 0; }
   .wg-tor-track { height: 4px; background: var(--ibtn-bg); border-radius: 2px; overflow: hidden; }
   .wg-tor-fill { height: 100%; border-radius: 2px; transition: width .8s ease; }
@@ -1223,6 +1223,6 @@
   }
   .wg-tor-dot {
     width: 5px; height: 5px; border-radius: 50%;
-    background: var(--green); box-shadow: 0 0 4px rgba(74,222,128,0.5);
+    background: var(--green); box-shadow: 0 0 4px rgba(34,197,94,0.5);
   }
 </style>

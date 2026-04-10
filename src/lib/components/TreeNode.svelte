@@ -43,7 +43,7 @@
 
   $: isActive = activeShare === share && activePath === path;
   $: indent = depth * 12;
-  $: iconColor = remote ? '#3b82f6' : '#f59e0b';
+  $: iconColor = remote ? 'var(--blue)' : 'var(--amber)';
 </script>
 
 <div class="tree-item" class:active={isActive} style="padding-left:{14 + indent}px"

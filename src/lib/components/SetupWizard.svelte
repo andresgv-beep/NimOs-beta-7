@@ -66,7 +66,7 @@
   .overlay {
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(140deg, #1a1030 0%, #0d0d1a 100%);
+    background: linear-gradient(140deg, #09090b 0%, #0c0c0f 100%);
   }
   .container {
     display: flex; flex-direction: column; align-items: center;
@@ -82,7 +82,7 @@
   }
   .input:focus { border-color: var(--accent, #E95420); }
   .input::placeholder { color: rgba(255,255,255,0.3); }
-  .error { color: #f87171; font-size: 12px; }
+  .error { color: var(--red); font-size: 12px; }
   .btn {
     width: 100%; padding: 12px;
     background: var(--accent, #E95420); border: none; border-radius: 10px;
