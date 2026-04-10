@@ -1172,13 +1172,13 @@
   .s2-root {
     width:100%; height:100%;
     display:flex; overflow:hidden;
-    font-family:'Inter',-apple-system,sans-serif;
+    font-family:var(--font);
     color:var(--text-1);
   }
 
   /* ── Sidebar ── */
   .sidebar {
-    width:200px; flex-shrink:0;
+    width:200px; flex-shrink:0; border-right:1px solid var(--border);
     display:flex; flex-direction:column;
     padding:12px 8px;
     background:var(--bg-sidebar);
@@ -1415,7 +1415,7 @@
   /* ── Forms ── */
   .form-field { display:flex; flex-direction:column; gap:4px; }
   .form-label { font-size:10px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; }
-  .form-input, .form-select { padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-1); font-size:12px; font-family:'Inter',sans-serif; outline:none; transition:border-color .2s; }
+  .form-input, .form-select { padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-1); font-size:12px; font-family:var(--font); outline:none; transition:border-color .2s; }
   .form-input:focus, .form-select:focus { border-color:var(--accent); }
   .form-input::placeholder { color:var(--text-3); }
   .form-select { cursor:pointer; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }

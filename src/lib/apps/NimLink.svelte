@@ -536,7 +536,7 @@
   /* Forms */
   .form-field { display:flex; flex-direction:column; gap:4px; }
   .form-label { font-size:10px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; }
-  .form-input, .form-select { padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-1); font-size:12px; font-family:'Inter',sans-serif; outline:none; transition:border-color .2s; }
+  .form-input, .form-select { padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-1); font-size:12px; font-family:var(--font); outline:none; transition:border-color .2s; }
   .form-input:focus, .form-select:focus { border-color:var(--accent); }
   .form-input::placeholder { color:var(--text-3); }
   .form-input.mono { font-family:var(--mono); font-size:11px; }
@@ -556,7 +556,7 @@
   .dev-opt-info { flex:1; min-width:0; }
   .dev-opt-name { font-size:12px; font-weight:600; color:var(--text-1); }
   .dev-opt-addr { font-size:10px; color:var(--text-3); font-family:var(--mono); }
-  .dev-opt-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 5px rgba(74,222,128,.4); flex-shrink:0; }
+  .dev-opt-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 5px rgba(34,197,94,.4); flex-shrink:0; }
 
   .empty-box { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; border:1px dashed rgba(255,255,255,0.08); border-radius:9px; color:var(--text-3); font-size:11px; gap:4px; }
 
@@ -579,7 +579,7 @@
   .totp-input { font-family:var(--mono); font-size:16px; letter-spacing:4px; text-align:center; padding:8px; }
 
   /* Success */
-  .success-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:50%; background:rgba(74,222,128,0.12); border:2px solid rgba(74,222,128,0.3); color:var(--green); align-self:center; margin:4px 0; }
+  .success-icon { display:flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:50%; background:rgba(34,197,94,0.12); border:2px solid rgba(34,197,94,0.3); color:var(--green); align-self:center; margin:4px 0; }
 
   /* Sync arrow */
   .sync-arrow-center { display:flex; align-items:center; justify-content:center; color:var(--accent); padding:2px 0; }

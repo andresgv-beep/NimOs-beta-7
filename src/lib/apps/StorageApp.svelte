@@ -116,7 +116,7 @@
 
   /* ── SIDEBAR ── */
   .sidebar {
-    width:200px; flex-shrink:0;
+    width:200px; flex-shrink:0; border-right:1px solid var(--border);
     display:flex; flex-direction:column;
     padding:12px 8px;
     background:var(--bg-sidebar);
@@ -192,5 +192,5 @@
     background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3);
     border-radius:0 0 11px 11px; font-family:var(--mono);
   }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(34,197,94,0.6); }
 </style>

@@ -440,7 +440,7 @@
 
 <style>
   .store-root{width:100%;height:100%;display:flex;overflow:hidden;font-family:var(--font);color:var(--text-1)}
-  .sidebar{width:186px;flex-shrink:0;display:flex;flex-direction:column;padding:12px 8px;background:var(--bg-sidebar)}
+  .sidebar{width:186px;flex-shrink:0;display:flex;flex-direction:column;padding:12px 8px;background:var(--bg-sidebar);border-right:1px solid var(--border)}
   .sb-header{display:flex;align-items:center;gap:9px;padding:14px 8px 14px}
   .sb-logo{color:var(--accent);flex-shrink:0}
   .sb-title{font-size:13px;font-weight:700;color:var(--text-1)}
@@ -455,7 +455,7 @@
   .sb-ico{font-size:12px;width:16px;text-align:center;flex-shrink:0}
   .sb-badge{margin-left:auto;font-size:9px;font-weight:700;font-family:var(--mono);padding:1px 6px;border-radius:8px;background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.25);color:var(--green)}
   .inner-wrap{flex:1;padding:8px;display:flex}
-  .inner{flex:1;border-radius:10px;border:1px solid var(--border);background:var(--bg-inner);display:flex;flex-direction:column;overflow:hidden}
+  .inner{flex:1;background:var(--bg-inner);display:flex;flex-direction:column;overflow:hidden}
   .inner-titlebar{display:flex;align-items:center;gap:8px;padding:10px 16px 9px;background:var(--bg-bar);flex-shrink:0}
   .tb-title{font-size:13px;font-weight:600;color:var(--text-1)}
   .tb-sub{font-size:11px;color:var(--text-3)}

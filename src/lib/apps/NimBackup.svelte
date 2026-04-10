@@ -312,10 +312,10 @@
 </div>
 
 <style>
-  .backup-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:'Inter',-apple-system,sans-serif; color:var(--text-1); }
+  .backup-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
 
   /* Sidebar — matches FileManager/NimTorrent */
-  .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; gap:2px; padding:12px 8px; overflow-y:auto; }
+  .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; gap:2px; padding:12px 8px; overflow-y:auto; background:var(--bg-sidebar); border-right:1px solid var(--border); }
   .sidebar::-webkit-scrollbar { width:3px; } .sidebar::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.2); border-radius:2px; }
   .sb-header { display:flex; align-items:center; gap:8px; padding:32px 8px 12px; }
   .title { font-size:15px; font-weight:600; color:var(--text-1); }
@@ -336,7 +336,7 @@
 
   /* Inner wrap — the NimOS app frame pattern */
   .inner-wrap { flex:1; padding:8px; display:flex; }
-  .inner { flex:1; border-radius:10px; border:1px solid var(--border); background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
+  .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
 
   /* Titlebar */
   .inner-titlebar { display:flex; align-items:center; gap:8px; padding:10px 14px 9px; background:var(--bg-bar); flex-shrink:0; border-bottom:1px solid var(--border); }

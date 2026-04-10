@@ -410,7 +410,7 @@
 <style>
   .nt-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); }
 
-  .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; padding:12px 8px; background:var(--bg-sidebar); overflow-y:auto; }
+  .sidebar { width:190px; flex-shrink:0; display:flex; flex-direction:column; padding:12px 8px; background:var(--bg-sidebar); border-right:1px solid var(--border); overflow-y:auto; }
   .sidebar::-webkit-scrollbar { width:3px; } .sidebar::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }
   .sb-header { display:flex; align-items:center; gap:9px; padding:32px 8px 20px; }
   .sb-logo-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; flex-shrink:0; color:var(--text-1); }
@@ -439,7 +439,7 @@
   .btn-sm.danger { border-color:rgba(239,68,68,0.25); color:var(--red); } .btn-sm.danger:hover { background:rgba(239,68,68,0.10); }
 
   .inner-wrap { flex:1; padding:8px; display:flex; }
-  .inner { flex:1; border-radius:10px; border:1px solid var(--border); background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
+  .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
   .inner-titlebar { display:flex; align-items:center; gap:8px; padding:10px 14px 9px; background:var(--bg-bar); flex-shrink:0; }
   .tabs { display:flex; gap:4px; flex:1; }
   .tab { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:500; color:var(--text-3); border:1px solid transparent; transition:all .15s; }
