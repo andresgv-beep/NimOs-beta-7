@@ -67,7 +67,7 @@ function computeUiScale(setting) {
 // Apply theme to DOM
 function applyToDOM(p) {
   const root = document.documentElement;
-  if (p.theme === 'midnight') root.removeAttribute('data-theme');
+  if (p.theme === 'dark') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', p.theme);
 
   const accent = ACCENT_COLORS[p.accentColor] || p.customAccentColor || ACCENT_COLORS.orange;
