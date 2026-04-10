@@ -166,7 +166,7 @@
       <div class="transfer-row" class:selected={selected.has(task.id)} on:click={() => toggleSelect(task.id)}>
         <div class="row-ico">
           {#if task.status === 'uploading'}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c6fff" stroke="none" style="overflow:visible">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)" stroke="none" style="overflow:visible">
               <polygon points="12,2 20,12 15,12 15,22 9,22 9,12 4,12">
                 <animateTransform attributeName="transform" type="translate" values="0,16;0,-16" dur="1.2s" repeatCount="indefinite"/>
                 <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.25;0.75;1" dur="1.2s" repeatCount="indefinite"/>
@@ -271,7 +271,7 @@
     display:flex; align-items:center; gap:5px;
   }
   .tool-btn svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
-  .tool-btn:hover { background:rgba(124,111,255,0.12); color:var(--text-1); }
+  .tool-btn:hover { background:rgba(var(--accent-rgb),0.12); color:var(--text-1); }
   .tool-btn:disabled { opacity:.3; cursor:not-allowed; }
   .tool-btn.danger:hover { background:rgba(248,113,113,0.12); color:var(--red); }
   .tool-sep { width:1px; height:16px; background:var(--border); margin:0 2px; }
@@ -309,9 +309,9 @@
   .row-ico { display:flex; align-items:center; justify-content:center; }
   .row-file { min-width:0; }
   .row-name { font-size:11px; font-weight:500; color:var(--text-1); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .row-dest { font-size:9px; color:var(--red); font-family:'DM Mono',monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:1px; }
-  .row-size { font-size:10px; color:var(--text-2); font-family:'DM Mono',monospace; }
-  .row-speed { font-size:10px; color:var(--text-2); font-family:'DM Mono',monospace; }
+  .row-dest { font-size:9px; color:var(--red); font-family:var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:1px; }
+  .row-size { font-size:10px; color:var(--text-2); font-family:var(--mono); }
+  .row-speed { font-size:10px; color:var(--text-2); font-family:var(--mono); }
 
   /* PROGRESS */
   .row-progress { padding-right:12px; }
@@ -321,9 +321,9 @@
   .prog-bar.done { background:var(--green); }
   .prog-bar.error { background:var(--red); }
   .prog-bar.paused { background:var(--amber); }
-  .prog-pct { font-size:9px; color:var(--text-3); font-family:'DM Mono',monospace; }
+  .prog-pct { font-size:9px; color:var(--text-3); font-family:var(--mono); }
 
-  .row-eta { font-size:10px; color:var(--text-2); font-family:'DM Mono',monospace; }
+  .row-eta { font-size:10px; color:var(--text-2); font-family:var(--mono); }
 
   /* STATUS PILL */
   .status-pill {
@@ -350,7 +350,7 @@
     background:var(--bg-bar);
     flex-shrink:0; font-size:10px; color:var(--text-3);
   }
-  .sb-speed { font-family:'DM Mono',monospace; }
+  .sb-speed { font-family:var(--mono); }
   .sb-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .sb-dot.green { background:var(--green); box-shadow:0 0 5px var(--green); animation:sbPulse .8s ease-in-out infinite; }
   .sb-dot.grey { background:var(--text-3); }

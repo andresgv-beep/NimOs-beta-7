@@ -76,7 +76,7 @@
 </div>
 
 <style>
-  .webapp { width: 100%; height: 100%; position: relative; background: var(--bg-inner, #1c1b3a); }
+  .webapp { width: 100%; height: 100%; position: relative; background: var(--bg-inner, #111114); }
   .iframe { width: 100%; height: 100%; border: none; display: block; }
   .overlay {
     width: 100%; height: 100%;
@@ -89,7 +89,7 @@
   .spinner {
     width: 28px; height: 28px; border-radius: 50%;
     border: 2px solid var(--border, rgba(255,255,255,0.1));
-    border-top-color: var(--accent, #7c6fff);
+    border-top-color: var(--accent, var(--accent));
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -101,7 +101,7 @@
   }
   .btn-primary {
     padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 500;
-    background: var(--accent, #7c6fff); border: none;
+    background: var(--accent, var(--accent)); border: none;
     color: #fff; cursor: pointer; font-family: inherit;
   }
 </style>

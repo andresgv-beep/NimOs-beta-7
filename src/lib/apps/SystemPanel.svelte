@@ -645,7 +645,7 @@
     padding:5px 0; border-bottom:1px solid var(--border); font-size:11px;
   }
   .summary-row span:first-child { color:var(--text-3); }
-  .summary-row span:last-child  { color:var(--text-1); font-family:'DM Mono',monospace; }
+  .summary-row span:last-child  { color:var(--text-1); font-family:var(--mono); }
   .modal-footer {
     display:flex; align-items:center; justify-content:flex-end; gap:8px;
     padding:12px 18px; border-top:1px solid var(--border);
@@ -690,7 +690,7 @@
     font-size:9px; font-weight:600; text-transform:uppercase;
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3);
   }
-  .user-badge.admin { background:rgba(124,111,255,0.12); border-color:rgba(124,111,255,0.30); color:var(--accent); }
+  .user-badge.admin { background:rgba(var(--accent-rgb),0.12); border-color:rgba(var(--accent-rgb),0.30); color:var(--accent); }
 
   /* ── SHARES ── */
   .share-list { display:flex; flex-direction:column; gap:6px; }
@@ -701,7 +701,7 @@
   }
   .share-icon { font-size:16px; flex-shrink:0; }
   .share-name { font-size:12px; font-weight:600; color:var(--text-1); }
-  .share-path { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; margin-top:1px; }
+  .share-path { font-size:10px; color:var(--text-3); font-family:var(--mono); margin-top:1px; }
   .share-meta { font-size:10px; color:var(--text-3); margin-top:2px; }
   .share-desc { color:var(--text-3); }
   .share-actions { margin-left:auto; display:flex; gap:4px; flex-shrink:0; }
@@ -727,7 +727,7 @@
   .form-input, .form-select {
     padding:9px 12px; border-radius:8px;
     background:rgba(255,255,255,0.04); border:1px solid var(--border);
-    color:var(--text-1); font-size:12px; font-family:'DM Sans',sans-serif;
+    color:var(--text-1); font-size:12px; font-family:var(--font);
     outline:none; transition:border-color .2s;
   }
   .form-input:focus, .form-select:focus { border-color:var(--accent); }
@@ -766,7 +766,7 @@
   .perm-admin-tag {
     font-size:8px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
     padding:1px 5px; border-radius:3px;
-    background:rgba(124,111,255,0.12); color:var(--accent);
+    background:rgba(var(--accent-rgb),0.12); color:var(--accent);
   }
   .perm-select { padding:5px 28px 5px 8px; font-size:10px; min-width:140px; }
 
@@ -777,7 +777,7 @@
     padding:8px 0; border-bottom:1px solid var(--border);
   }
   .field-label { font-size:11px; color:var(--text-2); }
-  .field-value { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .field-value { font-size:11px; color:var(--text-1); font-family:var(--mono); }
 
   /* ── UPDATES ── */
   .update-card {

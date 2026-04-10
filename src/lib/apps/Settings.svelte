@@ -648,7 +648,7 @@
                           </div>
                           <div class="sd-info-item" style="grid-column:1/-1">
                             <div class="sd-info-label">Montaje</div>
-                            <div class="sd-info-value" style="font-size:10px;word-break:break-all;font-family:'DM Mono',monospace">{s.mountpoint || s.path || '—'}</div>
+                            <div class="sd-info-value" style="font-size:10px;word-break:break-all;font-family:var(--mono)">{s.mountpoint || s.path || '—'}</div>
                           </div>
                           <div class="sd-info-item">
                             <div class="sd-info-label">Disponible</div>
@@ -1010,7 +1010,7 @@
                 {/each}
               </div>
             </div>
-            <div style="font-size:10px;color:var(--text-3);margin-top:8px;font-family:'DM Mono',monospace">
+            <div style="font-size:10px;color:var(--text-3);margin-top:8px;font-family:var(--mono)">
               Pantalla: {typeof window !== 'undefined' ? `${window.screen.width}×${window.screen.height}` : '—'} · DPR: {typeof window !== 'undefined' ? window.devicePixelRatio?.toFixed(2) : '—'} · CSS: {typeof window !== 'undefined' ? `${window.innerWidth}×${window.innerHeight}` : '—'}
             </div>
 
@@ -1049,7 +1049,7 @@
         <label class="form-label">Capacidad asignada</label>
         <div style="position:relative;display:flex;align-items:center">
           <input class="form-input" type="number" min="1" placeholder="Sin límite" bind:value={quotaModal.quotaGB} style="padding-right:40px" />
-          <span style="position:absolute;right:12px;font-size:11px;color:var(--text-3);font-family:'DM Mono',monospace;pointer-events:none">GB</span>
+          <span style="position:absolute;right:12px;font-size:11px;color:var(--text-3);font-family:var(--mono);pointer-events:none">GB</span>
         </div>
         <div style="font-size:11px;color:var(--text-3);margin-top:4px">
           {quotaModal.quotaGB === '' ? 'Sin límite — usa todo el espacio del pool' : `Se asignarán ${quotaModal.quotaGB} GB`}
@@ -1079,7 +1079,7 @@
     <div class="modal-body">
       <p style="font-size:12px;color:var(--text-2);margin:0">Los archivos del pool <strong>no se eliminarán</strong>, solo se dejará de compartir la carpeta.</p>
       <div class="form-field">
-        <label class="form-label">Escribe <span style="color:var(--text-1);font-family:'DM Mono',monospace">{deleteModal.name}</span> para confirmar</label>
+        <label class="form-label">Escribe <span style="color:var(--text-1);font-family:var(--mono)">{deleteModal.name}</span> para confirmar</label>
         <input class="form-input" type="text" placeholder={deleteModal.name} bind:value={deleteModal.confirm} />
       </div>
     </div>
@@ -1241,7 +1241,7 @@
   .section-label { font-size:9px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px; }
   .coming-soon { font-size:12px; color:var(--text-3); }
   .empty-state { display:flex; flex-direction:column; align-items:center; gap:8px; padding:40px 0; }
-  .empty-icon { width:38px; height:38px; border-radius:9px; background:rgba(124,111,255,0.08); border:1px solid rgba(124,111,255,0.12); display:flex; align-items:center; justify-content:center; }
+  .empty-icon { width:38px; height:38px; border-radius:9px; background:rgba(var(--accent-rgb),0.08); border:1px solid rgba(var(--accent-rgb),0.12); display:flex; align-items:center; justify-content:center; }
   .empty-icon svg { width:19px; height:19px; color:var(--accent); opacity:.5; }
   .empty-title { font-size:12px; font-weight:600; color:var(--text-2); }
   .empty-desc  { font-size:11px; color:var(--text-3); text-align:center; max-width:200px; }
@@ -1261,10 +1261,10 @@
   }
   .share-row:hover { background:var(--ibtn-bg); }
   .share-row.selected { background:var(--ibtn-bg); border-color:var(--border-hi); }
-  .share-folder-icon { width:32px; height:32px; flex-shrink:0; border-radius:8px; background:rgba(124,111,255,0.10); display:flex; align-items:center; justify-content:center; }
+  .share-folder-icon { width:32px; height:32px; flex-shrink:0; border-radius:8px; background:rgba(var(--accent-rgb),0.10); display:flex; align-items:center; justify-content:center; }
   .share-folder-icon svg { width:16px; height:16px; color:var(--accent); }
   .share-name { font-size:12px; font-weight:600; color:var(--text-1); min-width:80px; }
-  .share-pool { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; flex:1; }
+  .share-pool { font-size:10px; color:var(--text-3); font-family:var(--mono); flex:1; }
   .share-protocols { display:flex; gap:3px; flex-shrink:0; }
   .proto { padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text-3); background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all .15s; }
   .proto.smb.on { color:#60a5fa; background:rgba(96,165,250,0.10); border-color:rgba(96,165,250,0.22); }
@@ -1339,7 +1339,7 @@
   .user-name { font-size:12px; font-weight:600; color:var(--text-1); min-width:80px; }
   .user-role-label { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; flex:1; }
   .user-badge { padding:2px 7px; border-radius:4px; font-size:9px; font-weight:600; text-transform:uppercase; background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3); flex-shrink:0; }
-  .user-badge.admin { background:rgba(124,111,255,0.12); border-color:rgba(124,111,255,0.30); color:var(--accent); }
+  .user-badge.admin { background:rgba(var(--accent-rgb),0.12); border-color:rgba(var(--accent-rgb),0.30); color:var(--accent); }
   .row-actions { display:flex; gap:3px; opacity:0; transition:opacity .15s; }
   .user-row:hover .row-actions { opacity:1; }
   .action-btn { width:26px; height:26px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-3); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
@@ -1359,7 +1359,7 @@
   .field-group { display:flex; flex-direction:column; }
   .field-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
   .field-label { font-size:11px; color:var(--text-2); }
-  .field-value { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .field-value { font-size:11px; color:var(--text-1); font-family:var(--mono); }
   .update-actions { display:flex; gap:8px; margin-top:16px; }
   .update-msg { font-size:11px; margin-top:10px; color:var(--green); }
   .update-msg.error { color:var(--red); }
@@ -1410,7 +1410,7 @@
   .summary-label { font-size:9px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
   .summary-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:11px; }
   .summary-row span:first-child { color:var(--text-3); }
-  .summary-row span:last-child  { color:var(--text-1); font-family:'DM Mono',monospace; }
+  .summary-row span:last-child  { color:var(--text-1); font-family:var(--mono); }
 
   /* ── Forms ── */
   .form-field { display:flex; flex-direction:column; gap:4px; }
@@ -1431,11 +1431,11 @@
   .perm-col-perm { flex-shrink:0; }
   .perm-avatar { width:22px; height:22px; border-radius:5px; flex-shrink:0; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff; }
   .perm-name { font-size:11px; font-weight:600; color:var(--text-1); }
-  .perm-admin-tag { font-size:8px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:1px 5px; border-radius:3px; background:rgba(124,111,255,0.12); color:var(--accent); }
+  .perm-admin-tag { font-size:8px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:1px 5px; border-radius:3px; background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
   .perm-select { padding:5px 28px 5px 8px; font-size:10px; min-width:140px; }
 
   /* ── Statusbar ── */
-  .statusbar { display:flex; align-items:center; gap:10px; padding:8px 16px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:'DM Mono',monospace; }
+  .statusbar { display:flex; align-items:center; gap:10px; padding:8px 16px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:var(--mono); }
   .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
 
   /* ── Appearance settings ── */
@@ -1564,14 +1564,14 @@
   }
   .twofa-secret-label { font-size:10px; color:var(--text-3); flex-shrink:0; }
   .twofa-secret-value {
-    font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace;
+    font-size:11px; color:var(--text-1); font-family:var(--mono);
     letter-spacing:.06em; word-break:break-all; user-select:all;
   }
 
   .twofa-verify-row { display:flex; align-items:center; gap:8px; }
   .twofa-code-input {
     width:120px; text-align:center; font-size:1.2em;
-    letter-spacing:4px; font-family:'DM Mono',monospace;
+    letter-spacing:4px; font-family:var(--mono);
   }
 
   .twofa-msg { font-size:11px; padding:8px 0; color:var(--green); }
@@ -1592,7 +1592,7 @@
   }
   .backup-code {
     padding:6px 10px; border-radius:6px; text-align:center;
-    font-family:'DM Mono',monospace; font-size:12px; font-weight:600;
+    font-family:var(--mono); font-size:12px; font-weight:600;
     color:var(--text-1); background:rgba(255,255,255,0.04);
     border:1px solid var(--border); user-select:all;
   }

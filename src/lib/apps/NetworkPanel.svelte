@@ -841,13 +841,13 @@
     padding:9px 12px; border-bottom:1px solid var(--border);
   }
   .iface-led { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  .iface-name { font-size:12px; font-weight:600; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .iface-name { font-size:12px; font-weight:600; color:var(--text-1); font-family:var(--mono); }
   .iface-type { font-size:10px; color:var(--text-3); margin-left:2px; }
-  .iface-status { margin-left:auto; font-size:10px; font-weight:600; font-family:'DM Mono',monospace; }
+  .iface-status { margin-left:auto; font-size:10px; font-weight:600; font-family:var(--mono); }
   .iface-body { padding:8px 12px; display:flex; flex-direction:column; gap:4px; }
   .iface-row { display:flex; justify-content:space-between; font-size:10px; }
   .iface-row span:first-child { color:var(--text-3); }
-  .iface-row span:last-child  { color:var(--text-1); font-family:'DM Mono',monospace; }
+  .iface-row span:last-child  { color:var(--text-1); font-family:var(--mono); }
 
   /* ── FIELDS ── */
   .field-group { display:flex; flex-direction:column; gap:0; }
@@ -856,7 +856,7 @@
     padding:8px 0; border-bottom:1px solid var(--border);
   }
   .field-label { font-size:11px; color:var(--text-2); }
-  .field-value { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .field-value { font-size:11px; color:var(--text-1); font-family:var(--mono); }
 
   /* ── SERVICES ── */
   .service-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
@@ -870,7 +870,7 @@
     font-size:11px;
   }
   .share-name { font-weight:600; color:var(--text-1); min-width:80px; }
-  .share-path { color:var(--text-3); font-family:'DM Mono',monospace; }
+  .share-path { color:var(--text-3); font-family:var(--mono); }
 
   /* ── PROXY ── */
   .proxy-list { display:flex; flex-direction:column; gap:6px; }
@@ -878,7 +878,7 @@
     display:flex; align-items:center; gap:8px;
     padding:8px 10px; border-radius:7px;
     border:1px solid var(--border); background:var(--ibtn-bg);
-    font-size:11px; font-family:'DM Mono',monospace;
+    font-size:11px; font-family:var(--mono);
   }
   .proxy-from { color:var(--text-1); }
   .proxy-arrow { color:var(--text-3); }
@@ -889,7 +889,7 @@
   .port-tag {
     padding:3px 9px; border-radius:5px; font-size:10px; font-weight:600;
     background:var(--ibtn-bg); border:1px solid var(--border);
-    color:var(--text-2); font-family:'DM Mono',monospace;
+    color:var(--text-2); font-family:var(--mono);
   }
   .rule-list { display:flex; flex-direction:column; gap:5px; }
   .rule-row {
@@ -900,12 +900,12 @@
   }
   .rule-action {
     padding:2px 7px; border-radius:4px; font-size:9px; font-weight:700;
-    font-family:'DM Mono',monospace;
+    font-family:var(--mono);
     background:var(--ibtn-bg); color:var(--text-3);
   }
   .rule-action.allow { background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.25); color:var(--green); }
   .rule-action.deny  { background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.25); color:var(--red); }
-  .rule-desc { font-size:10px; color:var(--text-2); font-family:'DM Mono',monospace; }
+  .rule-desc { font-size:10px; color:var(--text-2); font-family:var(--mono); }
 
   /* ── DDNS ── */
   .ddns-status {
@@ -913,14 +913,14 @@
     margin-bottom:20px;
   }
   .ddns-ip-label { font-size:10px; color:var(--text-3); display:block; margin-bottom:2px; }
-  .ddns-ip-value { font-size:18px; font-weight:600; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .ddns-ip-value { font-size:18px; font-weight:600; color:var(--text-1); font-family:var(--mono); }
 
   .ddns-active { margin-bottom:8px; }
   .ddns-domain-row {
     display:flex; align-items:center; gap:10px;
     padding:10px 0; border-bottom:1px solid var(--border);
   }
-  .ddns-domain-name { font-size:12px; font-weight:500; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .ddns-domain-name { font-size:12px; font-weight:500; color:var(--text-1); font-family:var(--mono); }
   .ddns-domain-provider { font-size:10px; color:var(--text-3); text-transform:uppercase; }
   .ddns-domain-state { display:flex; align-items:center; gap:5px; font-size:10px; font-weight:600; color:var(--green); }
   .ddns-domain-right { display:flex; align-items:center; gap:12px; margin-left:auto; }
@@ -954,7 +954,7 @@
     display:flex; flex-direction:column; gap:3px;
   }
   .ddns-info-label { font-size:9px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; }
-  .ddns-info-value { font-size:13px; font-weight:600; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .ddns-info-value { font-size:13px; font-weight:600; color:var(--text-1); font-family:var(--mono); }
   .ddns-info-value.small { font-size:10px; font-weight:400; line-height:1.4; }
 
   .ddns-form { display:flex; flex-direction:column; gap:14px; max-width:420px; }
@@ -963,7 +963,7 @@
   .form-input, .form-select {
     padding:9px 12px; border-radius:8px;
     background:rgba(255,255,255,0.04); border:1px solid var(--border);
-    color:var(--text-1); font-size:12px; font-family:'DM Sans',sans-serif;
+    color:var(--text-1); font-size:12px; font-family:var(--font);
     outline:none; transition:border-color .2s;
   }
   .form-input:focus, .form-select:focus { border-color:var(--accent); }
@@ -1006,7 +1006,7 @@
   .ddns-msg.error { color:var(--red); }
 
   .ddns-log { margin-top:8px; }
-  .ddns-log-text { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; display:block; margin-top:2px; }
+  .ddns-log-text { font-size:10px; color:var(--text-3); font-family:var(--mono); display:block; margin-top:2px; }
 
   /* ── CERTS ── */
   .cert-card {
@@ -1018,7 +1018,7 @@
     padding:10px 14px; border-bottom:1px solid var(--border);
   }
   .cert-dot { width:7px; height:7px; border-radius:50%; box-shadow:0 0 5px rgba(74,222,128,0.5); flex-shrink:0; }
-  .cert-card-status { font-size:11px; font-weight:600; color:var(--green); font-family:'DM Mono',monospace; }
+  .cert-card-status { font-size:11px; font-weight:600; color:var(--green); font-family:var(--mono); }
   .cert-refresh {
     margin-left:auto; cursor:pointer; color:var(--text-3);
     transition:color .15s; display:flex; align-items:center;
@@ -1035,12 +1035,12 @@
   }
   .cert-cell { display:flex; flex-direction:column; gap:2px; }
   .cert-cell-label { font-size:9px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; }
-  .cert-cell-value { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .cert-cell-value { font-size:11px; color:var(--text-1); font-family:var(--mono); }
 
   .cert-domain-preview {
     display:flex; align-items:baseline; gap:10px; margin-bottom:4px;
   }
-  .cert-domain-val { font-size:14px; font-weight:500; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .cert-domain-val { font-size:14px; font-weight:500; color:var(--text-1); font-family:var(--mono); }
   .cert-domain-src { font-size:9px; color:var(--text-3); }
 
   /* ── HTTPS ── */
@@ -1066,7 +1066,7 @@
 
   .https-url {
     font-size:12px; font-weight:500; color:var(--green);
-    font-family:'DM Mono',monospace;
+    font-family:var(--mono);
   }
 
   /* ── CERT DETAILS (Port Exposure connection info) ── */
@@ -1076,7 +1076,7 @@
     padding:7px 0; border-bottom:1px solid var(--border); gap:12px;
   }
   .cert-label { font-size:10px; color:var(--text-3); flex-shrink:0; min-width:120px; }
-  .cert-value { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; word-break:break-all; }
+  .cert-value { font-size:11px; color:var(--text-1); font-family:var(--mono); word-break:break-all; }
 
   /* ── SUB-TABS ── */
   .sub-tabs {

@@ -48,7 +48,7 @@
   const SERVICES = [
     { key:'share', name:'Share remota', desc:'Carpetas de este NAS visibles en Files', color:'var(--green)', bg:'rgba(74,222,128,0.12)', icon:'folder' },
     { key:'backup_dest', name:'Backup destino', desc:'Este NAS recibe tus backups', color:'var(--blue)', bg:'rgba(96,165,250,0.12)', icon:'down' },
-    { key:'backup_src', name:'Backup origen', desc:'Este NAS hace backup al tuyo', color:'var(--accent)', bg:'rgba(124,111,255,0.12)', icon:'up' },
+    { key:'backup_src', name:'Backup origen', desc:'Este NAS hace backup al tuyo', color:'var(--accent)', bg:'rgba(var(--accent-rgb),0.12)', icon:'up' },
     { key:'sync', name:'Sincronización', desc:'Carpetas espejo entre los dos NAS', color:'var(--amber)', bg:'rgba(251,191,36,0.12)', icon:'sync' },
   ];
 
@@ -193,7 +193,7 @@
                     </div>
                     <div class="donut-info">
                       <div style="font-size:13px;font-weight:600;color:var(--text-1)">{share.displayName||share.name}</div>
-                      <div style="font-size:10px;color:var(--text-3);font-family:'DM Mono',monospace">{share.path}</div>
+                      <div style="font-size:10px;color:var(--text-3);font-family:var(--mono)">{share.path}</div>
                       <div style="font-size:10px;color:var(--text-3)">{share.used ? fmtSize(share.used) + ' usado' : ''}{share.total ? ' · ' + fmtSize(share.total) + ' total' : ''}</div>
                       {#if share.mountPoint}<div class="mount-badge">
                         <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>
@@ -255,7 +255,7 @@
                 {:else}
                   {#each remoteShares as share}
                     <div class="row">
-                      <div class="row-icon" style="background:rgba(124,111,255,0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+                      <div class="row-icon" style="background:rgba(var(--accent-rgb),0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
                       <div class="row-info"><div class="row-name">{share.displayName||share.name}</div><div class="row-meta">{share.path}</div></div>
                       {#if share.mounted}
                         <!-- svelte-ignore a11y_click_events_have_key_events --><!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -327,7 +327,7 @@
   .sb-item.active svg { opacity:1; }
   .sb-dot { width:7px; height:7px; border-radius:50%; background:var(--green); margin-left:auto; flex-shrink:0; box-shadow:0 0 5px rgba(74,222,128,.4); }
   .sb-add { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:8px; font-size:11px; color:var(--text-3); cursor:pointer; border:1px dashed rgba(255,255,255,0.1); transition:all .15s; margin-top:4px; }
-  .sb-add:hover { color:var(--accent); border-color:rgba(124,111,255,.3); }
+  .sb-add:hover { color:var(--accent); border-color:rgba(var(--accent-rgb),.3); }
   .sb-add svg { width:11px; height:11px; }
   .sb-next { margin-top:auto; padding:9px 10px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:9px; }
   .sn-label { font-size:9px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
@@ -358,7 +358,7 @@
   .stat-card { background:rgba(255,255,255,0.025); border:1px solid var(--border); border-radius:9px; padding:11px 13px; }
   .stat-lbl { font-size:9px; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
   .stat-val { font-size:15px; font-weight:600; color:var(--text-1); }
-  .stat-sub { font-size:9px; color:var(--text-3); margin-top:2px; font-family:'DM Mono',monospace; }
+  .stat-sub { font-size:9px; color:var(--text-3); margin-top:2px; font-family:var(--mono); }
 
   .section-label { font-size:9px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.08em; }
 
@@ -369,7 +369,7 @@
   .row-icon { width:28px; height:28px; border-radius:7px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
   .row-info { flex:1; min-width:0; }
   .row-name { font-size:12px; font-weight:600; color:var(--text-1); }
-  .row-meta { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row-meta { font-size:10px; color:var(--text-3); font-family:var(--mono); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   /* Donut card */
   .donut-card { background:rgba(255,255,255,0.025); border:1px solid var(--border); border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:16px; }
@@ -382,7 +382,7 @@
   /* Buttons */
   .icon-btn { width:27px; height:27px; background:var(--ibtn-bg); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-2); transition:all .15s; }
   .icon-btn svg { width:13px; height:13px; }
-  .icon-btn:hover { background:rgba(124,111,255,0.15); color:var(--text-1); }
+  .icon-btn:hover { background:rgba(var(--accent-rgb),0.15); color:var(--text-1); }
   .btn-secondary { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; background:var(--ibtn-bg); border:1px solid var(--border); border-radius:6px; color:var(--text-2); font-family:inherit; font-size:11px; font-weight:500; cursor:pointer; transition:all .15s; }
   .btn-secondary svg { width:11px; height:11px; }
   .btn-secondary:hover { color:var(--text-1); border-color:var(--border-hi); }
@@ -414,7 +414,7 @@
   .cfg-header { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--bg-bar); min-width:0; overflow:hidden; }
 
   /* Statusbar */
-  .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:'DM Mono',monospace; }
+  .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:var(--mono); }
   .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,.5); }
   .status-dot.offline { background:rgba(255,255,255,0.15); box-shadow:none; }
   .st-sep { color:rgba(255,255,255,0.1); }

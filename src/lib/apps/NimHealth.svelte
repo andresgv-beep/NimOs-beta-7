@@ -469,7 +469,7 @@
   .metric-card { background:rgba(255,255,255,0.025); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
   .mc-label { font-size:9px; font-weight:600; color:var(--text-3); letter-spacing:.07em; text-transform:uppercase; margin-bottom:4px; }
   .mc-val { font-size:18px; font-weight:600; color:var(--text-1); line-height:1; }
-  .mc-sub { font-size:9px; color:var(--text-3); margin-top:2px; font-family:'DM Mono',monospace; }
+  .mc-sub { font-size:9px; color:var(--text-3); margin-top:2px; font-family:var(--mono); }
   .mc-graph { height:24px; display:flex; align-items:flex-end; gap:2px; margin-top:6px; }
   .mc-bar { flex:1; border-radius:2px; min-height:3px; transition:height .3s; }
 
@@ -486,18 +486,18 @@
   .svc-row.starting, .svc-row.degraded { border-left-color:var(--amber); }
   .svc-ico { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .svc-ico svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
-  .ico-daemon { background:rgba(124,111,255,0.12); color:var(--accent); }
+  .ico-daemon { background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
   .ico-docker { background:rgba(96,165,250,0.12); color:var(--blue); }
   .ico-system { background:rgba(251,191,36,0.12); color:var(--amber); }
   .svc-name { font-size:12px; font-weight:600; color:var(--text-1); min-width:100px; }
-  .svc-pool { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .svc-pool { font-size:10px; color:var(--text-3); font-family:var(--mono); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .dot-running, .dot-ok { background:var(--green); box-shadow:0 0 5px var(--green); }
   .dot-stopped { background:var(--text-3); }
   .dot-error, .dot-err { background:var(--red); }
   .dot-starting, .dot-warn { background:var(--amber); animation:pulse .8s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-  .status-lbl { font-size:10px; color:var(--text-2); font-family:'DM Mono',monospace; min-width:56px; }
+  .status-lbl { font-size:10px; color:var(--text-2); font-family:var(--mono); min-width:56px; }
   .health-pill { font-size:9px; font-weight:600; padding:2px 6px; border-radius:5px; min-width:60px; text-align:center; }
   .hp-healthy { background:rgba(74,222,128,0.12); color:var(--green); }
   .hp-degraded { background:rgba(251,191,36,0.12); color:var(--amber); }
@@ -510,7 +510,7 @@
   .detail-hero { display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.025); border:1px solid var(--border); border-radius:10px; }
   .hero-info { flex:1; }
   .hero-name { font-size:15px; font-weight:600; color:var(--text-1); }
-  .hero-id { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; margin-top:2px; }
+  .hero-id { font-size:10px; color:var(--text-3); font-family:var(--mono); margin-top:2px; }
   .hero-status { display:flex; align-items:center; gap:6px; margin-top:5px; }
 
   /* Detail blocks */
@@ -520,16 +520,16 @@
   .d-row { display:flex; align-items:center; justify-content:space-between; padding:3px 0; }
   .d-row + .d-row { border-top:1px solid var(--border); }
   .d-key { font-size:11px; color:var(--text-2); }
-  .d-val { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
+  .d-val { font-size:11px; color:var(--text-1); font-family:var(--mono); }
 
   /* Dependencies */
   .deps-list { display:flex; flex-direction:column; gap:5px; }
   .dep-row { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--ibtn-bg); border:1px solid var(--border); border-radius:7px; }
   .dep-type { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; min-width:36px; text-align:center; }
-  .dep-pool { background:rgba(124,111,255,0.12); color:var(--accent); }
+  .dep-pool { background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
   .dep-share { background:rgba(251,191,36,0.12); color:var(--amber); }
   .dep-path { background:rgba(96,165,250,0.12); color:var(--blue); }
-  .dep-target { font-size:10px; color:var(--text-2); font-family:'DM Mono',monospace; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dep-target { font-size:10px; color:var(--text-2); font-family:var(--mono); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dep-req { font-size:9px; color:var(--text-3); margin-left:auto; white-space:nowrap; }
 
   /* Actions */
@@ -542,19 +542,19 @@
   .act-start { background:rgba(74,222,128,0.12); color:var(--green); }
 
   /* Statusbar */
-  .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:'DM Mono',monospace; }
+  .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:var(--mono); }
   .st-sep { color:rgba(255,255,255,0.1); }
 
   /* Icon btn */
   .icon-btn { width:27px; height:27px; background:var(--ibtn-bg); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-2); transition:all .15s; }
   .icon-btn svg { width:13px; height:13px; }
-  .icon-btn:hover { background:rgba(124,111,255,0.15); color:var(--text-1); }
+  .icon-btn:hover { background:rgba(var(--accent-rgb),0.15); color:var(--text-1); }
 
   /* Empty */
   .empty-hint { text-align:center; padding:28px; border:1px dashed var(--border); border-radius:9px; color:var(--text-3); font-size:11px; }
 
   /* Logs */
-  .log-wrap { background:rgba(0,0,0,0.2); border-radius:7px; padding:10px; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-2); line-height:1.7; flex:1; min-height:80px; overflow-y:auto; }
+  .log-wrap { background:rgba(0,0,0,0.2); border-radius:7px; padding:10px; font-family:var(--mono); font-size:9px; color:var(--text-2); line-height:1.7; flex:1; min-height:80px; overflow-y:auto; }
   .log-wrap::-webkit-scrollbar { width:2px; }
   .log-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
   .log-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
