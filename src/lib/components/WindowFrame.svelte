@@ -7,7 +7,6 @@
 
   $: meta = APP_META[win.appId] || { name: win.appId, icon: '📦' };
 
-  // Reactive position state for the style binding
   let x = 0, y = 0, w = 800, h = 520;
 
   onMount(async () => {
@@ -16,7 +15,7 @@
     x = p.x; y = p.y; w = p.width; h = p.height;
   });
 
-  // Drag
+  // ── Drag ──
   let dragging = false;
   let dragOffset = { x: 0, y: 0 };
 
@@ -39,7 +38,7 @@
     if (!dragging) return;
     const z = getZoom();
     x = e.clientX / z - dragOffset.x;
-    y = Math.max(0, e.clientY / z - dragOffset.y);
+    y = Math.max(0, e.clientX / z - dragOffset.y);
     updateWindowPos(win.id, { x, y });
   }
 
@@ -49,7 +48,7 @@
     window.removeEventListener('mouseup', onDragEnd);
   }
 
-  // Resize
+  // ── Resize ──
   let resizing = false;
   let resizeStart = { mx: 0, my: 0, w: 0, h: 0 };
 
@@ -77,7 +76,7 @@
     window.removeEventListener('mouseup', onResizeEnd);
   }
 
-  // Maximize
+  // ── Maximize ──
   function doMaximize() {
     maximizeWindow(win.id);
     tick().then(() => {
@@ -85,45 +84,38 @@
       x = p.x; y = p.y; w = p.width; h = p.height;
     });
   }
+
+  $: compact = win.appId === 'transfermanager';
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="window"
+  class="wf"
   class:maximized={win.maximized}
   class:dragging
   style="z-index:{win.zIndex}; left:{x}px; top:{y}px; width:{w}px; height:{h}px;"
   on:mousedown={() => focusWindow(win.id)}
 >
-  <!-- Drag zone — invisible bar at top for dragging -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="drag-zone" on:mousedown={onTitleMouseDown}></div>
+  <div class="wf-drag" on:mousedown={onTitleMouseDown}></div>
 
-  <!-- Window controls -->
-  {#if win.appId === 'transfermanager'}
-    <div class="wf-controls wf-controls-right">
-      <button class="wf-btn close" on:click={() => closeWindow(win.id)}>
+  {#if compact}
+    <div class="wf-dots wf-dots-right">
+      <button class="wf-btn" on:click={() => closeWindow(win.id)}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="10" height="10">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
     </div>
   {:else}
-    <div class="wf-controls">
-      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)}>
-        <i class="wf-dot"></i>
-      </button>
-      <button class="wf-btn wf-minimize" on:click={() => minimizeWindow(win.id)}>
-        <i class="wf-dot"></i>
-      </button>
-      <button class="wf-btn wf-maximize" on:click={doMaximize}>
-        <i class="wf-dot"></i>
-      </button>
+    <div class="wf-dots">
+      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)}><i></i></button>
+      <button class="wf-btn wf-min" on:click={() => minimizeWindow(win.id)}><i></i></button>
+      <button class="wf-btn wf-max" on:click={doMaximize}><i></i></button>
     </div>
   {/if}
 
-  <!-- App content — fills entire window -->
-  <div class="content">
+  <div class="wf-body">
     {#if win.isWebApp && win.webAppPort}
       {#await import('$lib/apps/WebApp.svelte') then module}
         <svelte:component this={module.default} appId={win.appId} port={win.webAppPort} name={win.webAppName} />
@@ -173,7 +165,7 @@
         <svelte:component this={module.default} />
       {/await}
     {:else}
-      <div class="placeholder">
+      <div class="wf-placeholder">
         <span style="font-size:48px">{meta.icon}</span>
         <p>{meta.name}</p>
         <small>Coming soon</small>
@@ -183,83 +175,78 @@
 
   {#if !win.maximized}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="resize-handle" on:mousedown={onResizeMouseDown}></div>
+    <div class="wf-resize" on:mousedown={onResizeMouseDown}></div>
   {/if}
 </div>
 
 <style>
-  .window {
+  .wf {
     position: fixed;
     border-radius: 12px;
     overflow: hidden;
-    border: 1px solid var(--window-border);
-    box-shadow: var(--window-shadow);
+    border: 1px solid var(--border-hi, rgba(255,255,255,0.10));
+    box-shadow: 0 32px 100px rgba(0,0,0,0.7), inset 0 0.5px 0 rgba(255,255,255,0.04);
     display: flex; flex-direction: column;
-    background: var(--bg-frame, #131316);
-    animation: winIn 0.42s cubic-bezier(0.16,1,0.3,1) both;
+    background: var(--bg-app, #09090b);
+    animation: wfIn 0.38s cubic-bezier(0.16,1,0.3,1) both;
   }
-  .window.dragging { user-select: none; }
-  .window.maximized {
+  .wf.dragging { user-select: none; }
+  .wf.maximized {
     border-radius: 0 !important; border: none !important;
     box-shadow: none !important;
     left: 0 !important; top: 0 !important;
     width: 100vw !important;
     height: calc(100vh - var(--taskbar-height, 48px)) !important;
   }
-  @keyframes winIn {
+  @keyframes wfIn {
     from { opacity: 0; transform: scale(0.96) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  .drag-zone {
+  .wf-drag {
     position: absolute; top: 0; left: 0; right: 0;
     height: 38px; z-index: 1;
     cursor: default; user-select: none;
   }
 
-  .wf-controls {
+  .wf-dots {
     position: absolute; top: 14px; left: 14px;
     display: flex; gap: 7px; z-index: 10;
+    opacity: 0.45; transition: opacity 0.2s;
   }
-  .wf-controls-right {
-    left: auto; right: 12px;
-  }
+  .wf-dots-right { left: auto; right: 12px; }
+  .wf:hover .wf-dots { opacity: 1; }
+
   .wf-btn {
     width: 12px; height: 12px;
     border: none; background: none; padding: 0;
-    color: rgba(255,255,255,0.55);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.55);
   }
-  .wf-dot {
-    width: 12px; height: 12px; border-radius: 50%; display: block;
-    transition: opacity 0.15s;
+  .wf-btn i {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: block; transition: box-shadow 0.15s;
   }
-  .wf-close .wf-dot { background: #ff5f57; }
-  .wf-minimize .wf-dot { background: #febc2e; }
-  .wf-maximize .wf-dot { background: #28c840; }
+  .wf-close i { background: #ff5f57; }
+  .wf-min i   { background: #febc2e; }
+  .wf-max i   { background: #28c840; }
+  .wf-close:hover i { box-shadow: 0 0 6px rgba(255,95,87,0.5); }
+  .wf-min:hover i   { box-shadow: 0 0 6px rgba(254,188,46,0.5); }
+  .wf-max:hover i   { box-shadow: 0 0 6px rgba(40,200,64,0.5); }
 
-  /* Dim dots when window not hovered, full on hover */
-  .wf-controls { opacity: 0.4; transition: opacity 0.2s; }
-  .window:hover .wf-controls { opacity: 1; }
+  .wf-body { flex: 1; overflow: hidden; }
 
-  /* Hover glow on individual dot */
-  .wf-close:hover .wf-dot { box-shadow: 0 0 6px rgba(255,95,87,0.5); }
-  .wf-minimize:hover .wf-dot { box-shadow: 0 0 6px rgba(254,188,46,0.5); }
-  .wf-maximize:hover .wf-dot { box-shadow: 0 0 6px rgba(40,200,64,0.5); }
-
-  .content { flex: 1; overflow: hidden; }
-
-  .placeholder {
+  .wf-placeholder {
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 8px; color: rgba(255,255,255,0.3);
-    background: var(--bg-inner, #1a1a1e);
+    gap: 8px; color: var(--text-3, rgba(255,255,255,0.25));
+    background: var(--bg-panel, #111114);
   }
-  .placeholder p { font-size: 14px; font-weight: 500; }
-  .placeholder small { font-size: 11px; }
+  .wf-placeholder p { font-size: 14px; font-weight: 500; }
+  .wf-placeholder small { font-size: 11px; }
 
-  .resize-handle {
+  .wf-resize {
     position: absolute; bottom: 0; right: 0;
     width: 16px; height: 16px;
     cursor: nwse-resize; z-index: 10;
