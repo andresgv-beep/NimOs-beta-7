@@ -128,7 +128,7 @@
     width: 680px; max-height: 75vh; overflow-y: auto;
     background: var(--bg-frame, #09090b);
     border: 1px solid var(--window-border, rgba(255,255,255,0.12));
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: var(--window-shadow, 0 32px 90px rgba(0,0,0,0.60));
     padding: 28px;
     animation: launchIn 0.25s cubic-bezier(0.16,1,0.3,1) both;

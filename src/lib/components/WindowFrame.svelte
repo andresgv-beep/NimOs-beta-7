@@ -110,14 +110,14 @@
     </div>
   {:else}
     <div class="wf-controls">
-      <button class="wf-btn close" on:click={() => closeWindow(win.id)}>
-        <div class="wf-line red"></div>
+      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)}>
+        <i class="wf-dot"></i>
       </button>
-      <button class="wf-btn minimize" on:click={() => minimizeWindow(win.id)}>
-        <div class="wf-line yellow"></div>
+      <button class="wf-btn wf-minimize" on:click={() => minimizeWindow(win.id)}>
+        <i class="wf-dot"></i>
       </button>
-      <button class="wf-btn maximize" on:click={doMaximize}>
-        <div class="wf-line green"></div>
+      <button class="wf-btn wf-maximize" on:click={doMaximize}>
+        <i class="wf-dot"></i>
       </button>
     </div>
   {/if}
@@ -190,7 +190,7 @@
 <style>
   .window {
     position: fixed;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--window-border);
     box-shadow: var(--window-shadow);
@@ -218,30 +218,34 @@
   }
 
   .wf-controls {
-    position: absolute; top: 10px; left: 12px;
-    display: flex; gap: 8px; z-index: 10;
-    opacity: 0.35;
-    transition: opacity 0.2s;
+    position: absolute; top: 14px; left: 14px;
+    display: flex; gap: 7px; z-index: 10;
   }
   .wf-controls-right {
     left: auto; right: 12px;
   }
-  .window:hover .wf-controls { opacity: 1; }
   .wf-btn {
-    width: 14px; height: 14px;
+    width: 12px; height: 12px;
     border: none; background: none; padding: 0;
     color: rgba(255,255,255,0.55);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: color 0.15s;
   }
-  .wf-btn:hover .wf-line { transform: scaleX(1.2); }
-  .wf-line {
-    width: 24px; height: 3px; border-radius: 2px;
-    transition: all 0.15s;
+  .wf-dot {
+    width: 12px; height: 12px; border-radius: 50%; display: block;
+    transition: opacity 0.15s;
   }
-  .wf-line.red { background: #ff5f57; }
-  .wf-line.yellow { background: #febc2e; }
-  .wf-line.green { background: #28c840; }
+  .wf-close .wf-dot { background: #ff5f57; }
+  .wf-minimize .wf-dot { background: #febc2e; }
+  .wf-maximize .wf-dot { background: #28c840; }
+
+  /* Dim dots when window not hovered, full on hover */
+  .wf-controls { opacity: 0.4; transition: opacity 0.2s; }
+  .window:hover .wf-controls { opacity: 1; }
+
+  /* Hover glow on individual dot */
+  .wf-close:hover .wf-dot { box-shadow: 0 0 6px rgba(255,95,87,0.5); }
+  .wf-minimize:hover .wf-dot { box-shadow: 0 0 6px rgba(254,188,46,0.5); }
+  .wf-maximize:hover .wf-dot { box-shadow: 0 0 6px rgba(40,200,64,0.5); }
 
   .content { flex: 1; overflow: hidden; }
 
