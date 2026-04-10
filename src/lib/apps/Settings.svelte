@@ -1267,9 +1267,9 @@
   .share-pool { font-size:10px; color:var(--text-3); font-family:var(--mono); flex:1; }
   .share-protocols { display:flex; gap:3px; flex-shrink:0; }
   .proto { padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text-3); background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all .15s; }
-  .proto.smb.on { color:#60a5fa; background:rgba(96,165,250,0.10); border-color:rgba(96,165,250,0.22); }
-  .proto.nfs.on { color:#4ade80; background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.22); }
-  .proto.ftp.on { color:#fbbf24; background:rgba(251,191,36,0.10); border-color:rgba(251,191,36,0.22); }
+  .proto.smb.on { color:var(--blue); background:rgba(59,130,246,0.10); border-color:rgba(59,130,246,0.22); }
+  .proto.nfs.on { color:var(--green); background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.22); }
+  .proto.ftp.on { color:var(--amber); background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.22); }
   .share-users { font-size:10px; color:var(--text-3); flex-shrink:0; min-width:58px; text-align:right; }
 
   /* ── Share detail panel ── */
@@ -1324,10 +1324,10 @@
   }
   .sd-item:hover { background:var(--active-bg); color:var(--text-1); }
   .sd-item.danger { color:var(--red); }
-  .sd-item.danger:hover { background:rgba(248,113,113,0.10); }
+  .sd-item.danger:hover { background:rgba(239,68,68,0.10); }
   .sd-sep { height:1px; background:var(--border); margin:3px 6px; }
-  .btn-danger { padding:8px 16px; border-radius:8px; border:none; background:rgba(248,113,113,0.15); color:var(--red); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; border:1px solid rgba(248,113,113,0.3); }
-  .btn-danger:hover { background:rgba(248,113,113,0.25); }
+  .btn-danger { padding:8px 16px; border-radius:8px; border:none; background:rgba(239,68,68,0.15); color:var(--red); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; border:1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background:rgba(239,68,68,0.25); }
   .btn-danger:disabled { opacity:.4; cursor:not-allowed; }
 
   /* ── Users ── */
@@ -1345,7 +1345,7 @@
   .action-btn { width:26px; height:26px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-3); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
   .action-btn svg { width:12px; height:12px; }
   .action-btn:hover { color:var(--text-1); border-color:var(--border-hi); background:var(--ibtn-bg); }
-  .action-btn.danger:hover { color:var(--red); border-color:rgba(248,113,113,0.25); }
+  .action-btn.danger:hover { color:var(--red); border-color:rgba(239,68,68,0.25); }
 
   /* ── Buttons ── */
   .btn-accent { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:8px; border:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity .15s; }
@@ -1436,7 +1436,7 @@
 
   /* ── Statusbar ── */
   .statusbar { display:flex; align-items:center; gap:10px; padding:8px 16px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(34,197,94,0.6); }
 
   /* ── Appearance settings ── */
   .setting-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
@@ -1521,14 +1521,14 @@
     padding:14px 16px; border-radius:10px;
     border:1px solid var(--border); background:var(--ibtn-bg);
   }
-  .twofa-status-card.enabled { border-color:rgba(74,222,128,0.25); background:rgba(74,222,128,0.04); }
+  .twofa-status-card.enabled { border-color:rgba(34,197,94,0.25); background:rgba(34,197,94,0.04); }
   .twofa-status-icon {
     width:36px; height:36px; border-radius:9px; flex-shrink:0;
     background:rgba(128,128,128,0.08); border:1px solid var(--border);
     display:flex; align-items:center; justify-content:center;
   }
   .twofa-status-icon svg { width:18px; height:18px; color:var(--text-3); }
-  .twofa-status-icon.enabled { background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.25); }
+  .twofa-status-icon.enabled { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.25); }
   .twofa-status-icon.enabled svg { color:var(--green); }
   .twofa-status-info { flex:1; min-width:0; }
   .twofa-status-title { font-size:12px; font-weight:600; color:var(--text-1); }
@@ -1538,7 +1538,7 @@
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3);
     flex-shrink:0; text-transform:uppercase; letter-spacing:.04em;
   }
-  .twofa-status-badge.enabled { background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.25); color:var(--green); }
+  .twofa-status-badge.enabled { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.25); color:var(--green); }
 
   .twofa-setup { max-width:420px; }
   .twofa-step-label { font-size:11px; font-weight:600; color:var(--text-2); margin-bottom:6px; }
@@ -1580,7 +1580,7 @@
   .twofa-success { display:flex; flex-direction:column; align-items:center; gap:10px; max-width:400px; }
   .twofa-success-icon {
     width:42px; height:42px; border-radius:50%;
-    background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.25);
+    background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.25);
     display:flex; align-items:center; justify-content:center;
   }
   .twofa-success-icon svg { width:20px; height:20px; color:var(--green); }
@@ -1601,11 +1601,11 @@
 
   .btn-danger-outline {
     padding:7px 13px; border-radius:8px;
-    border:1px solid rgba(248,113,113,0.25); background:rgba(248,113,113,0.06);
+    border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.06);
     color:var(--red); font-size:11px; font-weight:600;
     cursor:pointer; font-family:inherit; transition:all .15s;
   }
-  .btn-danger-outline:hover { background:rgba(248,113,113,0.12); }
+  .btn-danger-outline:hover { background:rgba(239,68,68,0.12); }
 
   .btn-link {
     background:none; border:none; color:var(--text-3);
@@ -1662,7 +1662,7 @@
     position:relative; transition:all .2s;
   }
   .appperm-toggle.on {
-    background:rgba(74,222,128,0.25); border-color:rgba(74,222,128,0.40);
+    background:rgba(34,197,94,0.25); border-color:rgba(34,197,94,0.40);
   }
   .appperm-toggle-dot {
     position:absolute; top:2px; left:2px;

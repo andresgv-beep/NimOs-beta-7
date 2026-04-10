@@ -46,10 +46,10 @@
   $: mountedShares = remoteShares.filter(s => s.mounted);
 
   const SERVICES = [
-    { key:'share', name:'Share remota', desc:'Carpetas de este NAS visibles en Files', color:'var(--green)', bg:'rgba(74,222,128,0.12)', icon:'folder' },
-    { key:'backup_dest', name:'Backup destino', desc:'Este NAS recibe tus backups', color:'var(--blue)', bg:'rgba(96,165,250,0.12)', icon:'down' },
+    { key:'share', name:'Share remota', desc:'Carpetas de este NAS visibles en Files', color:'var(--green)', bg:'rgba(34,197,94,0.12)', icon:'folder' },
+    { key:'backup_dest', name:'Backup destino', desc:'Este NAS recibe tus backups', color:'var(--blue)', bg:'rgba(59,130,246,0.12)', icon:'down' },
     { key:'backup_src', name:'Backup origen', desc:'Este NAS hace backup al tuyo', color:'var(--accent)', bg:'rgba(var(--accent-rgb),0.12)', icon:'up' },
-    { key:'sync', name:'Sincronización', desc:'Carpetas espejo entre los dos NAS', color:'var(--amber)', bg:'rgba(251,191,36,0.12)', icon:'sync' },
+    { key:'sync', name:'Sincronización', desc:'Carpetas espejo entre los dos NAS', color:'var(--amber)', bg:'rgba(245,158,11,0.12)', icon:'sync' },
   ];
 
   onMount(() => { loadDevices(); loadJobs(); loadHistory(); });
@@ -117,7 +117,7 @@
             <div class="section-label">Trabajos activos</div>
             {#each jobs as job}
               <div class="row">
-                <div class="row-icon" style="background:{job.fsType==='btrfs'?'rgba(74,222,128,0.1)':'rgba(96,165,250,0.1)'}">
+                <div class="row-icon" style="background:{job.fsType==='btrfs'?'rgba(34,197,94,0.1)':'rgba(59,130,246,0.1)'}">
                   <svg viewBox="0 0 24 24" fill="none" stroke={job.fsType==='btrfs'?'var(--green)':'var(--blue)'} stroke-width="1.8" stroke-linecap="round" style="width:14px;height:14px"><rect x="2" y="3" width="20" height="8" rx="2"/><circle cx="18" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
                 </div>
                 <div class="row-info"><div class="row-name">{job.name}</div><div class="row-meta">{job.fsType} · {job.schedule} · {fmtTime(job.lastRun)}</div></div>
@@ -139,7 +139,7 @@
         <div class="content">
           {#each history as h}
             <div class="row">
-              <div class="row-icon" style="background:{h.ok?'rgba(74,222,128,0.1)':'rgba(248,113,113,0.1)'}">
+              <div class="row-icon" style="background:{h.ok?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)'}">
                 {#if h.ok}<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>
                 {:else}<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{/if}
               </div>
@@ -271,7 +271,7 @@
               {:else if configPane==='backup_dest'||configPane==='backup_src'}
                 {#each deviceJobs as job}
                   <div class="row">
-                    <div class="row-icon" style="background:rgba(96,165,250,0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><rect x="2" y="3" width="20" height="8" rx="2"/><circle cx="18" cy="7" r="1" fill="currentColor" stroke="none"/></svg></div>
+                    <div class="row-icon" style="background:rgba(59,130,246,0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><rect x="2" y="3" width="20" height="8" rx="2"/><circle cx="18" cy="7" r="1" fill="currentColor" stroke="none"/></svg></div>
                     <div class="row-info"><div class="row-name">{job.name}</div><div class="row-meta">{job.source} → {job.dest} · {job.schedule}</div></div>
                     <div class="dot" class:dot-on={job.status==='ok'} class:dot-err={job.status==='error'}></div>
                     <!-- svelte-ignore a11y_click_events_have_key_events --><!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -282,7 +282,7 @@
               {:else if configPane==='sync'}
                 {#each (activeDevice.syncPairs||[]) as pair}
                   <div class="row">
-                    <div class="row-icon" style="background:rgba(251,191,36,0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+                    <div class="row-icon" style="background:rgba(245,158,11,0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
                     <div class="row-info"><div class="row-name">{pair.local}</div><div class="row-meta">↔ {pair.remote}</div></div>
                     <span class="pill pill-on">{pair.status==='synced'?'Sync':'Pendiente'}</span>
                   </div>
@@ -325,7 +325,7 @@
   .sb-item:hover { background:rgba(128,128,128,0.10); color:var(--text-1); }
   .sb-item.active { background:var(--active-bg); color:var(--text-1); border-color:var(--border-hi); }
   .sb-item.active svg { opacity:1; }
-  .sb-dot { width:7px; height:7px; border-radius:50%; background:var(--green); margin-left:auto; flex-shrink:0; box-shadow:0 0 5px rgba(74,222,128,.4); }
+  .sb-dot { width:7px; height:7px; border-radius:50%; background:var(--green); margin-left:auto; flex-shrink:0; box-shadow:0 0 5px rgba(34,197,94,.4); }
   .sb-add { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:8px; font-size:11px; color:var(--text-3); cursor:pointer; border:1px dashed rgba(255,255,255,0.1); transition:all .15s; margin-top:4px; }
   .sb-add:hover { color:var(--accent); border-color:rgba(var(--accent-rgb),.3); }
   .sb-add svg { width:11px; height:11px; }
@@ -345,7 +345,7 @@
   .tb-right { margin-left:auto; display:flex; align-items:center; gap:6px; flex-shrink:0; }
 
   /* Badge */
-  .dev-badge { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--green); background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.2); padding:3px 9px; border-radius:20px; flex-shrink:0; white-space:nowrap; }
+  .dev-badge { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--green); background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); padding:3px 9px; border-radius:20px; flex-shrink:0; white-space:nowrap; }
   .dev-badge.offline { color:var(--text-3); background:rgba(255,255,255,0.04); border-color:var(--border); }
   .dev-badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
 
@@ -377,7 +377,7 @@
   .donut-wrap svg { width:72px; height:72px; }
   .donut-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
   .donut-info { flex:1; display:flex; flex-direction:column; gap:3px; }
-  .mount-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; background:rgba(74,222,128,0.1); color:var(--green); border:1px solid rgba(74,222,128,0.2); border-radius:5px; padding:2px 7px; margin-top:4px; }
+  .mount-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; background:rgba(34,197,94,0.1); color:var(--green); border:1px solid rgba(34,197,94,0.2); border-radius:5px; padding:2px 7px; margin-top:4px; }
 
   /* Buttons */
   .icon-btn { width:27px; height:27px; background:var(--ibtn-bg); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-2); transition:all .15s; }
@@ -395,14 +395,14 @@
 
   /* Pills */
   .pill { font-size:10px; border-radius:5px; padding:2px 8px; flex-shrink:0; cursor:pointer; white-space:nowrap; }
-  .pill-on { color:var(--green); background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.2); }
+  .pill-on { color:var(--green); background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); }
   .pill-off { color:var(--text-3); background:rgba(255,255,255,0.04); border:1px solid var(--border); }
   .pill-off:hover { color:var(--accent); border-color:var(--border-hi); }
-  .pill-danger { color:var(--red); background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.2); }
+  .pill-danger { color:var(--red); background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); }
 
   /* Dots */
   .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; background:rgba(255,255,255,0.15); }
-  .dot-on { background:var(--green); box-shadow:0 0 5px rgba(74,222,128,.4); }
+  .dot-on { background:var(--green); box-shadow:0 0 5px rgba(34,197,94,.4); }
   .dot-err { background:var(--red); }
 
   /* Slider */
@@ -415,7 +415,7 @@
 
   /* Statusbar */
   .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,.5); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(34,197,94,.5); }
   .status-dot.offline { background:rgba(255,255,255,0.15); box-shadow:none; }
   .st-sep { color:rgba(255,255,255,0.1); }
 

@@ -313,7 +313,7 @@
             {#each netIfaces as iface}
               <div class="iface-card">
                 <div class="iface-header">
-                  <div class="iface-led" style="background:{iface.up ? 'var(--green)' : 'var(--text-3)'}; box-shadow:{iface.up ? '0 0 5px rgba(74,222,128,0.6)' : 'none'}"></div>
+                  <div class="iface-led" style="background:{iface.up ? 'var(--green)' : 'var(--text-3)'}; box-shadow:{iface.up ? '0 0 5px rgba(34,197,94,0.6)' : 'none'}"></div>
                   <div class="iface-name">{iface.name || iface.interface}</div>
                   <div class="iface-type">{iface.type || (iface.name?.startsWith('w') ? 'WiFi' : 'Ethernet')}</div>
                   <div class="iface-status" style="color:{statusColor(iface.up)}">{iface.up ? 'UP' : 'DOWN'}</div>
@@ -528,7 +528,7 @@
                           {:else if routerTesting[p.externalPort] === 'fail'}✗
                           {:else}Test{/if}
                         </button>
-                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;color:var(--red, #e05a5a)" on:click={() => removePort(p.externalPort, p.protocol)}>✕</button>
+                        <button class="btn-secondary" style="padding:2px 8px;font-size:10px;color:var(--red, var(--red))" on:click={() => removePort(p.externalPort, p.protocol)}>✕</button>
                       </td>
                     </tr>
                   {/each}
@@ -903,8 +903,8 @@
     font-family:var(--mono);
     background:var(--ibtn-bg); color:var(--text-3);
   }
-  .rule-action.allow { background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.25); color:var(--green); }
-  .rule-action.deny  { background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.25); color:var(--red); }
+  .rule-action.allow { background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.25); color:var(--green); }
+  .rule-action.deny  { background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:var(--red); }
   .rule-desc { font-size:10px; color:var(--text-2); font-family:var(--mono); }
 
   /* ── DDNS ── */
@@ -994,7 +994,7 @@
   .btn-secondary:disabled { opacity:.5; cursor:not-allowed; }
   .btn-danger {
     padding:8px 16px; border-radius:8px;
-    border:1px solid rgba(248,113,113,0.25); background:rgba(248,113,113,0.08);
+    border:1px solid rgba(239,68,68,0.25); background:rgba(239,68,68,0.08);
     color:var(--red); font-size:11px; font-weight:500; cursor:pointer;
     font-family:inherit; transition:opacity .15s;
   }
@@ -1017,7 +1017,7 @@
     display:flex; align-items:center; gap:8px;
     padding:10px 14px; border-bottom:1px solid var(--border);
   }
-  .cert-dot { width:7px; height:7px; border-radius:50%; box-shadow:0 0 5px rgba(74,222,128,0.5); flex-shrink:0; }
+  .cert-dot { width:7px; height:7px; border-radius:50%; box-shadow:0 0 5px rgba(34,197,94,0.5); flex-shrink:0; }
   .cert-card-status { font-size:11px; font-weight:600; color:var(--green); font-family:var(--mono); }
   .cert-refresh {
     margin-left:auto; cursor:pointer; color:var(--text-3);

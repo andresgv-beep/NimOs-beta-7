@@ -712,13 +712,13 @@
     transition:all .15s;
   }
   .share-action-btn:hover { color:var(--text-1); border-color:var(--border-hi); }
-  .share-action-btn.danger:hover { color:var(--red); border-color:rgba(248,113,113,0.25); }
+  .share-action-btn.danger:hover { color:var(--red); border-color:rgba(239,68,68,0.25); }
   .share-perms { margin-left:auto; display:flex; gap:5px; }
   .perm-tag {
     padding:2px 7px; border-radius:4px; font-size:9px; font-weight:600;
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3);
   }
-  .perm-tag.warn { background:rgba(251,191,36,0.10); border-color:rgba(251,191,36,0.25); color:var(--amber); }
+  .perm-tag.warn { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.25); color:var(--amber); }
 
   /* ── SHARE FORM ── */
   .share-form { display:flex; flex-direction:column; gap:14px; max-width:520px; }
@@ -782,7 +782,7 @@
   /* ── UPDATES ── */
   .update-card {
     margin-top:12px; padding:12px 14px; border-radius:8px;
-    border:1px solid rgba(74,222,128,0.25); background:rgba(74,222,128,0.06);
+    border:1px solid rgba(34,197,94,0.25); background:rgba(34,197,94,0.06);
     font-size:11px; color:var(--green);
   }
   .update-version { font-size:12px; font-weight:600; color:var(--amber); margin-bottom:4px; }

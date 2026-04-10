@@ -412,7 +412,7 @@
       const d = await r.json();
       const notifs = d.notifications || [];
       recentActivity = notifs.map(n => {
-        const colorMap = { info: 'var(--blue, #60a5fa)', success: 'var(--green)', warning: 'var(--amber, #f59e0b)', error: 'var(--red, #ef4444)' };
+        const colorMap = { info: 'var(--blue)', success: 'var(--green)', warning: 'var(--amber)', error: 'var(--red)' };
         let timeAgo = '—';
         if (n.timestamp) {
           const diff = Date.now() - new Date(n.timestamp).getTime();
@@ -1020,7 +1020,7 @@
                 {#each poolServices as svc}
                   <div class="dt-svc">
                     <span class="dt-svc-name">
-                      <span class="dt-svc-dot" style="background:{svc.status === 'running' ? 'var(--green)' : 'var(--text-3)'}; box-shadow:{svc.status === 'running' ? '0 0 5px rgba(74,222,128,0.55)' : 'none'}"></span>
+                      <span class="dt-svc-dot" style="background:{svc.status === 'running' ? 'var(--green)' : 'var(--text-3)'}; box-shadow:{svc.status === 'running' ? '0 0 5px rgba(34,197,94,0.55)' : 'none'}"></span>
                       {svc.appName || svc.appId}
                     </span>
                     <span class="dt-svc-status">{svc.status === 'running' ? 'activo' : svc.status}</span>
@@ -2101,7 +2101,7 @@
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-2);
     font-family:var(--mono);
   }
-  .di-tag.green { background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.25); color:var(--green); }
+  .di-tag.green { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.25); color:var(--green); }
 
   /* ── STORAGE BAR ── */
   .storage-bar-section { margin-top:16px; width:50%; }
@@ -2124,12 +2124,12 @@
     border:1px solid var(--border); background:var(--ibtn-bg);
   }
   .pool-led { width:7px; height:7px; border-radius:50%; background:rgba(128,128,128,0.3); flex-shrink:0; }
-  .pool-led.healthy { background:var(--green); box-shadow:0 0 5px rgba(74,222,128,0.6); }
+  .pool-led.healthy { background:var(--green); box-shadow:0 0 5px rgba(34,197,94,0.6); }
   .pool-name { font-size:12px; font-weight:600; color:var(--text-1); }
   .pool-primary { font-size:9px; font-weight:400; color:var(--text-3); margin-left:5px; }
   .pool-meta { font-size:10px; color:var(--text-3); margin-top:1px; }
   .pool-badge { margin-left:auto; padding:3px 8px; border-radius:20px; font-size:9px; font-weight:600; background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-2); }
-  .pool-badge.green { background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.25); color:var(--green); }
+  .pool-badge.green { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.25); color:var(--green); }
   .coming-soon { color:var(--text-3); font-size:12px; }
 
   /* ── DISK CARDS ── */
@@ -2150,16 +2150,16 @@
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3);
     font-family:var(--mono);
   }
-  .disk-tag.green { background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.25); color:var(--green); }
-  .disk-tag.amber { background:rgba(251,191,36,0.10); border-color:rgba(251,191,36,0.25); color:var(--amber); }
+  .disk-tag.green { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.25); color:var(--green); }
+  .disk-tag.amber { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.25); color:var(--amber); }
 
   .disk-wipe-btn {
-    padding:4px 10px; border-radius:6px; border:1px solid rgba(248,113,113,0.25);
-    background:rgba(248,113,113,0.08); color:var(--red);
+    padding:4px 10px; border-radius:6px; border:1px solid rgba(239,68,68,0.25);
+    background:rgba(239,68,68,0.08); color:var(--red);
     font-size:9px; font-weight:600; cursor:pointer; font-family:inherit;
     transition:all .15s; flex-shrink:0;
   }
-  .disk-wipe-btn:hover { background:rgba(248,113,113,0.15); }
+  .disk-wipe-btn:hover { background:rgba(239,68,68,0.15); }
   .disk-wipe-btn:disabled { opacity:.5; cursor:not-allowed; }
 
   .create-pool-btn {
@@ -2265,7 +2265,7 @@
     font-family:var(--mono);
   }
   .zfs-size-badge.refer { color:var(--text-2); }
-  .zfs-size-badge.quota { color:var(--amber); border-color:rgba(251,191,36,0.25); background:rgba(251,191,36,0.08); }
+  .zfs-size-badge.quota { color:var(--amber); border-color:rgba(245,158,11,0.25); background:rgba(245,158,11,0.08); }
   .zfs-row-actions { display:flex; gap:5px; flex-shrink:0; }
   .zfs-action-btn {
     width:26px; height:26px; border-radius:6px; border:1px solid var(--border);
@@ -2274,7 +2274,7 @@
     transition:all .15s;
   }
   .zfs-action-btn:hover { color:var(--text-1); border-color:var(--border-hi); }
-  .zfs-action-btn.del:hover  { color:var(--red);    border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.08); }
+  .zfs-action-btn.del:hover  { color:var(--red);    border-color:rgba(239,68,68,0.35); background:rgba(239,68,68,0.08); }
   .zfs-action-btn.rollback:hover { color:var(--accent); border-color:rgba(var(--accent-rgb),0.35); background:rgba(var(--accent-rgb),0.08); }
 
   /* ── DATASET QUOTA BAR ── */
@@ -2294,7 +2294,7 @@
   }
   .scrub-status-indicator.idle    { background:rgba(128,128,128,0.3); }
   .scrub-status-indicator.running { background:var(--accent); box-shadow:0 0 6px rgba(var(--accent-rgb),0.6); animation:ledBlink 1.5s ease-in-out infinite; }
-  .scrub-status-indicator.done    { background:var(--green);  box-shadow:0 0 5px rgba(74,222,128,0.5); }
+  .scrub-status-indicator.done    { background:var(--green);  box-shadow:0 0 5px rgba(34,197,94,0.5); }
   .scrub-status-indicator.err     { background:var(--red); }
   .scrub-status-label { font-size:13px; font-weight:600; color:var(--text-1); }
   .scrub-errors { margin-left:auto; font-size:10px; font-family:var(--mono); color:var(--text-3); }
@@ -2366,7 +2366,7 @@
   .r-disk-row:last-child { border:none; }
   .r-disk-row:hover { background:rgba(255,255,255,0.02); }
   .r-disk-selected { background:var(--active-bg) !important; border-left:3px solid var(--accent); }
-  .r-disk-ico { width:32px; height:32px; border-radius:8px; background:rgba(96,165,250,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .r-disk-ico { width:32px; height:32px; border-radius:8px; background:rgba(59,130,246,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .r-disk-ico svg { width:14px; height:14px; stroke:var(--blue); fill:none; stroke-width:2; stroke-linecap:round; }
   .r-disk-info { flex:1; }
   .r-disk-name { font-size:13px; font-weight:600; color:var(--text-1); }
@@ -2412,8 +2412,8 @@
   .r-btn-danger { background:rgba(239,68,68,0.10); border-color:rgba(239,68,68,0.3); color:var(--red); }
   .r-btn-danger:hover { background:rgba(239,68,68,0.18); }
   .r-btn-danger:disabled { opacity:.35; cursor:not-allowed; }
-  .r-btn-warn { background:rgba(251,191,36,0.10); border-color:rgba(251,191,36,0.3); color:var(--amber); }
-  .r-btn-warn:hover { background:rgba(251,191,36,0.18); }
+  .r-btn-warn { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.3); color:var(--amber); }
+  .r-btn-warn:hover { background:rgba(245,158,11,0.18); }
 
   /* ── DETAIL VIEW REDESIGN (dt-*) ── */
   .dt-grid { display:flex; flex-direction:column; gap:14px; }
@@ -2452,10 +2452,10 @@
 
   .dt-disk-ico {
     width:34px; height:34px; border-radius:9px; flex-shrink:0;
-    background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.18);
+    background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.18);
     display:flex; align-items:center; justify-content:center;
   }
-  .dt-disk-ico svg { width:16px; height:16px; color:var(--blue, #60a5fa); }
+  .dt-disk-ico svg { width:16px; height:16px; color:var(--blue); }
   .dt-disk-ico-warn { background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.2); }
   .dt-disk-ico-warn svg { color:var(--amber); }
 
@@ -2633,7 +2633,7 @@
   .r-dt-mono { font-family:var(--mono); color:var(--text-3); }
   .r-dt-badge { padding:3px 10px; border-radius:12px; font-size:10px; font-weight:600; }
   .r-dt-ok { background:rgba(34,197,94,0.10); color:var(--green); }
-  .r-dt-free { background:rgba(96,165,250,0.10); color:var(--blue, #60a5fa); }
+  .r-dt-free { background:rgba(59,130,246,0.10); color:var(--blue); }
   .r-dt-warn { background:rgba(245,158,11,0.10); color:var(--amber); }
   .r-dt-err { background:rgba(239,68,68,0.10); color:var(--red); }
 
@@ -2689,12 +2689,12 @@
     display:flex; align-items:center; justify-content:center;
     background:rgba(224,90,90,0.1); border:1px solid rgba(224,90,90,0.2);
   }
-  .rb-pool-icon svg { width:20px; height:20px; color:var(--red, #e05a5a); }
+  .rb-pool-icon svg { width:20px; height:20px; color:var(--red, var(--red)); }
   .rb-pool-info { flex:1; min-width:0; }
   .rb-pool-name { font-size:14px; font-weight:600; color:var(--text-1); }
   .rb-pool-badge {
     padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600;
-    background:rgba(224,90,90,0.1); color:var(--red, #e05a5a); border:1px solid rgba(224,90,90,0.2);
+    background:rgba(224,90,90,0.1); color:var(--red, var(--red)); border:1px solid rgba(224,90,90,0.2);
   }
   .rb-pool-meta { font-size:12px; color:var(--text-3); margin-top:3px; }
   .rb-pool-disks { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
@@ -2704,8 +2704,8 @@
     border-radius:6px; font-size:11px; color:var(--text-3);
   }
   .rb-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-  .rb-dot.ok { background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.5); }
-  .rb-dot.missing { background:var(--red, #e05a5a); box-shadow:0 0 4px rgba(224,90,90,0.5); }
+  .rb-dot.ok { background:var(--green); box-shadow:0 0 4px rgba(34,197,94,0.5); }
+  .rb-dot.missing { background:var(--red, var(--red)); box-shadow:0 0 4px rgba(224,90,90,0.5); }
 
   .rb-disk-list { display:flex; flex-direction:column; gap:6px; }
   .rb-disk-opt {
@@ -2744,7 +2744,7 @@
   .rb-disk-badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; flex-shrink:0; }
   .rb-badge-ok { background:rgba(76,175,130,0.12); color:var(--green); }
   .rb-badge-warn { background:rgba(224,168,90,0.1); color:var(--amber); }
-  .rb-badge-err { background:rgba(224,90,90,0.1); color:var(--red, #e05a5a); }
+  .rb-badge-err { background:rgba(224,90,90,0.1); color:var(--red, var(--red)); }
 
   .rb-warning {
     display:flex; align-items:flex-start; gap:10px;

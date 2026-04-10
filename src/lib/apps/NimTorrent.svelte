@@ -423,8 +423,8 @@
   .sb-item.active { background:var(--active-bg); color:var(--text-1); border-color:var(--border-hi); }
   .sb-ico { font-size:12px; width:14px; text-align:center; flex-shrink:0; }
   .sb-badge { margin-left:auto; padding:1px 6px; border-radius:10px; font-size:9px; font-weight:700; font-family:var(--mono); background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3); }
-  .sb-badge.blue  { background:rgba(96,165,250,0.12); border-color:rgba(96,165,250,0.25); color:rgba(96,165,250,0.9); }
-  .sb-badge.green { background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.22); color:rgba(74,222,128,0.85); }
+  .sb-badge.blue  { background:rgba(59,130,246,0.12); border-color:rgba(59,130,246,0.25); color:rgba(59,130,246,0.9); }
+  .sb-badge.green { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.22); color:rgba(34,197,94,0.85); }
 
   .sb-detail { margin-top:auto; padding:10px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:4px; }
   .sb-detail-header { display:flex; align-items:flex-start; gap:6px; margin-bottom:4px; }
@@ -436,7 +436,7 @@
   .sb-detail-actions { display:flex; gap:4px; margin-top:6px; }
   .btn-sm { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:var(--ibtn-bg); color:var(--text-2); font-size:9px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; }
   .btn-sm:hover { color:var(--text-1); border-color:var(--border-hi); }
-  .btn-sm.danger { border-color:rgba(248,113,113,0.25); color:var(--red); } .btn-sm.danger:hover { background:rgba(248,113,113,0.10); }
+  .btn-sm.danger { border-color:rgba(239,68,68,0.25); color:var(--red); } .btn-sm.danger:hover { background:rgba(239,68,68,0.10); }
 
   .inner-wrap { flex:1; padding:8px; display:flex; }
   .inner { flex:1; border-radius:10px; border:1px solid var(--border); background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; }
@@ -444,12 +444,12 @@
   .tabs { display:flex; gap:4px; flex:1; }
   .tab { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:500; color:var(--text-3); border:1px solid transparent; transition:all .15s; }
   .tab:hover { color:var(--text-2); }
-  .tab.active-tab { background:rgba(96,165,250,0.10); border-color:rgba(96,165,250,0.30); color:rgba(96,165,250,0.90); }
-  .tab.done-tab.active { background:rgba(74,222,128,0.08); border-color:rgba(74,222,128,0.25); color:rgba(74,222,128,0.85); }
+  .tab.active-tab { background:rgba(59,130,246,0.10); border-color:rgba(59,130,246,0.30); color:rgba(59,130,246,0.90); }
+  .tab.done-tab.active { background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.25); color:rgba(34,197,94,0.85); }
   .tab.stopped-tab.active { background:rgba(148,163,184,0.08); border-color:rgba(148,163,184,0.22); color:rgba(148,163,184,0.75); }
   .tab-dot { width:5px; height:5px; border-radius:50%; background:rgba(128,128,128,0.3); }
-  .active-tab .tab-dot { background:rgba(96,165,250,0.90); box-shadow:0 0 4px rgba(96,165,250,0.6); }
-  .done-tab.active .tab-dot { background:rgba(74,222,128,0.85); box-shadow:0 0 4px rgba(74,222,128,0.5); }
+  .active-tab .tab-dot { background:rgba(59,130,246,0.90); box-shadow:0 0 4px rgba(59,130,246,0.6); }
+  .done-tab.active .tab-dot { background:rgba(34,197,94,0.85); box-shadow:0 0 4px rgba(34,197,94,0.5); }
   .stopped-tab.active .tab-dot { background:rgba(148,163,184,0.70); }
   .tab-count { font-size:9px; font-weight:700; padding:1px 5px; border-radius:8px; background:rgba(255,255,255,0.07); color:var(--text-3); font-family:var(--mono); }
   .tb-actions { display:flex; align-items:center; gap:6px; }
@@ -473,20 +473,20 @@
   .t-name { font-size:12px; font-weight:500; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
   .t-meta { display:flex; gap:8px; margin-top:2px; overflow:hidden; }
   .t-meta span { font-size:9px; color:var(--text-3); font-family:var(--mono); white-space:nowrap; flex-shrink:0; }
-  .t-dl { color:#4ade80 !important; } .t-ul { color:#60a5fa !important; } .t-eta { opacity:.7; }
+  .t-dl { color:var(--green) !important; } .t-ul { color:var(--blue) !important; } .t-eta { opacity:.7; }
   .t-progress { display:flex; align-items:center; gap:6px; flex-shrink:0; width:140px; }
   .t-bar-bg { flex:1; height:3px; background:rgba(128,128,128,0.15); border-radius:2px; overflow:hidden; }
   .t-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition:width .4s; }
-  .t-bar-fill.done { background:linear-gradient(90deg, #4ade80, #22d3ee); } .t-bar-fill.paused { background:rgba(128,128,128,0.3); }
+  .t-bar-fill.done { background:linear-gradient(90deg, var(--green), #22d3ee); } .t-bar-fill.paused { background:rgba(128,128,128,0.3); }
   .t-pct { font-size:10px; color:var(--text-3); font-family:var(--mono); flex-shrink:0; width:28px; text-align:right; }
   .t-actions { display:flex; gap:4px; flex-shrink:0; opacity:0; transition:opacity .15s; }
   .torrent-row:hover .t-actions { opacity:1; }
   .t-action { width:24px; height:24px; border-radius:6px; border:none; background:transparent; color:var(--text-2); cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
   .t-action:hover { background:rgba(128,128,128,0.10); color:var(--text-1); }
-  .t-action.danger:hover { background:rgba(248,113,113,0.12); color:var(--red); }
+  .t-action.danger:hover { background:rgba(239,68,68,0.12); color:var(--red); }
 
   .statusbar { display:flex; align-items:center; gap:10px; padding:7px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); flex-shrink:0; }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(34,197,94,0.6); flex-shrink:0; }
   .status-sep { width:1px; height:10px; background:var(--border); }
   .spinner { width:24px; height:24px; border-radius:50%; border:2px solid rgba(255,255,255,0.08); border-top-color:var(--accent); animation:spin .7s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }

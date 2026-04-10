@@ -524,7 +524,7 @@
   .mp-now { display:flex; align-items:center; gap:9px; flex:1; min-width:0; }
   .mp-now-art { width:34px; height:34px; border-radius:7px; flex-shrink:0; background:rgba(var(--accent-rgb),0.20); border:1px solid rgba(var(--accent-rgb),0.30); display:flex; align-items:center; justify-content:center; }
   .mp-now-art svg { width:15px; height:15px; color:var(--accent); }
-  .mp-now-art.video { background:rgba(96,165,250,0.15); border-color:rgba(96,165,250,0.25); }
+  .mp-now-art.video { background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.25); }
   .mp-now-art.video svg { color:var(--blue); }
   .mp-now-info { overflow:hidden; min-width:0; }
   .mp-now-name { font-size:12px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -573,9 +573,9 @@
   .modal-file.is-media:hover { background:var(--active-bg); color:var(--text-1); }
   .modal-file-ico { width:28px; height:28px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.05); }
   .modal-file-ico svg { width:14px; height:14px; color:var(--text-3); }
-  .modal-file-ico.dir   { background:rgba(251,191,36,0.10); } .modal-file-ico.dir svg   { color:var(--amber); }
+  .modal-file-ico.dir   { background:rgba(245,158,11,0.10); } .modal-file-ico.dir svg   { color:var(--amber); }
   .modal-file-ico.video { background:rgba(var(--accent-rgb),0.10); } .modal-file-ico.video svg { color:var(--accent); }
-  .modal-file-ico.audio { background:rgba(74,222,128,0.10);  } .modal-file-ico.audio svg { color:var(--green); }
+  .modal-file-ico.audio { background:rgba(34,197,94,0.10);  } .modal-file-ico.audio svg { color:var(--green); }
   .modal-file-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .modal-file-size { font-size:10px; color:var(--text-3); font-family:var(--mono); flex-shrink:0; }
   .modal-add-file { width:24px; height:24px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--text-3); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:all .1s; flex-shrink:0; }

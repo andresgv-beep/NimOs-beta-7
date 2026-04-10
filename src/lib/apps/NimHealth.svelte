@@ -445,8 +445,8 @@
   .sb-item.active { background:var(--active-bg); color:var(--text-1); border-color:var(--border-hi); }
   .sb-item.active svg { opacity:1; }
   .sb-badge { margin-left:auto; font-size:9px; font-weight:700; background:var(--active-bg); color:var(--accent); border-radius:5px; padding:1px 5px; }
-  .sb-badge.red { background:rgba(248,113,113,0.15); color:var(--red); }
-  .sb-badge.amber { background:rgba(251,191,36,0.12); color:var(--amber); }
+  .sb-badge.red { background:rgba(239,68,68,0.15); color:var(--red); }
+  .sb-badge.amber { background:rgba(245,158,11,0.12); color:var(--amber); }
 
   /* Inner wrap */
   .inner-wrap { flex:1; padding:8px; display:flex; min-height:0; overflow:hidden; }
@@ -487,8 +487,8 @@
   .svc-ico { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .svc-ico svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
   .ico-daemon { background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
-  .ico-docker { background:rgba(96,165,250,0.12); color:var(--blue); }
-  .ico-system { background:rgba(251,191,36,0.12); color:var(--amber); }
+  .ico-docker { background:rgba(59,130,246,0.12); color:var(--blue); }
+  .ico-system { background:rgba(245,158,11,0.12); color:var(--amber); }
   .svc-name { font-size:12px; font-weight:600; color:var(--text-1); min-width:100px; }
   .svc-pool { font-size:10px; color:var(--text-3); font-family:var(--mono); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
@@ -499,10 +499,10 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
   .status-lbl { font-size:10px; color:var(--text-2); font-family:var(--mono); min-width:56px; }
   .health-pill { font-size:9px; font-weight:600; padding:2px 6px; border-radius:5px; min-width:60px; text-align:center; }
-  .hp-healthy { background:rgba(74,222,128,0.12); color:var(--green); }
-  .hp-degraded { background:rgba(251,191,36,0.12); color:var(--amber); }
+  .hp-healthy { background:rgba(34,197,94,0.12); color:var(--green); }
+  .hp-degraded { background:rgba(245,158,11,0.12); color:var(--amber); }
   .hp-unknown { background:rgba(255,255,255,0.06); color:var(--text-3); }
-  .hp-unreachable { background:rgba(248,113,113,0.12); color:var(--red); }
+  .hp-unreachable { background:rgba(239,68,68,0.12); color:var(--red); }
   .svc-chevron { color:var(--text-3); flex-shrink:0; }
   .svc-chevron svg { width:12px; height:12px; }
 
@@ -527,8 +527,8 @@
   .dep-row { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--ibtn-bg); border:1px solid var(--border); border-radius:7px; }
   .dep-type { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; min-width:36px; text-align:center; }
   .dep-pool { background:rgba(var(--accent-rgb),0.12); color:var(--accent); }
-  .dep-share { background:rgba(251,191,36,0.12); color:var(--amber); }
-  .dep-path { background:rgba(96,165,250,0.12); color:var(--blue); }
+  .dep-share { background:rgba(245,158,11,0.12); color:var(--amber); }
+  .dep-path { background:rgba(59,130,246,0.12); color:var(--blue); }
   .dep-target { font-size:10px; color:var(--text-2); font-family:var(--mono); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dep-req { font-size:9px; color:var(--text-3); margin-left:auto; white-space:nowrap; }
 
@@ -537,9 +537,9 @@
   .act-btn { flex:1; padding:9px; border:none; border-radius:8px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
   .act-btn:hover { opacity:.82; }
   .act-btn:disabled { opacity:.3; cursor:not-allowed; }
-  .act-stop { background:rgba(248,113,113,0.12); color:var(--red); }
+  .act-stop { background:rgba(239,68,68,0.12); color:var(--red); }
   .act-restart { background:var(--ibtn-bg); color:var(--text-2); }
-  .act-start { background:rgba(74,222,128,0.12); color:var(--green); }
+  .act-start { background:rgba(34,197,94,0.12); color:var(--green); }
 
   /* Statusbar */
   .statusbar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }

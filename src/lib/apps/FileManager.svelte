@@ -762,7 +762,7 @@
   .inner-title small { color:var(--text-3); font-weight:400; font-size:11px; margin-left:4px; }
   .tb-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
   .clipboard-badge { display:flex; align-items:center; gap:5px; padding:3px 8px 3px 6px; border-radius:5px; font-size:10px; color:var(--text-2); background:var(--ibtn-bg); border:1px solid var(--border); max-width:180px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-  .clipboard-badge.cut { color:var(--amber); border-color:rgba(251,191,36,0.25); background:rgba(251,191,36,0.06); }
+  .clipboard-badge.cut { color:var(--amber); border-color:rgba(245,158,11,0.25); background:rgba(245,158,11,0.06); }
   .cb-clear { cursor:pointer; color:var(--text-3); font-size:10px; margin-left:2px; flex-shrink:0; }
   .cb-clear:hover { color:var(--text-1); }
   .btn-import { display:flex; align-items:center; gap:5px; padding:5px 12px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:6px; color:#fff; font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; transition:opacity .15s; }
@@ -817,7 +817,7 @@
   .ctx-item:hover svg { opacity:1; }
   .ctx-item.danger { color:var(--red); }
   .ctx-item.danger svg { color:var(--red); opacity:.8; }
-  .ctx-item.danger:hover { background:rgba(248,113,113,0.10); color:var(--red); }
+  .ctx-item.danger:hover { background:rgba(239,68,68,0.10); color:var(--red); }
   .ctx-sep { height:1px; background:var(--border); margin:3px 4px; }
 
   /* ── Modals ── */

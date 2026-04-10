@@ -254,7 +254,7 @@
     padding:1px 5px; border-radius:5px;
     background:var(--active-bg); color:var(--accent);
   }
-  .tab-count.red { background:rgba(248,113,113,0.15); color:var(--red); }
+  .tab-count.red { background:rgba(239,68,68,0.15); color:var(--red); }
 
   /* TOOLBAR */
   .toolbar {
@@ -273,7 +273,7 @@
   .tool-btn svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
   .tool-btn:hover { background:rgba(var(--accent-rgb),0.12); color:var(--text-1); }
   .tool-btn:disabled { opacity:.3; cursor:not-allowed; }
-  .tool-btn.danger:hover { background:rgba(248,113,113,0.12); color:var(--red); }
+  .tool-btn.danger:hover { background:rgba(239,68,68,0.12); color:var(--red); }
   .tool-sep { width:1px; height:16px; background:var(--border); margin:0 2px; }
 
   /* LIST HEADER */
@@ -331,10 +331,10 @@
     padding:2px 7px; border-radius:5px;
     display:inline-block;
   }
-  .sp-uploading { background:rgba(96,165,250,0.12); color:var(--blue); }
-  .sp-paused   { background:rgba(251,191,36,0.12); color:var(--amber); }
-  .sp-done     { background:rgba(74,222,128,0.12); color:var(--green); }
-  .sp-error    { background:rgba(248,113,113,0.12); color:var(--red); }
+  .sp-uploading { background:rgba(59,130,246,0.12); color:var(--blue); }
+  .sp-paused   { background:rgba(245,158,11,0.12); color:var(--amber); }
+  .sp-done     { background:rgba(34,197,94,0.12); color:var(--green); }
+  .sp-error    { background:rgba(239,68,68,0.12); color:var(--red); }
   .sp-queue    { background:rgba(255,255,255,0.06); color:var(--text-3); }
 
   /* EMPTY */
