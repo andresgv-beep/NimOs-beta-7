@@ -212,6 +212,15 @@
   }
 
   // ── Pool actions ──
+  let showDestroy = false;
+  let destroyDeps = [];
+  let destroyInput = '';
+  let destroying = false;
+  let stoppingService = {};
+
+  $: allDepsStopped = destroyDeps.every(d => d.status !== 'running' && d.status !== 'starting');
+  $: canDestroy = destroyInput === 'ELIMINAR' && allDepsStopped;
+
   async function startScrub(poolName) {
     try {
       const res = await fetch('/api/storage/scrub', {
@@ -238,19 +247,48 @@
     } catch (e) { alert('Error: ' + e.message); }
   }
 
-  async function destroyPool(poolName) {
-    const confirm1 = prompt(`Para destruir "${poolName}", escribe ELIMINAR:`);
-    if (confirm1 !== 'ELIMINAR') return;
+  async function openDestroy() {
+    if (!detailPool) return;
+    destroyInput = '';
+    destroying = false;
+    stoppingService = {};
     try {
-      const res = await fetch('/api/storage/pool/destroy', {
+      const r = await fetch(`/api/services/dependencies?pool=${encodeURIComponent(detailPool.name)}`, { headers: hdrs() });
+      const d = await r.json();
+      destroyDeps = d.dependencies || [];
+    } catch { destroyDeps = []; }
+    showDestroy = true;
+  }
+
+  async function stopServiceForDestroy(svc) {
+    stoppingService = { ...stoppingService, [svc.id]: true };
+    try {
+      await fetch(`/api/services/${svc.id}/stop`, { method: 'POST', headers: hdrs() });
+      svc.status = 'stopped';
+      destroyDeps = [...destroyDeps];
+    } catch {}
+    stoppingService = { ...stoppingService, [svc.id]: false };
+  }
+
+  async function doDestroy() {
+    if (!canDestroy || !detailPool) return;
+    destroying = true;
+    try {
+      const r = await fetch('/api/storage/pool/destroy', {
         method: 'POST',
         headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: poolName }),
+        body: JSON.stringify({ name: detailPool.name }),
       });
-      const data = await res.json();
-      if (data.ok) { detailPool = null; await load(); }
-      else alert(data.error || 'Error al destruir');
+      const d = await r.json();
+      if (d.ok) {
+        showDestroy = false;
+        detailPool = null;
+        await load();
+      } else {
+        alert(d.error || 'Error al destruir el volumen');
+      }
     } catch (e) { alert('Error: ' + e.message); }
+    destroying = false;
   }
 </script>
 
@@ -302,7 +340,7 @@
               Punto de restauración
             </Button>
             <div class="btn-divider"></div>
-            <Button variant="danger" on:click={() => destroyPool(detailPool.name)}>
+            <Button variant="danger" on:click={openDestroy}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
               Destruir volumen
             </Button>
@@ -516,6 +554,64 @@
   {/if}
 </AppShell>
 
+<!-- Destroy modal (renders outside AppShell content flow) -->
+{#if showDestroy && detailPool}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" on:click|self={() => showDestroy = false}>
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Destruir {detailPool.name}</span>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <span class="modal-close" on:click={() => showDestroy = false}>✕</span>
+      </div>
+      <div class="modal-body">
+        <div class="destroy-warn">
+          Esta acción eliminará permanentemente todos los datos del volumen, incluyendo carpetas compartidas, configuraciones de apps y puntos de restauración.
+        </div>
+
+        {#if destroyDeps.length > 0}
+          <div class="modal-section">Servicios que dependen de este volumen</div>
+          <div class="deps-list">
+            {#each destroyDeps as dep}
+              <div class="dep-item">
+                <span class="dep-dot" style="background:{dep.status === 'running' ? 'var(--c-ok)' : 'var(--text-muted)'}"></span>
+                <span class="dep-name">{dep.app || dep.appId}</span>
+                <span class="dep-status">{dep.status === 'running' ? 'activo' : dep.status}</span>
+                {#if dep.status === 'running' || dep.status === 'starting'}
+                  <button class="dep-stop" disabled={stoppingService[dep.id]} on:click={() => stopServiceForDestroy(dep)}>
+                    {stoppingService[dep.id] ? 'Deteniendo...' : 'Detener'}
+                  </button>
+                {:else}
+                  <span class="dep-stopped">Detenido</span>
+                {/if}
+              </div>
+            {/each}
+          </div>
+          {#if !allDepsStopped}
+            <div class="deps-hint">Debes detener todos los servicios antes de destruir el volumen.</div>
+          {/if}
+        {/if}
+
+        <div style="margin-top:16px">
+          <div class="modal-section">Confirmar destrucción</div>
+          <div class="confirm-hint">
+            Escribe <strong style="color:var(--c-crit)">ELIMINAR</strong> para confirmar:
+          </div>
+          <input class="confirm-input" bind:value={destroyInput} placeholder="Escribe ELIMINAR">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <Button on:click={() => showDestroy = false}>Cancelar</Button>
+        <Button variant="danger" disabled={!canDestroy || destroying} on:click={doDestroy}>
+          {destroying ? 'Destruyendo...' : 'Destruir volumen'}
+        </Button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .pool-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
   .pool-name { font-size:26px; font-weight:700; letter-spacing:-0.5px; color:var(--text-primary); }
@@ -666,4 +762,67 @@
   .dtable-8col {
     grid-template-columns:28px 1.5fr 0.9fr 0.6fr 0.5fr 0.55fr 0.5fr auto;
   }
+
+  /* ── Destroy modal ── */
+  .modal-overlay {
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.6);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .modal {
+    background:var(--bg-elev-1); border:1px solid var(--glass-border);
+    border-radius:var(--radius-lg); width:520px; max-width:90vw;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-header {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:18px 22px; border-bottom:1px solid var(--glass-border);
+  }
+  .modal-title { font-size:16px; font-weight:600; color:var(--text-primary); }
+  .modal-close {
+    font-size:18px; color:var(--text-muted); cursor:pointer;
+    padding:4px 8px; border-radius:4px; transition:all 0.15s;
+  }
+  .modal-close:hover { color:var(--text-primary); background:var(--bg-elev-2); }
+  .modal-body { padding:20px 22px; }
+  .modal-footer {
+    display:flex; justify-content:flex-end; gap:10px;
+    padding:16px 22px; border-top:1px solid var(--glass-border);
+  }
+  .destroy-warn {
+    font-size:13px; color:var(--c-crit);
+    background:var(--c-crit-dim); border:1px solid var(--c-crit-border);
+    border-radius:var(--radius-md); padding:14px 16px; line-height:1.5;
+  }
+  .modal-section {
+    font-size:10px; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:1.2px; margin-bottom:10px; margin-top:4px;
+  }
+  .deps-list { display:flex; flex-direction:column; gap:4px; }
+  .dep-item {
+    display:flex; align-items:center; gap:10px;
+    padding:8px 12px; border-radius:6px; font-size:13px;
+    background:var(--bg-elev-2);
+  }
+  .dep-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dep-name { font-weight:500; color:var(--text-primary); flex:1; }
+  .dep-status { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
+  .dep-stop {
+    font-family:var(--font-sans); font-size:11px; font-weight:500;
+    padding:4px 10px; border-radius:5px; cursor:pointer;
+    border:1px solid var(--c-warn-border); background:var(--c-warn-dim);
+    color:var(--c-warn); transition:all 0.15s;
+  }
+  .dep-stop:hover { filter:brightness(1.1); }
+  .dep-stop:disabled { opacity:0.5; cursor:not-allowed; }
+  .dep-stopped { font-size:11px; color:var(--text-muted); font-style:italic; }
+  .deps-hint { font-size:11px; color:var(--text-muted); margin-top:8px; }
+  .confirm-hint { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
+  .confirm-input {
+    width:100%; padding:10px 14px; border-radius:var(--radius-md);
+    border:1px solid var(--glass-border); background:var(--bg-elev-2);
+    color:var(--text-primary); font-family:var(--font-mono); font-size:14px;
+    outline:none; transition:border-color 0.15s;
+  }
+  .confirm-input:focus { border-color:var(--c-crit); }
 </style>
