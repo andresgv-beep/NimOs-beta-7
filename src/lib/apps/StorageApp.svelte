@@ -6,6 +6,7 @@
   import Badge from '$lib/ui/Badge.svelte';
   import SectionLabel from '$lib/ui/SectionLabel.svelte';
   import Button from '$lib/ui/Button.svelte';
+  import StatusHero from '$lib/ui/StatusHero.svelte';
 
   let active = 'resumen';
   let loading = true;
@@ -106,6 +107,18 @@
     return { raidz1:'RAIDZ1', raidz2:'RAIDZ2', raidz3:'RAIDZ3', mirror:'Espejo', single:'Simple', stripe:'Stripe' }[t] || t || '—';
   }
 
+  // ── System-level status (across all pools) ──
+  $: totalDisks = pools.reduce((n, p) => n + (p.disks?.length || 0), 0);
+  $: problemDisks = pools.flatMap(p => (p.disks || []).filter(d => d.smartStatus !== 'ok'));
+  $: systemStatus = pools.some(p => poolStatus(p) === 'crit') ? 'crit'
+                   : pools.some(p => poolStatus(p) === 'warn') ? 'warn' : 'ok';
+  $: systemTitle = systemStatus === 'crit' ? 'Grupo de almacenamiento en riesgo'
+                 : systemStatus === 'warn' ? 'Un volumen necesita tu atención'
+                 : 'El sistema funciona correctamente';
+  $: systemSub = `${pools.length} volumen${pools.length !== 1 ? 'es' : ''} · ${totalDisks} discos · ${
+    problemDisks.length === 0 ? 'sin incidencias' : problemDisks.length + ' disco' + (problemDisks.length > 1 ? 's' : '') + ' con avisos'
+  }`;
+
   let refreshInterval;
   onMount(() => { load(); refreshInterval = setInterval(load, 30000); });
   onDestroy(() => { if (refreshInterval) clearInterval(refreshInterval); });
@@ -117,6 +130,47 @@
     <div class="state-msg">Cargando...</div>
 
   {:else if active === 'resumen'}
+    <!-- System status hero -->
+    {#if pools.length > 0}
+      <Card>
+        <StatusHero
+          status={systemStatus}
+          title={systemTitle}
+          subtitle={systemSub}
+          stats={[
+            { label: 'Volúmenes', value: String(pools.length) },
+            { label: 'Discos', value: String(totalDisks) },
+          ]}
+        />
+        {#if problemDisks.length > 0}
+          <div class="status-disks">
+            <SectionLabel>Discos con incidencias</SectionLabel>
+            {#each problemDisks as disk}
+              <div class="dtable-row">
+                <div class="disk-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                    <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+                  </svg>
+                </div>
+                <div class="d-name">{disk.model || disk.name}</div>
+                <div class="d-cell">/dev/{disk.name}</div>
+                <div class="d-cell">{disk.size || '—'}</div>
+                <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>
+                  {disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}
+                </div>
+                <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
+                <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </Card>
+
+      <div style="height:14px"></div>
+    {/if}
+
+    <!-- Pool cards -->
     {#each pools as pool}
       <Card>
         <!-- Header -->
@@ -281,4 +335,9 @@
   .diag-dot.crit { background:var(--c-crit); }
 
   .state-msg { font-size:13px; color:var(--text-muted); padding:20px 0; text-align:center; }
+
+  .status-disks {
+    margin-top:20px; padding-top:18px;
+    border-top:1px solid var(--glass-border);
+  }
 </style>
