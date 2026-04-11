@@ -430,15 +430,20 @@
 
   .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
 
+  .dtable-head, .dtable-row {
+    display:grid;
+    grid-template-columns:28px 1.6fr 1.2fr 0.7fr 0.6fr 0.7fr auto;
+    gap:12px; padding:0;
+    width:100%;
+  }
   .dtable-head {
-    display:grid; grid-template-columns:28px 1.4fr 1.2fr 0.7fr 0.6fr 0.7fr 110px;
-    gap:14px; padding:0 12px 8px;
+    padding-bottom:8px;
     font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;
+    align-items:center;
   }
   .dtable-row {
-    display:grid; grid-template-columns:28px 1.4fr 1.2fr 0.7fr 0.6fr 0.7fr 110px;
-    align-items:center; gap:14px; padding:9px 12px; border-radius:8px;
-    font-size:12px; cursor:pointer; transition:background 0.15s;
+    align-items:center; padding-top:9px; padding-bottom:9px;
+    border-radius:8px; font-size:12px; cursor:pointer; transition:background 0.15s;
   }
   .dtable-row + .dtable-row { margin-top:2px; }
   .dtable-row:hover { background:var(--bg-elev-2); }
