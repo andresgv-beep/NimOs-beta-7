@@ -478,7 +478,8 @@
     {/if}
 
     <!-- Pool cards -->
-    {#each pools as pool}
+    {#each pools as pool, i}
+      {#if i > 0}<div style="height:14px"></div>{/if}
       <Card>
         <!-- Header -->
         <div class="pool-header">
