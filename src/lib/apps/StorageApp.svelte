@@ -2,7 +2,10 @@
   import { onMount, onDestroy } from 'svelte';
   import { hdrs } from '$lib/stores/auth.js';
   import AppShell from '$lib/components/AppShell.svelte';
-  import { Card, Badge, SectionLabel, Button } from '$lib/ui/index.js';
+  import Card from '$lib/ui/Card.svelte';
+  import Badge from '$lib/ui/Badge.svelte';
+  import SectionLabel from '$lib/ui/SectionLabel.svelte';
+  import Button from '$lib/ui/Button.svelte';
 
   let active = 'resumen';
   let loading = true;
