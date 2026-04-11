@@ -510,6 +510,13 @@
           <div class="pool-body">
             <div class="pool-detail">
               <div class="detail-left">
+                <div class="pill-actions">
+                  <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
+                  <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Snapshot</Button>
+                </div>
+              </div>
+
+              <div class="detail-right">
                 {#if poolFileStats[pool.name]}
                   <div class="legend">
                     {#each categories as cat}
@@ -523,14 +530,8 @@
                     {/each}
                   </div>
                 {/if}
-                <div class="pill-actions">
-                  <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
-                  <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Snapshot</Button>
-                </div>
-              </div>
 
-              {#if poolFileStats[pool.name]}
-                <div class="donut-wrap">
+                {#if poolFileStats[pool.name]}
                   <div class="donut">
                     <svg width="110" height="110" viewBox="0 0 120 120">
                       <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
@@ -545,8 +546,8 @@
                       <div class="donut-lbl">TOTAL</div>
                     </div>
                   </div>
-                </div>
-              {/if}
+                {/if}
+              </div>
             </div>
           </div>
         </div>
@@ -829,17 +830,20 @@
   .pool-detail {
     border-top:1px solid var(--glass-border);
     padding:22px 24px 20px;
-    display:grid; grid-template-columns:1fr auto; gap:20px;
-    align-items:center;
+    display:flex; justify-content:space-between; align-items:center;
   }
   .detail-left { display:flex; flex-direction:column; gap:16px; }
+  .detail-right { display:flex; align-items:center; gap:18px; }
   .pill-actions { display:flex; gap:10px; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
 
   /* Donut + legend */
   .donut-wrap { display:flex; align-items:center; gap:18px; }
-  .legend { display:flex; flex-direction:column; gap:8px; }
+  .legend {
+    display:grid; grid-auto-flow:column; grid-template-rows:repeat(3, auto);
+    gap:8px 22px;
+  }
   .legend-row {
     display:flex; align-items:center; gap:8px;
     font-size:12px; color:var(--text-primary);
