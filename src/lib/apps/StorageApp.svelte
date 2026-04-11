@@ -478,139 +478,85 @@
       <div style="height:14px"></div>
     {/if}
 
-    <!-- Pool cards -->
-    {#each pools as pool, i}
-      {#if i > 0}<div style="height:14px"></div>{/if}
-      <Card>
-        <!-- Header — always visible -->
-        <div class="pool-header">
-          <div>
-            <div class="pool-name">{pool.name}</div>
-            <div class="pool-sub">{vdevLabel(pool.vdevType)} · {pool.type?.toUpperCase()} · {pool.disks?.length || 0} discos</div>
-          </div>
-          <Badge status={poolStatus(pool)}>{poolStatusLabel(pool)}</Badge>
-        </div>
-
-        <!-- Capacity — always visible -->
-        <div class="capacity">
-          <div class="cap-row">
-            <div class="bar-track">
-              <div class="bar-used" style="width:{Math.max(pool.usagePercent || 0, 1)}%;display:flex">
-                {#each getBarSegments(poolFileStats[pool.name], pool.total) as seg}
-                  <div class="bar-seg" style="width:{seg.pct}%;background:{seg.color}" title="{seg.label}: {formatBytes(seg.value)}"></div>
-                {/each}
-                {#if !poolFileStats[pool.name] || getBarSegments(poolFileStats[pool.name], pool.total).length === 0}
-                  <div class="bar-seg" style="width:100%;background:var(--accent)"></div>
-                {/if}
-              </div>
-            </div>
-            <div class="cap-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
-              {pool.usagePercent || 0}<span class="sym">%</span>
-            </div>
-          </div>
-          <div class="cap-info">
-            <span class="mono">{pool.usedFormatted || '0 B'} usados</span>
-            <span class="mono muted">{pool.totalFormatted || '—'}</span>
-          </div>
-        </div>
-
-        <!-- Expand toggle -->
+    <!-- Pool pills -->
+    <div class="pool-list">
+      {#each pools as pool}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="expand-toggle" on:click={() => expandedPools[pool.name] = !expandedPools[pool.name]}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-            {#if expandedPools[pool.name]}
-              <polyline points="18 15 12 9 6 15"/>
-            {:else}
-              <polyline points="6 9 12 15 18 9"/>
-            {/if}
-          </svg>
-          <span>{expandedPools[pool.name] ? 'Menos detalles' : 'Más detalles'}</span>
-        </div>
-
-        <!-- Expandable content -->
-        {#if expandedPools[pool.name]}
-          <!-- Actions + Donut -->
-          <div class="pool-bottom">
-            <div class="pool-actions">
-              <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
-              <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Punto de restauración</Button>
+        <div class="pool-pill" class:open={expandedPools[pool.name]}>
+          <div class="pool-head" on:click={() => expandedPools[pool.name] = !expandedPools[pool.name]}>
+            <div class="pool-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+              </svg>
             </div>
-
-            {#if poolFileStats[pool.name]}
-              <div class="donut-wrap">
-                <div class="legend">
-                  {#each categories as cat}
-                    {#if (poolFileStats[pool.name]?.[cat.key] || 0) > 0}
-                      <div class="legend-row">
-                        <span class="legend-dot" style="background:{cat.color}"></span>
-                        <span>{cat.label}</span>
-                        <span class="legend-size">{formatBytes(poolFileStats[pool.name][cat.key])}</span>
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
-                <div class="donut">
-                  <svg width="120" height="120" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
-                    {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
-                      <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
-                        stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
-                        style="transform:rotate(-90deg);transform-origin:50% 50%"/>
-                    {/each}
-                  </svg>
-                  <div class="donut-center">
-                    <div class="donut-val">{pool.totalFormatted || '—'}</div>
-                    <div class="donut-lbl">TOTAL</div>
-                  </div>
-                </div>
-              </div>
-            {/if}
+            <div class="pool-ident">
+              <div class="pill-name">{pool.name}</div>
+              <div class="pill-sub">{pool.type?.toUpperCase()} · {vdevLabel(pool.vdevType)} · {pool.disks?.length || 0} discos</div>
+            </div>
+            <div class="pill-bar">
+              {#each getBarSegments(poolFileStats[pool.name], pool.total) as seg}
+                <div class="bar-seg" style="width:{seg.pct}%;background:{seg.color}"></div>
+              {/each}
+              {#if !poolFileStats[pool.name] || getBarSegments(poolFileStats[pool.name], pool.total).length === 0}
+                <div class="bar-seg" style="width:{Math.max(pool.usagePercent || 0, 0.3)}%;background:var(--accent)"></div>
+              {/if}
+            </div>
+            <div class="pill-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
+              {pool.usagePercent || 0}<span class="sym">%</span>
+            </div>
+            <div class="pill-total">{pool.totalFormatted || '—'}</div>
+            <div class="chev">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
           </div>
 
-          <!-- SMART disk table -->
-          {#if pool.disks?.length > 0}
-            <div class="smart-section">
-              <SectionLabel>Estado SMART</SectionLabel>
-              <div class="dtable-head">
-                <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
+          <div class="pool-body">
+            <div class="pool-detail">
+              <div class="detail-left">
+                {#if poolFileStats[pool.name]}
+                  <div class="legend">
+                    {#each categories as cat}
+                      {#if (poolFileStats[pool.name]?.[cat.key] || 0) > 0}
+                        <div class="legend-row">
+                          <span class="legend-dot" style="background:{cat.color}"></span>
+                          <span>{cat.label}</span>
+                          <span class="legend-size">{formatBytes(poolFileStats[pool.name][cat.key])}</span>
+                        </div>
+                      {/if}
+                    {/each}
+                  </div>
+                {/if}
+                <div class="pill-actions">
+                  <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
+                  <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Snapshot</Button>
+                </div>
               </div>
-              {#each pool.disks as disk}
-                <div class="dtable-row">
-                  <div class="disk-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                      <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-                    </svg>
-                  </div>
-                  <div class="d-name">{disk.model || disk.name}</div>
-                  <div class="d-cell">/dev/{disk.name}</div>
-                  <div class="d-cell">{disk.size || '—'}</div>
-                  <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>
-                    {disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}
-                  </div>
-                  <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
-                  <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
-                </div>
-              {/each}
-            </div>
-          {/if}
 
-          <!-- Diagnostics -->
-          {#if pool.poolHealth?.diagnostics?.length > 0}
-            <div class="diag-section">
-              <SectionLabel>Diagnóstico</SectionLabel>
-              {#each pool.poolHealth.diagnostics as diag}
-                <div class="diag-row">
-                  <div class="diag-dot" class:crit={diag.severity >= 4} class:warn={diag.severity >= 2 && diag.severity < 4}></div>
-                  <span>{diag.detail}</span>
+              {#if poolFileStats[pool.name]}
+                <div class="donut-wrap">
+                  <div class="donut">
+                    <svg width="110" height="110" viewBox="0 0 120 120">
+                      <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
+                      {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
+                        <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
+                          stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
+                          style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+                      {/each}
+                    </svg>
+                    <div class="donut-center">
+                      <div class="donut-val">{pool.totalFormatted || '—'}</div>
+                      <div class="donut-lbl">TOTAL</div>
+                    </div>
+                  </div>
                 </div>
-              {/each}
+              {/if}
             </div>
-          {/if}
-        {/if}
-      </Card>
-    {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
 
     {#if pools.length === 0}
       <Card>
@@ -818,45 +764,81 @@
 {/if}
 
 <style>
-  .pool-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
-  .pool-name { font-size:26px; font-weight:700; letter-spacing:-0.5px; color:var(--text-primary); }
-  .pool-sub { font-size:13px; color:var(--text-secondary); margin-top:4px; }
+  /* ── Pool pills ── */
+  .pool-list { display:flex; flex-direction:column; gap:8px; }
 
-  .capacity { margin-bottom:22px; }
-  .cap-row { display:flex; align-items:center; gap:32px; max-width:78%; }
-  .bar-track {
-    flex:1; height:13px; border-radius:8px;
-    background:var(--bg-elev-2); overflow:hidden;
-    border:1px solid var(--glass-border);
+  .pool-pill {
+    background:var(--glass-bg); border:1px solid var(--glass-border);
+    border-radius:12px; cursor:default;
   }
-  .bar-used { height:100%; display:flex; overflow:hidden; border-radius:8px; }
-  .bar-seg { height:100%; transition:filter 0.2s; min-width:2px; }
-  .bar-seg:hover { filter:brightness(1.3); }
-  .cap-pct {
-    font-size:42px; font-weight:700; letter-spacing:-1.5px; line-height:1;
-    color:var(--c-ok); white-space:nowrap; font-family:var(--font-mono);
+  .pool-head {
+    display:grid;
+    grid-template-columns:32px 1.5fr 2fr auto 70px 20px;
+    align-items:center; gap:18px;
+    padding:16px 20px; cursor:pointer;
+    transition:background 0.18s;
   }
-  .cap-pct.warn { color:var(--c-warn); }
-  .cap-pct.crit { color:var(--c-crit); }
-  .cap-pct .sym { font-size:28px; font-weight:600; margin-left:2px; }
-  .cap-info { display:flex; justify-content:space-between; margin-top:12px; font-size:13px; max-width:62%; }
+  .pool-head:hover { background:var(--bg-elev-2); }
+  .pool-head:hover .chev { transform:translateX(3px); color:var(--text-primary); }
+  .pool-pill.open .pool-head { background:var(--bg-elev-2); }
+  .pool-pill.open .chev { transform:rotate(90deg); color:var(--text-primary); }
+
+  .pool-icon {
+    width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg-elev-2); border:1px solid var(--glass-border);
+    color:var(--text-primary);
+  }
+  .pool-icon svg { width:18px; height:18px; display:block; }
+
+  .pool-ident { min-width:0; }
+  .pill-name { font-size:16px; font-weight:700; letter-spacing:-0.3px; color:var(--text-primary); line-height:1.2; }
+  .pill-sub { font-size:11px; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); }
+
+  .pill-bar {
+    height:7px; border-radius:5px;
+    background:var(--bg-elev-2); border:1px solid var(--glass-border);
+    overflow:hidden; display:flex;
+  }
+  .bar-seg { height:100%; }
+
+  .pill-pct {
+    font-family:var(--font-mono); font-size:20px; font-weight:700;
+    letter-spacing:-0.5px; line-height:1; white-space:nowrap;
+    color:var(--text-primary);
+  }
+  .pill-pct .sym { font-size:14px; font-weight:600; margin-left:1px; opacity:0.7; }
+  .pill-pct.warn { color:var(--c-warn); }
+  .pill-pct.crit { color:var(--c-crit); }
+
+  .pill-total {
+    font-family:var(--font-mono); font-size:12px;
+    color:var(--text-secondary); text-align:right; white-space:nowrap;
+  }
+
+  .chev {
+    color:var(--text-muted); display:flex; align-items:center; justify-content:center;
+    transition:transform 0.18s, color 0.18s;
+  }
+  .chev svg { width:14px; height:14px; }
+
+  /* Expandable body */
+  .pool-body {
+    max-height:0; opacity:0; overflow:hidden;
+    transition:max-height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.25s ease;
+  }
+  .pool-pill.open .pool-body { max-height:520px; opacity:1; }
+
+  .pool-detail {
+    border-top:1px solid var(--glass-border);
+    padding:22px 24px 20px;
+    display:grid; grid-template-columns:1fr auto; gap:20px;
+    align-items:center;
+  }
+  .detail-left { display:flex; flex-direction:column; gap:16px; }
+  .pill-actions { display:flex; gap:10px; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
-
-  .expand-toggle {
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    padding:12px 0; margin-top:8px; cursor:pointer;
-    font-size:12px; font-weight:500; color:var(--text-muted);
-    border-top:1px solid var(--glass-border);
-    transition:color 0.15s;
-  }
-  .expand-toggle:hover { color:var(--text-primary); }
-
-  .pool-bottom {
-    display:flex; justify-content:space-between; align-items:flex-end;
-    border-top:1px solid var(--glass-border); padding-top:20px; margin-bottom:22px;
-  }
-  .pool-actions { display:flex; gap:10px; }
 
   /* Donut + legend */
   .donut-wrap { display:flex; align-items:center; gap:18px; }
