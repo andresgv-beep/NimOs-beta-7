@@ -13,6 +13,7 @@
   let pools = [];
   let shares = [];
   let poolFileStats = {}; // poolName → { video, image, audio, document, other }
+  let detailPool = null; // when set, shows the "Gestionar" view for this pool
 
   // ── App icon: duotone database ──
   const appIcon = [
@@ -191,6 +192,24 @@
   let refreshInterval;
   onMount(() => { load(); refreshInterval = setInterval(load, 30000); });
   onDestroy(() => { if (refreshInterval) clearInterval(refreshInterval); });
+
+  // Keep detailPool in sync after refresh
+  $: if (detailPool && pools.length) {
+    detailPool = pools.find(p => p.name === detailPool.name) || null;
+  }
+
+  function redundancyLabel(pool) {
+    const r = pool.poolHealth?.redundancy;
+    if (!r) return '—';
+    const typeLabel = { raidz1:'Protección simple', raidz2:'Protección doble', raidz3:'Protección triple', mirror:'Espejo', single:'Sin protección', stripe:'Sin protección' };
+    const tl = typeLabel[r.type] || r.type;
+    return tl;
+  }
+  function redundancySub(pool) {
+    const r = pool.poolHealth?.redundancy;
+    if (!r) return '';
+    return `${r.current}/${r.expected} discos · puede perder ${r.canLose}`;
+  }
 </script>
 
 <AppShell title="Almacenamiento" {appIcon} {sections} bind:active showSearch>
@@ -199,7 +218,90 @@
     <div class="state-msg">Cargando...</div>
 
   {:else if active === 'resumen'}
-    <!-- System status hero -->
+    {#if detailPool}
+      <!-- ═══ GESTIONAR POOL ═══ -->
+      <div class="page-header">
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="back-btn" on:click={() => detailPool = null}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+          Volver
+        </div>
+        <div class="header-title">
+          <span class="pool-name">{detailPool.name}</span>
+          <Badge status={poolStatus(detailPool)}>{poolStatusLabel(detailPool)}</Badge>
+        </div>
+      </div>
+
+      <!-- Info + Actions row -->
+      <div class="row-top">
+        <Card>
+          <SectionLabel>Información</SectionLabel>
+          <div class="info-grid">
+            <div class="info-k">Nombre</div><div class="info-v">{detailPool.name}</div>
+            <div class="info-k">Sistema de archivos</div><div class="info-v">{detailPool.type?.toUpperCase()}</div>
+            <div class="info-k">Protección</div><div class="info-v">{redundancyLabel(detailPool)}<span class="info-sub">{redundancySub(detailPool)}</span></div>
+            <div class="info-k">Punto de montaje</div><div class="info-v mono">{detailPool.mountPoint}</div>
+            <div class="info-k">Estado</div><div class="info-v">{detailPool.health}</div>
+            <div class="info-k">Compresión</div><div class="info-v">lz4</div>
+            <div class="info-k">Creado</div><div class="info-v mono">{detailPool.createdAt?.split('T')[0] || '—'}</div>
+          </div>
+        </Card>
+
+        <Card>
+          <SectionLabel>Acciones</SectionLabel>
+          <div class="actions-col">
+            <Button variant="primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>
+              Verificar integridad
+            </Button>
+            <Button>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+              Exportar pool
+            </Button>
+            <Button>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2 2-2-2 2-2z"/></svg>
+              Reparar / Resilver
+            </Button>
+            <div class="btn-divider"></div>
+            <Button variant="danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              Destruir volumen
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      <!-- Disks table full width -->
+      {#if detailPool.disks?.length > 0}
+        <Card>
+          <SectionLabel>Discos del volumen</SectionLabel>
+          <div class="dtable-head dtable-8col">
+            <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Rol</div><div>Estado</div>
+          </div>
+          {#each detailPool.disks as disk}
+            <div class="dtable-row dtable-8col">
+              <div class="disk-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                  <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+                </svg>
+              </div>
+              <div class="d-name">{disk.model || disk.name}</div>
+              <div class="d-cell">/dev/{disk.name}</div>
+              <div class="d-cell">{disk.size || '—'}</div>
+              <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>{disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}</div>
+              <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
+              <div><span class="role-pill">data</span></div>
+              <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+            </div>
+          {/each}
+        </Card>
+      {/if}
+
+    {:else}
+      <!-- ═══ RESUMEN (pool list) ═══ -->
+      <!-- System status hero -->
     {#if pools.length > 0}
       <Card>
         <StatusHero
@@ -277,7 +379,7 @@
         <!-- Actions + Donut -->
         <div class="pool-bottom">
           <div class="pool-actions">
-            <Button>Gestionar</Button>
+            <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
             <Button variant="primary">+ Punto de restauración</Button>
           </div>
 
@@ -362,6 +464,7 @@
           <div>Crea un volumen para empezar a almacenar datos.</div>
         </div>
       </Card>
+    {/if}
     {/if}
 
   {:else if active === 'disks'}
@@ -479,5 +582,50 @@
   .status-disks {
     margin-top:20px; padding-top:18px;
     border-top:1px solid var(--glass-border);
+  }
+
+  /* ── Gestionar view ── */
+  .page-header {
+    display:flex; align-items:center; gap:20px; margin-bottom:24px;
+  }
+  .back-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:13px; color:var(--text-secondary);
+    cursor:pointer; padding:6px 10px; border-radius:6px;
+    transition:all 0.15s; background:transparent;
+  }
+  .back-btn:hover { color:var(--text-primary); background:var(--bg-elev-2); }
+  .header-title { display:flex; align-items:center; gap:14px; }
+
+  .row-top {
+    display:grid; grid-template-columns:1.4fr 1fr;
+    gap:18px; margin-bottom:18px;
+  }
+
+  .info-grid {
+    display:grid; grid-template-columns:140px 1fr;
+    gap:13px 16px; font-size:13px;
+  }
+  .info-k { color:var(--text-secondary); }
+  .info-v { color:var(--text-primary); font-weight:500; text-align:right; }
+  .info-v.mono { font-family:var(--font-mono); font-weight:400; }
+  .info-sub {
+    display:block; font-size:11px; color:var(--text-muted);
+    font-weight:400; margin-top:2px;
+  }
+
+  .actions-col { display:flex; flex-direction:column; gap:10px; }
+  .btn-divider { height:1px; background:var(--glass-border); margin:6px 0; }
+
+  .role-pill {
+    display:inline-block; font-size:10px;
+    padding:3px 8px; border-radius:5px;
+    background:var(--bg-elev-2); color:var(--text-secondary);
+    font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;
+  }
+
+  /* 8-column disk table for gestionar */
+  .dtable-8col {
+    grid-template-columns:28px 1.5fr 0.9fr 0.6fr 0.5fr 0.55fr 0.5fr auto;
   }
 </style>
