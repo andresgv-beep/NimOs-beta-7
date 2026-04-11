@@ -1,0 +1,231 @@
+<script>
+  import { user } from '$lib/stores/auth.js';
+
+  /**
+   * AppShell — Standard NimOS app layout.
+   * Apps declare navigation structure. Shell renders everything.
+   * Apps only control the content via the default slot.
+   *
+   * Props:
+   *   title      — App name ("Almacenamiento")
+   *   appIcon    — Array of SVG elements for the app header icon: 
+   *                [{ tag: 'ellipse'|'path'|'circle'|'rect'|'polyline'|'line', attrs: {} }]
+   *   sections   — [{ label, items: [{ id, label, paths: [] }] }]
+   *                paths: array of { tag, attrs, fill? } for duotone SVG icons
+   *   active     — bind:active — currently selected item id
+   *   showSearch — show search bar in sidebar (default false)
+   *
+   * SECURITY: No {@html} anywhere. All SVG is rendered via explicit elements.
+   * Icon data is pure attribute objects — no strings are injected into DOM.
+   */
+  export let title = '';
+  export let appIcon = [];
+  export let sections = [];
+  export let active = '';
+  export let showSearch = false;
+
+  $: userName = $user?.username || 'User';
+  $: userRole = $user?.role || 'user';
+
+  $: subtitle = findLabel(active);
+
+  function findLabel(id) {
+    for (const s of sections) {
+      for (const item of s.items) {
+        if (item.id === id) return item.label;
+      }
+    }
+    return '';
+  }
+</script>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <!-- App header -->
+    <div class="sb-header">
+      <svg class="sb-app-icon" viewBox="0 0 24 24">
+        {#each appIcon as el}
+          {#if el.tag === 'path'}<path {...el.attrs}/>
+          {:else if el.tag === 'ellipse'}<ellipse {...el.attrs}/>
+          {:else if el.tag === 'circle'}<circle {...el.attrs}/>
+          {:else if el.tag === 'rect'}<rect {...el.attrs}/>
+          {:else if el.tag === 'polyline'}<polyline {...el.attrs}/>
+          {:else if el.tag === 'line'}<line {...el.attrs}/>
+          {/if}
+        {/each}
+      </svg>
+      <span class="sb-app-title">{title}</span>
+    </div>
+
+    {#if showSearch}
+      <div class="sb-search">⌕ Buscar…</div>
+    {/if}
+
+    {#each sections as section, si}
+      <div class="sb-section" style={si > 0 ? 'margin-top:8px' : ''}>{section.label}</div>
+      {#each section.items as item}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="sb-item"
+          class:active={active === item.id}
+          on:click={() => active = item.id}
+        >
+          {#if item.paths && item.paths.length > 0}
+            <svg class="sb-icon" viewBox="0 0 24 24">
+              {#each item.paths as el}
+                {#if el.tag === 'path'}<path {...el.attrs}/>
+                {:else if el.tag === 'circle'}<circle {...el.attrs}/>
+                {:else if el.tag === 'rect'}<rect {...el.attrs}/>
+                {:else if el.tag === 'polyline'}<polyline {...el.attrs}/>
+                {:else if el.tag === 'line'}<line {...el.attrs}/>
+                {:else if el.tag === 'ellipse'}<ellipse {...el.attrs}/>
+                {/if}
+              {/each}
+            </svg>
+          {/if}
+          {item.label}
+        </div>
+      {/each}
+    {/each}
+
+    <div class="sb-bottom">
+      <div class="sb-user-card">
+        <div class="sb-avatar">{userName[0].toUpperCase()}</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name">{userName}</div>
+          <div class="sb-user-role">{userRole}</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="titlebar">
+      <span class="tb-title">{title}</span>
+      {#if subtitle}
+        <span class="tb-sep"></span>
+        <span class="tb-sub">{subtitle}</span>
+      {/if}
+    </div>
+    <div class="content">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  .app-shell {
+    width: 100%; height: 100%;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    background: var(--bg-elev-1);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--bg-elev-1);
+    border-right: 1px solid var(--glass-border);
+    padding: 18px 14px;
+    display: flex; flex-direction: column; gap: 3px;
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+
+  .sb-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 4px 12px 16px;
+  }
+  .sb-app-icon {
+    width: 22px; height: 22px; flex-shrink: 0;
+    stroke: var(--text-primary); fill: none;
+    stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .sb-app-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--text-primary); letter-spacing: -0.3px;
+  }
+
+  .sb-search {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border); background: var(--bg-elev-2);
+    font-size: 12px; color: var(--text-muted);
+    margin-bottom: 10px; cursor: text;
+  }
+
+  .sb-section {
+    font-size: 10px; font-weight: 500; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1.2px;
+    padding: 14px 12px 6px;
+  }
+  .sb-section:first-child { padding-top: 4px; }
+
+  .sb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; color: var(--text-secondary);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sb-item:hover { background: var(--bg-elev-2); color: var(--text-primary); }
+  .sb-item.active { background: var(--accent-dim); color: var(--accent); }
+
+  /* Duotone icon system */
+  .sb-icon {
+    width: 16px; height: 16px; flex-shrink: 0;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .sb-item .sb-icon :global([data-fill]) {
+    fill: currentColor; opacity: 0.12; stroke: none;
+  }
+  .sb-item.active .sb-icon :global([data-fill]) { opacity: 0.2; }
+  .sb-item .sb-icon :global([data-dot]) {
+    fill: currentColor; opacity: 0.45; stroke: none;
+  }
+  .sb-item.active .sb-icon :global([data-dot]) { opacity: 0.7; }
+
+  /* User card */
+  .sb-bottom {
+    margin-top: auto;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 10px;
+  }
+  .sb-user-card {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  }
+  .sb-avatar {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .sb-user-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .sb-user-role {
+    font-size: 9.5px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;
+  }
+
+  /* ── Main ── */
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+
+  .titlebar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 24px; height: var(--titlebar-height);
+    background: var(--bg-elev-1);
+    border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
+  }
+  .tb-title { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
+  .tb-sep { width: 1px; height: 16px; background: var(--glass-border); }
+  .tb-sub { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+
+  .content {
+    flex: 1; overflow-y: auto;
+    background: var(--bg-app); padding: 24px 28px;
+  }
+  .content::-webkit-scrollbar { width: 3px; }
+  .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+</style>
