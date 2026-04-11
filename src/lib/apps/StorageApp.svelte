@@ -63,7 +63,7 @@
     }
   ];
 
-  // ── Data loading ──
+  // ── Data ──
   async function load() {
     loading = true;
     try {
@@ -78,8 +78,11 @@
 
   // ── Helpers ──
   function poolStatus(pool) {
-    if (pool.poolHealth === 'critical' || pool.health === 'FAULTED') return 'crit';
-    if (pool.poolHealth === 'warning' || pool.health === 'DEGRADED') return 'warn';
+    const ph = pool.poolHealth;
+    if (ph?.status === 'critical' || pool.health === 'FAULTED') return 'crit';
+    if (ph?.status === 'degraded' || pool.health === 'DEGRADED') return 'warn';
+    // Check if any disk has SMART issues
+    if (pool.disks?.some(d => d.smartStatus === 'critical')) return 'warn';
     return 'ok';
   }
   function poolStatusLabel(pool) {
@@ -94,15 +97,6 @@
   function diskStatusLabel(disk) {
     const s = diskStatus(disk);
     return s === 'crit' ? 'Crítico' : s === 'warn' ? 'Atención' : 'Sano';
-  }
-  function formatSize(v) {
-    if (!v && v !== 0) return '—';
-    if (typeof v === 'string') return v;
-    const tb = v / (1024 ** 4);
-    if (tb >= 1) return tb.toFixed(1) + ' TB';
-    const gb = v / (1024 ** 3);
-    if (gb >= 1) return gb.toFixed(1) + ' GB';
-    return (v / (1024 ** 2)).toFixed(0) + ' MB';
   }
   function formatHours(h) {
     if (!h) return '—';
@@ -125,6 +119,7 @@
   {:else if active === 'resumen'}
     {#each pools as pool}
       <Card>
+        <!-- Header -->
         <div class="pool-header">
           <div>
             <div class="pool-name">{pool.name}</div>
@@ -133,33 +128,36 @@
           <Badge status={poolStatus(pool)}>{poolStatusLabel(pool)}</Badge>
         </div>
 
+        <!-- Capacity -->
         <div class="capacity">
           <div class="cap-row">
             <div class="bar-track">
-              <div class="bar-fill" style="width:{pool.usedPercent || 0}%"></div>
+              <div class="bar-fill" style="width:{pool.usagePercent || 0}%"></div>
             </div>
-            <div class="cap-pct" class:warn={pool.usedPercent > 80} class:crit={pool.usedPercent > 95}>
-              {pool.usedPercent || 0}<span class="sym">%</span>
+            <div class="cap-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
+              {pool.usagePercent || 0}<span class="sym">%</span>
             </div>
           </div>
           <div class="cap-info">
-            <span class="mono">{formatSize(pool.used)} usados</span>
-            <span class="mono muted">{formatSize(pool.capacity)}</span>
+            <span class="mono">{pool.usedFormatted || '0 B'} usados</span>
+            <span class="mono muted">{pool.totalFormatted || '—'}</span>
           </div>
         </div>
 
+        <!-- Actions -->
         <div class="pool-actions">
           <Button>Gestionar</Button>
           <Button variant="primary">+ Punto de restauración</Button>
         </div>
 
-        {#if pool.enrichedDisks?.length > 0}
+        <!-- SMART disk table -->
+        {#if pool.disks?.length > 0}
           <div class="smart-section">
             <SectionLabel>Estado SMART</SectionLabel>
             <div class="dtable-head">
               <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
             </div>
-            {#each pool.enrichedDisks as disk}
+            {#each pool.disks as disk}
               <div class="dtable-row">
                 <div class="disk-icon">
                   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -170,9 +168,24 @@
                 <div class="d-name">{disk.model || disk.name}</div>
                 <div class="d-cell">/dev/{disk.name}</div>
                 <div class="d-cell">{disk.size || '—'}</div>
-                <div class="d-cell" class:temp-hot={disk.temperature > 50}>{disk.temperature ? disk.temperature + '°C' : '—'}</div>
-                <div class="d-cell">{formatHours(disk.powerOnHours)}</div>
+                <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>
+                  {disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}
+                </div>
+                <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
                 <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Diagnostics -->
+        {#if pool.poolHealth?.diagnostics?.length > 0}
+          <div class="diag-section">
+            <SectionLabel>Diagnóstico</SectionLabel>
+            {#each pool.poolHealth.diagnostics as diag}
+              <div class="diag-row">
+                <div class="diag-dot" class:crit={diag.severity >= 4} class:warn={diag.severity >= 2 && diag.severity < 4}></div>
+                <span>{diag.detail}</span>
               </div>
             {/each}
           </div>
@@ -221,7 +234,7 @@
   .cap-pct.crit { color:var(--c-crit); }
   .cap-pct .sym { font-size:28px; font-weight:600; margin-left:2px; }
   .cap-info { display:flex; justify-content:space-between; margin-top:12px; font-size:13px; max-width:62%; }
-  .mono { font-family:var(--font-mono); }
+  .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
 
   .pool-actions { display:flex; gap:10px; border-top:1px solid var(--glass-border); padding-top:20px; margin-bottom:22px; }
@@ -253,6 +266,19 @@
   .d-name { font-weight:500; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .d-cell { font-family:var(--font-mono); color:var(--text-secondary); white-space:nowrap; }
   .temp-hot { color:var(--c-warn); }
+
+  .diag-section { border-top:1px solid var(--glass-border); padding-top:18px; margin-top:18px; }
+  .diag-row {
+    display:flex; align-items:center; gap:10px;
+    padding:8px 12px; border-radius:6px; font-size:12px;
+    color:var(--text-secondary);
+  }
+  .diag-dot {
+    width:8px; height:8px; border-radius:50%; flex-shrink:0;
+    background:var(--c-info);
+  }
+  .diag-dot.warn { background:var(--c-warn); }
+  .diag-dot.crit { background:var(--c-crit); }
 
   .state-msg { font-size:13px; color:var(--text-muted); padding:20px 0; text-align:center; }
 </style>
