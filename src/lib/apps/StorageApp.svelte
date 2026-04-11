@@ -1,196 +1,255 @@
 <script>
-  import { user } from '$lib/stores/auth.js';
-  import TabNav from '$lib/components/TabNav.svelte';
-  import StoragePanel from '$lib/apps/StoragePanel.svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { hdrs } from '$lib/stores/auth.js';
+  import AppShell from '$lib/components/AppShell.svelte';
+  import { Card, Badge, SectionLabel, Button } from '$lib/ui';
 
-  let activeTab = 'resumen';
+  let active = 'resumen';
+  let loading = true;
+  let pools = [];
 
-  // Sidebar items — Storage-specific sections
-  const sidebarItems = [
-    { id: 'resumen',   label: 'Resumen',                icon: 'resumen'  },
-    { id: 'disks',     label: 'Discos',                  icon: 'disk'     },
-    { id: 'snapshots', label: 'Puntos de restauración',  icon: 'snapshot' },
+  // ── App icon: duotone database ──
+  const appIcon = [
+    { tag: 'path', attrs: { d: 'M3 5c0 1.66 4 3 9 3s9-1.34 9-3v14c0 1.66-4 3-9 3s-9-1.34-9-3z', fill: 'currentColor', opacity: '0.12', stroke: 'none' }},
+    { tag: 'ellipse', attrs: { cx: 12, cy: 5, rx: 9, ry: 3 }},
+    { tag: 'path', attrs: { d: 'M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5', fill: 'none' }},
+    { tag: 'path', attrs: { d: 'M3 12c0 1.66 4 3 9 3s9-1.34 9-3', fill: 'none' }},
   ];
-  const maintItems = [
-    { id: 'health',    label: 'Salud',                   icon: 'health'   },
-    { id: 'restore',   label: 'Restaurar volumen',       icon: 'restore'  },
+
+  // ── Sidebar navigation ──
+  const sections = [
+    {
+      label: 'Almacenamiento',
+      items: [
+        { id: 'resumen', label: 'Resumen', paths: [
+          { tag: 'rect', attrs: { x:3, y:3, width:7, height:7, rx:2, 'data-fill': '' }},
+          { tag: 'rect', attrs: { x:14, y:3, width:7, height:7, rx:2, 'data-fill': '' }},
+          { tag: 'rect', attrs: { x:3, y:14, width:7, height:7, rx:2, 'data-fill': '' }},
+          { tag: 'rect', attrs: { x:14, y:14, width:7, height:7, rx:2, 'data-fill': '' }},
+          { tag: 'rect', attrs: { x:3, y:3, width:7, height:7, rx:2 }},
+          { tag: 'rect', attrs: { x:14, y:3, width:7, height:7, rx:2 }},
+          { tag: 'rect', attrs: { x:3, y:14, width:7, height:7, rx:2 }},
+          { tag: 'rect', attrs: { x:14, y:14, width:7, height:7, rx:2 }},
+        ]},
+        { id: 'disks', label: 'Discos', paths: [
+          { tag: 'circle', attrs: { cx:12, cy:12, r:9, 'data-fill': '' }},
+          { tag: 'circle', attrs: { cx:12, cy:12, r:9 }},
+          { tag: 'circle', attrs: { cx:12, cy:12, r:2.5, 'data-dot': '' }},
+        ]},
+        { id: 'snapshots', label: 'Puntos de restauración', paths: [
+          { tag: 'circle', attrs: { cx:13, cy:14, r:8, 'data-fill': '' }},
+          { tag: 'polyline', attrs: { points: '1 4 1 10 7 10' }},
+          { tag: 'path', attrs: { d: 'M3.51 15a9 9 0 1 0 2.13-9.36L1 10' }},
+        ]},
+      ]
+    },
+    {
+      label: 'Mantenimiento',
+      items: [
+        { id: 'health', label: 'Salud', paths: [
+          { tag: 'path', attrs: { d: 'M9 3l-3 9H2l4 9h0l3-9h4l3-9', 'data-fill': '', style: 'opacity:0.08' }},
+          { tag: 'path', attrs: { d: 'M22 12h-4l-3 9L9 3l-3 9H2' }},
+        ]},
+        { id: 'restore', label: 'Restaurar volumen', paths: [
+          { tag: 'rect', attrs: { x:3, y:15, width:18, height:6, rx:2, 'data-fill': '' }},
+          { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }},
+          { tag: 'polyline', attrs: { points: '17 8 12 3 7 8' }},
+          { tag: 'line', attrs: { x1:12, y1:3, x2:12, y2:15 }},
+        ]},
+      ]
+    }
   ];
 
-  $: userName = $user?.username || 'User';
-  $: userRole = $user?.role     || 'user';
+  // ── Data loading ──
+  async function load() {
+    loading = true;
+    try {
+      const res = await fetch('/api/storage/status', { headers: hdrs() });
+      const data = await res.json();
+      pools = data.pools || [];
+    } catch (e) {
+      console.error('[Storage] load failed', e);
+    }
+    loading = false;
+  }
 
-  // Tab label for titlebar subtitle
-  const tabLabel = { resumen:'Resumen', detalle:'Gestionar', disks:'Discos', pools:'Crear volumen', health:'Salud', restore:'Restaurar volumen', snapshots:'Puntos de restauración' };
+  // ── Helpers ──
+  function poolStatus(pool) {
+    if (pool.poolHealth === 'critical' || pool.health === 'FAULTED') return 'crit';
+    if (pool.poolHealth === 'warning' || pool.health === 'DEGRADED') return 'warn';
+    return 'ok';
+  }
+  function poolStatusLabel(pool) {
+    const s = poolStatus(pool);
+    return s === 'crit' ? 'En riesgo' : s === 'warn' ? 'Atención' : 'Sano';
+  }
+  function diskStatus(disk) {
+    if (disk.smartStatus === 'critical') return 'crit';
+    if (disk.smartStatus === 'warning') return 'warn';
+    return 'ok';
+  }
+  function diskStatusLabel(disk) {
+    const s = diskStatus(disk);
+    return s === 'crit' ? 'Crítico' : s === 'warn' ? 'Atención' : 'Sano';
+  }
+  function formatSize(v) {
+    if (!v && v !== 0) return '—';
+    if (typeof v === 'string') return v;
+    const tb = v / (1024 ** 4);
+    if (tb >= 1) return tb.toFixed(1) + ' TB';
+    const gb = v / (1024 ** 3);
+    if (gb >= 1) return gb.toFixed(1) + ' GB';
+    return (v / (1024 ** 2)).toFixed(0) + ' MB';
+  }
+  function formatHours(h) {
+    if (!h) return '—';
+    return h >= 1000 ? (h / 1000).toFixed(1) + 'k h' : h + ' h';
+  }
+  function vdevLabel(t) {
+    return { raidz1:'RAIDZ1', raidz2:'RAIDZ2', raidz3:'RAIDZ3', mirror:'Espejo', single:'Simple', stripe:'Stripe' }[t] || t || '—';
+  }
+
+  let refreshInterval;
+  onMount(() => { load(); refreshInterval = setInterval(load, 30000); });
+  onDestroy(() => { if (refreshInterval) clearInterval(refreshInterval); });
 </script>
 
-<div class="storage-app-root">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sb-header">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-1);flex-shrink:0">
-        <path d="M3 5c0 1.66 4 3 9 3s9-1.34 9-3v14c0 1.66-4 3-9 3s-9-1.34-9-3z" fill="currentColor" opacity="0.12"/>
-        <ellipse cx="12" cy="5" rx="9" ry="3"/>
-        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-      </svg>
-      <span class="sb-app-title">Almacenamiento</span>
-    </div>
+<AppShell title="Almacenamiento" {appIcon} {sections} bind:active showSearch>
 
-    <div class="sb-search">⌕ Buscar…</div>
+  {#if loading && pools.length === 0}
+    <div class="state-msg">Cargando...</div>
 
-    <div class="sb-section">Almacenamiento</div>
-    {#each sidebarItems as item}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="sb-item" class:active={activeTab === item.id} on:click={() => activeTab = item.id}>
-        <svg class="sb-svg" viewBox="0 0 24 24">
-          {#if item.icon === 'resumen'}
-            <rect x="3" y="3" width="7" height="7" rx="2" class="sb-fill"/><rect x="14" y="3" width="7" height="7" rx="2" class="sb-fill"/><rect x="3" y="14" width="7" height="7" rx="2" class="sb-fill"/><rect x="14" y="14" width="7" height="7" rx="2" class="sb-fill"/>
-            <rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>
-          {:else if item.icon === 'disk'}
-            <circle cx="12" cy="12" r="9" class="sb-fill"/><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" class="sb-dot"/>
-          {:else if item.icon === 'snapshot'}
-            <circle cx="13" cy="14" r="8" class="sb-fill"/><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-          {/if}
-        </svg>
-        {item.label}
-      </div>
-    {/each}
-
-    <div class="sb-section" style="margin-top:8px">Mantenimiento</div>
-    {#each maintItems as item}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="sb-item" class:active={activeTab === item.id} on:click={() => activeTab = item.id}>
-        <svg class="sb-svg" viewBox="0 0 24 24">
-          {#if item.icon === 'health'}
-            <path d="M9 3l-3 9H2l4 9h0l3-9h4l3-9" class="sb-fill" style="opacity:0.08"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-          {:else if item.icon === 'restore'}
-            <rect x="3" y="15" width="18" height="6" rx="2" class="sb-fill"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          {/if}
-        </svg>
-        {item.label}
-      </div>
-    {/each}
-
-    <div class="sb-bottom">
-      <div class="sb-user-card">
-        <div class="sb-avatar">{userName[0].toUpperCase()}</div>
-        <div class="sb-user-info">
-          <div class="sb-user-name">{userName}</div>
-          <div class="sb-user-role">{userRole}</div>
+  {:else if active === 'resumen'}
+    {#each pools as pool}
+      <Card>
+        <div class="pool-header">
+          <div>
+            <div class="pool-name">{pool.name}</div>
+            <div class="pool-sub">{vdevLabel(pool.vdevType)} · {pool.type?.toUpperCase()} · {pool.disks?.length || 0} discos</div>
+          </div>
+          <Badge status={poolStatus(pool)}>{poolStatusLabel(pool)}</Badge>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- INNER -->
-  <div class="inner-wrap">
-    <div class="inner">
-      <!-- TITLEBAR -->
-      <div class="inner-titlebar">
-        <div class="tb-title">Almacenamiento</div>
-        <div class="tb-sub">— {tabLabel[activeTab] || ''}</div>
-      </div>
+        <div class="capacity">
+          <div class="cap-row">
+            <div class="bar-track">
+              <div class="bar-fill" style="width:{pool.usedPercent || 0}%"></div>
+            </div>
+            <div class="cap-pct" class:warn={pool.usedPercent > 80} class:crit={pool.usedPercent > 95}>
+              {pool.usedPercent || 0}<span class="sym">%</span>
+            </div>
+          </div>
+          <div class="cap-info">
+            <span class="mono">{formatSize(pool.used)} usados</span>
+            <span class="mono muted">{formatSize(pool.capacity)}</span>
+          </div>
+        </div>
 
-      <!-- CONTENT -->
-      <div class="inner-content no-pad">
-        <StoragePanel bind:activeTab />
-      </div>
+        <div class="pool-actions">
+          <Button>Gestionar</Button>
+          <Button variant="primary">+ Punto de restauración</Button>
+        </div>
 
-      <div class="statusbar">
-        <div class="status-dot"></div>
-        <span>NimOS Beta 5</span>
-      </div>
-    </div>
-  </div>
-</div>
+        {#if pool.enrichedDisks?.length > 0}
+          <div class="smart-section">
+            <SectionLabel>Estado SMART</SectionLabel>
+            <div class="dtable-head">
+              <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
+            </div>
+            {#each pool.enrichedDisks as disk}
+              <div class="dtable-row">
+                <div class="disk-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                    <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+                  </svg>
+                </div>
+                <div class="d-name">{disk.model || disk.name}</div>
+                <div class="d-cell">/dev/{disk.name}</div>
+                <div class="d-cell">{disk.size || '—'}</div>
+                <div class="d-cell" class:temp-hot={disk.temperature > 50}>{disk.temperature ? disk.temperature + '°C' : '—'}</div>
+                <div class="d-cell">{formatHours(disk.powerOnHours)}</div>
+                <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </Card>
+    {/each}
+
+    {#if pools.length === 0}
+      <Card>
+        <div class="state-msg">
+          <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Sin volúmenes</div>
+          <div>Crea un volumen para empezar a almacenar datos.</div>
+        </div>
+      </Card>
+    {/if}
+
+  {:else if active === 'disks'}
+    <Card><SectionLabel>Discos físicos</SectionLabel><div class="state-msg">En desarrollo</div></Card>
+  {:else if active === 'snapshots'}
+    <Card><SectionLabel>Puntos de restauración</SectionLabel><div class="state-msg">En desarrollo</div></Card>
+  {:else if active === 'health'}
+    <Card><SectionLabel>Salud del sistema</SectionLabel><div class="state-msg">En desarrollo</div></Card>
+  {:else if active === 'restore'}
+    <Card><SectionLabel>Restaurar volumen</SectionLabel><div class="state-msg">En desarrollo</div></Card>
+  {/if}
+</AppShell>
 
 <style>
-  .storage-app-root {
-    width:100%; height:100%;
-    display:flex; overflow:hidden;
-    font-family:'DM Sans',-apple-system,sans-serif;
-    color:var(--text-1);
-  }
+  .pool-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+  .pool-name { font-size:26px; font-weight:700; letter-spacing:-0.5px; color:var(--text-primary); }
+  .pool-sub { font-size:13px; color:var(--text-secondary); margin-top:4px; }
 
-  /* ── SIDEBAR ── */
-  .sidebar {
-    width:200px; flex-shrink:0;
-    display:flex; flex-direction:column;
-    padding:12px 8px;
-    background:var(--bg-sidebar);
+  .capacity { margin-bottom:22px; }
+  .cap-row { display:flex; align-items:center; gap:32px; max-width:78%; }
+  .bar-track {
+    flex:1; height:13px; border-radius:8px;
+    background:var(--bg-elev-2); overflow:hidden;
+    border:1px solid var(--glass-border);
   }
-  .sb-header {
-    display:flex; align-items:center; gap:9px;
-    padding:28px 10px 14px;
+  .bar-fill { height:100%; border-radius:8px; background:var(--accent); transition:width 0.5s; }
+  .cap-pct {
+    font-size:42px; font-weight:700; letter-spacing:-1.5px; line-height:1;
+    color:var(--c-ok); white-space:nowrap; font-family:var(--font-mono);
   }
-  .sb-app-title { font-size:16px; font-weight:700; color:var(--text-1); }
+  .cap-pct.warn { color:var(--c-warn); }
+  .cap-pct.crit { color:var(--c-crit); }
+  .cap-pct .sym { font-size:28px; font-weight:600; margin-left:2px; }
+  .cap-info { display:flex; justify-content:space-between; margin-top:12px; font-size:13px; max-width:62%; }
+  .mono { font-family:var(--font-mono); }
+  .muted { color:var(--text-muted); }
 
-  .sb-search {
-    display:flex; align-items:center; gap:6px;
-    padding:6px 10px; border-radius:8px; margin-bottom:10px;
-    border:1px solid var(--border); background:var(--ibtn-bg);
-    font-size:11px; color:var(--text-3);
-  }
-  .sb-section {
-    font-size:9px; font-weight:600; color:var(--text-3);
-    text-transform:uppercase; letter-spacing:.08em;
-    padding:0 10px 4px; margin-top:4px;
-  }
-  .sb-item {
-    display:flex; align-items:center; gap:8px;
-    padding:7px 10px; border-radius:8px; cursor:pointer;
-    font-size:12px; color:var(--text-2);
-    border:1px solid transparent; transition:all .15s;
-  }
-  .sb-item:hover { background:rgba(128,128,128,0.10); color:var(--text-1); }
-  .sb-item.active { background:var(--active-bg); color:var(--text-1); border-color:var(--border-hi); }
-  .sb-svg { width:16px; height:16px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
-  .sb-svg .sb-fill { fill:currentColor; opacity:0.12; stroke:none; }
-  .sb-svg .sb-dot { fill:currentColor; opacity:0.5; stroke:none; }
-  .sb-item.active .sb-svg { color:var(--accent); }
-  .sb-item.active .sb-svg .sb-fill { opacity:0.2; }
-  .sb-item.active .sb-svg .sb-dot { opacity:0.8; }
+  .pool-actions { display:flex; gap:10px; border-top:1px solid var(--glass-border); padding-top:20px; margin-bottom:22px; }
 
-  .sb-bottom { margin-top:auto; border-top:1px solid var(--border); padding-top:8px; }
-  .sb-user-card {
-    display:flex; align-items:center; gap:10px;
-    padding:10px 10px;
+  .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
+
+  .dtable-head {
+    display:grid; grid-template-columns:28px 1.4fr 1.2fr 0.7fr 0.6fr 0.7fr 110px;
+    gap:14px; padding:0 12px 8px;
+    font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;
   }
-  .sb-avatar {
-    width:30px; height:30px; border-radius:8px; flex-shrink:0;
-    background:linear-gradient(135deg, var(--accent), var(--accent2));
+  .dtable-row {
+    display:grid; grid-template-columns:28px 1.4fr 1.2fr 0.7fr 0.6fr 0.7fr 110px;
+    align-items:center; gap:14px; padding:9px 12px; border-radius:8px;
+    font-size:12px; cursor:pointer; transition:background 0.15s;
+  }
+  .dtable-row + .dtable-row { margin-top:2px; }
+  .dtable-row:hover { background:var(--bg-elev-2); }
+
+  .disk-icon {
+    width:26px; height:26px; border-radius:6px;
+    background:var(--bg-elev-2);
     display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:700; color:#fff;
+    color:var(--text-secondary);
   }
-  .sb-user-name { font-size:12px; font-weight:600; color:var(--text-1); }
-  .sb-user-role { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; }
+  .disk-icon svg { width:16px; height:16px; display:block; }
+  .dtable-row:hover .disk-icon { color:var(--text-primary); }
 
-  /* ── INNER ── */
-  .inner-wrap { flex:1; padding:8px; display:flex; }
-  .inner {
-    flex:1; border-radius:10px; border:1px solid var(--border);
-    background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden;
-  }
-  .inner-titlebar {
-    display:flex; align-items:center; gap:8px;
-    padding:14px 16px 12px; background:var(--bg-bar); flex-shrink:0;
-  }
-  .tb-title { font-size:13px; font-weight:600; color:var(--text-1); }
-  .tb-sub { font-size:11px; color:var(--text-3); margin-left:2px; }
-  .tb-tabs { margin-left:auto; }
-  .inner-content { flex:1; overflow-y:auto; padding:20px; }
-  .inner-content.no-pad { padding:0; overflow:hidden; display:flex; flex-direction:column; }
-  .inner-content::-webkit-scrollbar { width:3px; }
-  .inner-content::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }
+  .d-name { font-weight:500; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .d-cell { font-family:var(--font-mono); color:var(--text-secondary); white-space:nowrap; }
+  .temp-hot { color:var(--c-warn); }
 
-  /* ── STATUSBAR ── */
-  .statusbar {
-    display:flex; align-items:center; gap:12px;
-    padding:8px 16px; border-top:1px solid var(--border);
-    background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3);
-    border-radius:0 0 10px 10px; font-family:'DM Mono',monospace;
-  }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
+  .state-msg { font-size:13px; color:var(--text-muted); padding:20px 0; text-align:center; }
 </style>
