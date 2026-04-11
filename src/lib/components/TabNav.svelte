@@ -34,7 +34,7 @@
     font-weight: 600;
     color: var(--text-3);
     transition: color 0.2s;
-    font-family: var(--font);
+    font-family: 'DM Sans', sans-serif;
   }
 
   .tab:hover .tab-text { color: var(--text-2); }

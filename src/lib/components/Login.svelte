@@ -167,9 +167,9 @@
     position: fixed; inset: 0; z-index: 10000;
     display: flex; align-items: center; justify-content: center;
     background:
-      radial-gradient(ellipse 80% 60% at 10% 50%, rgba(233,84,32,0.15) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 80% at 90% 20%, rgba(255,120,71,0.10) 0%, transparent 50%),
-      linear-gradient(140deg, #09090b 0%, #0c0c0f 100%);
+      radial-gradient(ellipse 80% 60% at 10% 50%, rgba(80,140,255,0.6) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 80% at 90% 20%, rgba(230,80,255,0.5) 0%, transparent 50%),
+      linear-gradient(140deg, #1a1030 0%, #0d0d1a 100%);
   }
 
   .card {
@@ -210,7 +210,7 @@
 
   .avatar {
     width: 68px; height: 68px; border-radius: 50%;
-    background: linear-gradient(135deg, #E95420, #ff7847);
+    background: linear-gradient(135deg, #e95420, #c040d0);
     display: flex; align-items: center; justify-content: center;
     font-size: 26px; font-weight: 700; color: #fff;
     opacity: 0; transform: scale(0.5);
@@ -248,10 +248,10 @@
   .inp::placeholder { color: rgba(255,255,255,0.22); }
   .inp.totp {
     text-align: center; font-size: 26px; letter-spacing: 10px;
-    font-family: var(--mono); font-weight: 500;
+    font-family: 'DM Mono', monospace; font-weight: 500;
     margin-bottom: 4px;
   }
-  .inp.totp:focus { border-color: var(--accent); background: rgba(var(--accent-rgb),0.08); }
+  .inp.totp:focus { border-color: #7c6fff; background: rgba(124,111,255,0.08); }
 
   /* ── 2FA ── */
   .tfa-wrap {
@@ -260,13 +260,13 @@
   }
   .shield {
     width: 72px; height: 72px; border-radius: 50%;
-    background: rgba(var(--accent-rgb),0.12);
-    border: 1px solid rgba(var(--accent-rgb),0.25);
+    background: rgba(124,111,255,0.12);
+    border: 1px solid rgba(124,111,255,0.25);
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 16px;
     animation: fadeIn .5s ease .05s both;
   }
-  .shield svg { width: 30px; height: 30px; stroke: var(--accent); }
+  .shield svg { width: 30px; height: 30px; stroke: #7c6fff; }
   .tfa-title {
     font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.92);
     margin-bottom: 6px;
@@ -278,7 +278,7 @@
     animation: fadeIn .4s ease .2s both;
   }
   .tfa-wrap .inp { animation: fadeIn .4s ease .3s both; width: 100%; margin-bottom: 12px; }
-  .tfa-btn { background: var(--accent) !important; animation: fadeIn .4s ease .4s both; }
+  .tfa-btn { background: #7c6fff !important; animation: fadeIn .4s ease .4s both; }
 
   /* ── SHARED ── */
   .login-btn {
@@ -291,7 +291,7 @@
   .login-btn:hover { opacity: .88; }
   .login-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-  .error { color: var(--red); font-size: 12px; text-align: center; margin-bottom: 8px; }
+  .error { color: #f87171; font-size: 12px; text-align: center; margin-bottom: 8px; }
 
   .back-link {
     background: none; border: none; color: rgba(255,255,255,0.3);

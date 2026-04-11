@@ -126,9 +126,9 @@
     left: 50%;
     transform: translateX(-50%);
     width: 680px; max-height: 75vh; overflow-y: auto;
-    background: var(--bg-frame, #09090b);
+    background: var(--bg-frame, #111028);
     border: 1px solid var(--window-border, rgba(255,255,255,0.12));
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: var(--window-shadow, 0 32px 90px rgba(0,0,0,0.60));
     padding: 28px;
     animation: launchIn 0.25s cubic-bezier(0.16,1,0.3,1) both;
@@ -142,7 +142,7 @@
   .launcher-title {
     font-size: 13px; font-weight: 600; color: var(--text-1);
     margin-bottom: 16px; padding: 0 4px;
-    font-family: var(--font);
+    font-family: 'DM Sans', sans-serif;
   }
   .app-grid {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
@@ -170,13 +170,13 @@
   .icon-img { width: 62px; height: 62px; border-radius: 14px; object-fit: contain; mix-blend-mode: screen; }
   .app-name {
     font-size: 11px; color: var(--text-2);
-    text-align: center; font-family: var(--font);
+    text-align: center; font-family: 'DM Sans', sans-serif;
     max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .web-dot {
     position: absolute; top: 8px; right: 8px;
     width: 5px; height: 5px; border-radius: 50%;
-    background: var(--accent, var(--accent));
-    box-shadow: 0 0 4px var(--accent, var(--accent));
+    background: var(--accent, #7c6fff);
+    box-shadow: 0 0 4px var(--accent, #7c6fff);
   }
 </style>

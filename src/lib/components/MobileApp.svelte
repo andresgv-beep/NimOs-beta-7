@@ -76,7 +76,7 @@
     if (b >= 1e6)  return (b/1e6).toFixed(0) + ' MB';
     return (b/1e3).toFixed(0) + ' KB';
   }
-  function arcColor(pct) { return pct < 60 ? 'var(--green)' : pct < 80 ? 'var(--amber)' : 'var(--red)'; }
+  function arcColor(pct) { return pct < 60 ? '#4ade80' : pct < 80 ? '#fbbf24' : '#f87171'; }
 
   function logout() {
     import('$lib/stores/auth.js').then(m => m.logout?.());
@@ -108,8 +108,8 @@
           </div>
           <div class="stat-card">
             <div class="stat-label">RAM</div>
-            <div class="stat-val" style="color:var(--blue)">{memPct.toFixed(0)}%</div>
-            <div class="stat-bar"><div class="stat-fill" style="width:{memPct}%;background:var(--blue)"></div></div>
+            <div class="stat-val" style="color:#3b82f6">{memPct.toFixed(0)}%</div>
+            <div class="stat-bar"><div class="stat-fill" style="width:{memPct}%;background:#3b82f6"></div></div>
             <div class="stat-sub">{fmtBytes(memUsed)} / {fmtBytes(memTotal)}</div>
           </div>
         </div>
@@ -133,25 +133,25 @@
         <div class="section-title">Apps</div>
         <div class="apps-grid">
           <div class="app-btn" on:click={() => switchTab('files')}>
-            <div class="app-ico" style="--ico-color:var(--amber)">
+            <div class="app-ico" style="--ico-color:#f59e0b">
               <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
             </div>
             <div class="app-lbl">Files</div>
           </div>
           <div class="app-btn" on:click={() => switchTab('torrents')}>
-            <div class="app-ico" style="--ico-color:var(--blue)">
+            <div class="app-ico" style="--ico-color:#5ba8ff">
               <svg viewBox="0 0 24 24"><path d="M12 2v10M8 8l4 4 4-4"/><path d="M20 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
             </div>
             <div class="app-lbl">Torrent</div>
           </div>
           <div class="app-btn">
-            <div class="app-ico" style="--ico-color:var(--accent2)">
+            <div class="app-ico" style="--ico-color:#a855f7">
               <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             </div>
             <div class="app-lbl">Docker</div>
           </div>
           <div class="app-btn" on:click={() => switchTab('more')}>
-            <div class="app-ico" style="--ico-color:var(--green)">
+            <div class="app-ico" style="--ico-color:#4ade80">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
             </div>
             <div class="app-lbl">Settings</div>
@@ -202,7 +202,7 @@
                 <div class="tor-name">{t.name}</div>
                 <div class="tor-spd-inline">↓ {fmtSpeed(t.dlSpeed)}</div>
               </div>
-              <div class="tor-bar"><div class="tor-fill" style="width:{Math.min(100,t.progress||0)}%;background:var(--blue)"></div></div>
+              <div class="tor-bar"><div class="tor-fill" style="width:{Math.min(100,t.progress||0)}%;background:#5ba8ff"></div></div>
             </div>
           {/each}
         {/if}
@@ -218,7 +218,7 @@
                 <div class="tor-name done-name">{t.name}</div>
                 <div class="tor-done-label">100%</div>
               </div>
-              <div class="tor-bar"><div class="tor-fill" style="width:100%;background:rgba(34,197,94,0.4)"></div></div>
+              <div class="tor-bar"><div class="tor-fill" style="width:100%;background:rgba(74,222,128,0.4)"></div></div>
             </div>
           {/each}
         {/if}
@@ -243,8 +243,8 @@
         <div class="section-title">Preferencias</div>
         <div class="more-list">
           <div class="more-item">
-            <div class="more-item-ico" style="background:rgba(var(--accent-rgb),0.15)">
-              <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <div class="more-item-ico" style="background:rgba(124,111,255,0.15)">
+              <svg viewBox="0 0 24 24" style="stroke:#7c6fff"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
             </div>
             <div class="more-item-label">Tema</div>
             <div class="theme-picker">
@@ -261,21 +261,21 @@
         <div class="more-list">
           <div class="more-item">
             <div class="more-item-ico" style="background:rgba(59,130,246,0.15)">
-              <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <svg viewBox="0 0 24 24" style="stroke:#3b82f6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             </div>
             <div class="more-item-label">Usuarios</div>
             <svg class="more-arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
           </div>
           <div class="more-item">
-            <div class="more-item-ico" style="background:rgba(245,158,11,0.15)">
-              <svg viewBox="0 0 24 24" style="stroke:var(--amber)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div class="more-item-ico" style="background:rgba(251,191,36,0.15)">
+              <svg viewBox="0 0 24 24" style="stroke:#fbbf24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
             <div class="more-item-label">2FA</div>
             <svg class="more-arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
           </div>
           <div class="more-item">
-            <div class="more-item-ico" style="background:rgba(34,197,94,0.15)">
-              <svg viewBox="0 0 24 24" style="stroke:var(--green)"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <div class="more-item-ico" style="background:rgba(74,222,128,0.15)">
+              <svg viewBox="0 0 24 24" style="stroke:#4ade80"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </div>
             <div class="more-item-label">Actualizaciones</div>
             <svg class="more-arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
@@ -287,10 +287,10 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div class="more-item" on:click={logout}>
-            <div class="more-item-ico" style="background:rgba(239,68,68,0.15)">
-              <svg viewBox="0 0 24 24" style="stroke:var(--red)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <div class="more-item-ico" style="background:rgba(248,113,113,0.15)">
+              <svg viewBox="0 0 24 24" style="stroke:#f87171"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </div>
-            <div class="more-item-label" style="color:var(--red)">Cerrar sesión</div>
+            <div class="more-item-label" style="color:#f87171">Cerrar sesión</div>
           </div>
         </div>
       </div>
@@ -326,7 +326,7 @@
   .mobile-root {
     width: 100%; height: 100vh;
     display: flex; flex-direction: column;
-    font-family: var(--font);
+    font-family: -apple-system, 'SF Pro Display', 'DM Sans', sans-serif;
     overflow: hidden;
     zoom: 1 !important;
     -webkit-text-size-adjust: 100%;
@@ -402,8 +402,8 @@
   .share-item { display:flex; align-items:center; gap:12px; padding:14px 18px; cursor:pointer; }
   .dark .share-item  { border-bottom:1px solid rgba(255,255,255,0.05); }
   .light .share-item { border-bottom:1px solid rgba(0,0,0,0.05); }
-  .share-ico { width:40px; height:40px; border-radius:10px; background:rgba(var(--accent-rgb),0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .share-ico svg { width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:1.8; }
+  .share-ico { width:40px; height:40px; border-radius:10px; background:rgba(124,111,255,0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .share-ico svg { width:20px; height:20px; stroke:#7c6fff; fill:none; stroke-width:1.8; }
   .share-info { flex:1; min-width:0; }
   .share-name { font-size:14px; font-weight:500; }
   .share-meta { font-size:11px; margin-top:2px; }
@@ -416,19 +416,19 @@
   /* ── TORRENTS ── */
   .tor-speeds { display:flex; gap:20px; padding:0 18px 16px; }
   .tor-spd { font-size:15px; font-weight:600; display:flex; align-items:center; gap:5px; }
-  .dl-arrow { color:var(--blue); }
-  .ul-arrow { color:var(--green); }
+  .dl-arrow { color:#5ba8ff; }
+  .ul-arrow { color:#4ad98a; }
   .tor-item { padding:11px 18px; }
   .dark .tor-item  { border-bottom:1px solid rgba(255,255,255,0.05); }
   .light .tor-item { border-bottom:1px solid rgba(0,0,0,0.05); }
   .tor-top { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
   .tor-icon { width:28px; height:28px; border-radius:8px; background:rgba(91,168,255,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .tor-icon svg { width:14px; height:14px; stroke:var(--blue); fill:none; stroke-width:2; }
+  .tor-icon svg { width:14px; height:14px; stroke:#5ba8ff; fill:none; stroke-width:2; }
   .tor-icon.done { background:rgba(74,217,138,0.12); }
-  .tor-icon.done svg { stroke:var(--green); }
+  .tor-icon.done svg { stroke:#4ad98a; }
   .tor-name { flex:1; min-width:0; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .done-name { opacity:.5; }
-  .tor-spd-inline { font-size:11px; color:var(--blue); flex-shrink:0; }
+  .tor-spd-inline { font-size:11px; color:#5ba8ff; flex-shrink:0; }
   .tor-done-label { font-size:11px; flex-shrink:0; }
   .dark .tor-done-label  { color:rgba(255,255,255,0.3); }
   .light .tor-done-label { color:rgba(0,0,0,0.3); }

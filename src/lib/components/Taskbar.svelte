@@ -371,7 +371,7 @@
   .notif-bell-wrap { position:relative; display:flex; align-items:center; }
   .notif-bell { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background .15s; }
   .notif-bell:hover { background:var(--ibtn-bg); }
-  .notif-bell.active { background:rgba(var(--accent-rgb),0.12); }
+  .notif-bell.active { background:rgba(124,111,255,0.12); }
   .notif-bell svg { width:20px; height:20px; color:var(--text-2); transition:color .15s; }
   .notif-bell:hover svg, .notif-bell.active svg { color:var(--text-1); }
   .notif-badge { position:absolute; top:5px; right:5px; min-width:13px; height:13px; border-radius:7px; background:var(--red); font-size:8px; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; padding:0 3px; }
@@ -425,13 +425,13 @@
   }
   .clock {
     font-size: 12px; font-weight: 600;
-    font-family: var(--mono);
+    font-family: 'DM Mono', monospace;
     color: var(--text-1);
     line-height: 1;
   }
   .clock-date {
     font-size: 9px; color: var(--text-3);
-    font-family: var(--mono);
+    font-family: 'DM Mono', monospace;
     text-transform: capitalize;
   }
 
