@@ -11,6 +11,8 @@
   let active = 'resumen';
   let loading = true;
   let pools = [];
+  let shares = [];
+  let poolFileStats = {}; // poolName → { video, image, audio, document, other }
 
   // ── App icon: duotone database ──
   const appIcon = [
@@ -68,9 +70,29 @@
   async function load() {
     loading = true;
     try {
-      const res = await fetch('/api/storage/status', { headers: hdrs() });
-      const data = await res.json();
+      const [statusRes, sharesRes] = await Promise.all([
+        fetch('/api/storage/status', { headers: hdrs() }),
+        fetch('/api/shares', { headers: hdrs() }),
+      ]);
+      const data = await statusRes.json();
       pools = data.pools || [];
+      shares = await sharesRes.json();
+
+      // Aggregate fileStats per pool
+      const agg = {};
+      for (const s of shares) {
+        const pn = s.pool || s.volume;
+        if (!pn) continue;
+        if (!agg[pn]) agg[pn] = { video: 0, image: 0, audio: 0, document: 0, other: 0 };
+        if (s.fileStats) {
+          agg[pn].video += s.fileStats.video || 0;
+          agg[pn].image += s.fileStats.image || 0;
+          agg[pn].audio += s.fileStats.audio || 0;
+          agg[pn].document += s.fileStats.document || 0;
+          agg[pn].other += s.fileStats.other || 0;
+        }
+      }
+      poolFileStats = agg;
     } catch (e) {
       console.error('[Storage] load failed', e);
     }
@@ -105,6 +127,43 @@
   }
   function vdevLabel(t) {
     return { raidz1:'RAIDZ1', raidz2:'RAIDZ2', raidz3:'RAIDZ3', mirror:'Espejo', single:'Simple', stripe:'Stripe' }[t] || t || '—';
+  }
+  function formatBytes(b) {
+    if (!b) return '0 B';
+    if (b >= 1099511627776) return (b / 1099511627776).toFixed(1) + ' TB';
+    if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
+    if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
+    if (b >= 1024) return (b / 1024).toFixed(1) + ' KB';
+    return b + ' B';
+  }
+
+  const categories = [
+    { key: 'video',    label: 'Vídeo',      color: '#3b82f6' },
+    { key: 'audio',    label: 'Audio',       color: '#f59e0b' },
+    { key: 'image',    label: 'Imágenes',    color: '#10b981' },
+    { key: 'document', label: 'Documentos',  color: '#8b5cf6' },
+    { key: 'other',    label: 'Otros',       color: '#64748b' },
+  ];
+
+  function getDonutSegments(stats, total) {
+    if (!stats || !total) return [];
+    const circumference = 2 * Math.PI * 48; // r=48
+    let offset = 0;
+    const segs = [];
+    for (const cat of categories) {
+      const val = stats[cat.key] || 0;
+      if (val <= 0) continue;
+      const pct = val / total;
+      const len = pct * circumference;
+      segs.push({ ...cat, value: val, dasharray: `${len} ${circumference}`, offset: -offset });
+      offset += len;
+    }
+    return segs;
+  }
+
+  function getBarSegments(stats, total) {
+    if (!stats || !total) return [];
+    return categories.map(c => ({ ...c, value: stats[c.key] || 0, pct: ((stats[c.key] || 0) / total) * 100 })).filter(s => s.pct > 0);
   }
 
   // ── System-level status (across all pools) ──
@@ -182,11 +241,16 @@
           <Badge status={poolStatus(pool)}>{poolStatusLabel(pool)}</Badge>
         </div>
 
-        <!-- Capacity -->
+        <!-- Capacity with segmented bar -->
         <div class="capacity">
           <div class="cap-row">
             <div class="bar-track">
-              <div class="bar-fill" style="width:{pool.usagePercent || 0}%"></div>
+              {#each getBarSegments(poolFileStats[pool.name], pool.total) as seg}
+                <div class="bar-seg" style="width:{seg.pct}%;background:{seg.color}" title="{seg.label}"></div>
+              {/each}
+              {#if !poolFileStats[pool.name] || getBarSegments(poolFileStats[pool.name], pool.total).length === 0}
+                <div class="bar-fill" style="width:{pool.usagePercent || 0}%"></div>
+              {/if}
             </div>
             <div class="cap-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
               {pool.usagePercent || 0}<span class="sym">%</span>
@@ -198,10 +262,42 @@
           </div>
         </div>
 
-        <!-- Actions -->
-        <div class="pool-actions">
-          <Button>Gestionar</Button>
-          <Button variant="primary">+ Punto de restauración</Button>
+        <!-- Actions + Donut -->
+        <div class="pool-bottom">
+          <div class="pool-actions">
+            <Button>Gestionar</Button>
+            <Button variant="primary">+ Punto de restauración</Button>
+          </div>
+
+          {#if poolFileStats[pool.name]}
+            <div class="donut-wrap">
+              <div class="legend">
+                {#each categories as cat}
+                  {#if (poolFileStats[pool.name]?.[cat.key] || 0) > 0}
+                    <div class="legend-row">
+                      <span class="legend-dot" style="background:{cat.color}"></span>
+                      <span>{cat.label}</span>
+                      <span class="legend-size">{formatBytes(poolFileStats[pool.name][cat.key])}</span>
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+              <div class="donut">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
+                  {#each getDonutSegments(poolFileStats[pool.name], pool.total) as seg}
+                    <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
+                      stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
+                      style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+                  {/each}
+                </svg>
+                <div class="donut-center">
+                  <div class="donut-val">{pool.totalFormatted || '—'}</div>
+                  <div class="donut-lbl">TOTAL</div>
+                </div>
+              </div>
+            </div>
+          {/if}
         </div>
 
         <!-- SMART disk table -->
@@ -278,7 +374,10 @@
     flex:1; height:13px; border-radius:8px;
     background:var(--bg-elev-2); overflow:hidden;
     border:1px solid var(--glass-border);
+    display:flex;
   }
+  .bar-seg { height:100%; transition:filter 0.2s; }
+  .bar-seg:hover { filter:brightness(1.3); }
   .bar-fill { height:100%; border-radius:8px; background:var(--accent); transition:width 0.5s; }
   .cap-pct {
     font-size:42px; font-weight:700; letter-spacing:-1.5px; line-height:1;
@@ -291,7 +390,32 @@
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
 
-  .pool-actions { display:flex; gap:10px; border-top:1px solid var(--glass-border); padding-top:20px; margin-bottom:22px; }
+  .pool-bottom {
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-top:1px solid var(--glass-border); padding-top:20px; margin-bottom:22px;
+  }
+  .pool-actions { display:flex; gap:10px; }
+
+  /* Donut + legend */
+  .donut-wrap { display:flex; align-items:center; gap:18px; }
+  .legend { display:flex; flex-direction:column; gap:8px; }
+  .legend-row {
+    display:flex; align-items:center; gap:8px;
+    font-size:12px; color:var(--text-primary);
+  }
+  .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .legend-size { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-left:4px; }
+
+  .donut { position:relative; width:120px; height:120px; }
+  .donut svg { display:block; }
+  .donut-center {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .donut-val { font-family:var(--font-mono); font-size:18px; font-weight:600; color:var(--text-primary); }
+  .donut-lbl { font-size:10px; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
 
   .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
 
