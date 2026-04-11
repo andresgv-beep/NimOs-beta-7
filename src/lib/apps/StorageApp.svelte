@@ -830,9 +830,9 @@
   .pool-detail {
     border-top:1px solid var(--glass-border);
     padding:22px 24px 20px;
-    display:flex; justify-content:space-between; align-items:center;
+    display:flex; justify-content:space-between; align-items:flex-end;
   }
-  .detail-left { display:flex; flex-direction:column; gap:16px; }
+  .detail-left { display:flex; flex-direction:column; justify-content:flex-end; }
   .detail-right { display:flex; align-items:center; gap:18px; }
   .pill-actions { display:flex; gap:10px; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
@@ -841,7 +841,7 @@
   /* Donut + legend */
   .donut-wrap { display:flex; align-items:center; gap:18px; }
   .legend {
-    display:grid; grid-auto-flow:column; grid-template-rows:repeat(3, auto);
+    display:grid; grid-auto-flow:column; grid-template-rows:repeat(4, auto);
     gap:8px 22px;
   }
   .legend-row {
