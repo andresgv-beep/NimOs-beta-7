@@ -24,7 +24,7 @@
   let projectTree = [];
 
   const LANGS = { py:'Python', js:'JavaScript', ts:'TypeScript', svelte:'Svelte', go:'Go', c:'C', cpp:'C++', rs:'Rust', sh:'Shell', md:'Markdown', json:'JSON', yaml:'YAML', yml:'YAML', html:'HTML', css:'CSS', txt:'Texto' };
-  const LANG_COLORS = { py:'#3b82f6', js:'#f59e0b', ts:'#3b82f6', go:'#22c55e', c:'#f97316', cpp:'#f97316', rs:'#f97316', svelte:'#f97316', md:'#c084fc', json:'#e879f9', sh:'#22c55e' };
+  const LANG_COLORS = { py:'#60a5fa', js:'#fbbf24', ts:'#60a5fa', go:'#4ade80', c:'#f97316', cpp:'#f97316', rs:'#f97316', svelte:'#f97316', md:'#c084fc', json:'#e879f9', sh:'#4ade80' };
 
   function getExt(name) { const d = name.lastIndexOf('.'); return d >= 0 ? name.slice(d+1).toLowerCase() : 'txt'; }
   function getLang(name) { return LANGS[getExt(name)] || 'Texto'; }
@@ -316,7 +316,7 @@
         <span class="st-sep">·</span><span>UTF-8</span>
         {#if activeFile}
           <span class="st-sep">·</span>
-          <span style="color:var(--text-3);font-family:var(--mono)">{activeFile.share}{activeFile.path}</span>
+          <span style="color:var(--text-3);font-family:'DM Mono',monospace">{activeFile.share}{activeFile.path}</span>
           <div class="st-right"><span>{lines.length} líneas</span><span class="st-sep">·</span><span>Ln {activeLine}</span></div>
         {/if}
       </div>
@@ -399,7 +399,7 @@
 {/if}
 
 <style>
-  .notes-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:var(--font); color:var(--text-1); background:var(--bg-frame); }
+  .notes-root { width:100%; height:100%; display:flex; overflow:hidden; font-family:'Inter',-apple-system,sans-serif; color:var(--text-1); }
   .sidebar { width:220px; flex-shrink:0; background:var(--bg-sidebar); display:flex; flex-direction:column; overflow:hidden; transition:width .2s cubic-bezier(0.4,0,0.2,1); border-right:1px solid var(--border); }
   .sidebar.collapsed { width:0; border-right:none; }
   .sb-header { display:flex; align-items:center; gap:8px; padding:28px 12px 14px; color:var(--text-1); white-space:nowrap; }
@@ -410,15 +410,15 @@
   .sb-item.active { background:var(--active-bg); color:var(--text-1); }
   .sb-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; }
   .sb-dot { width:6px; height:6px; border-radius:50%; background:var(--amber); flex-shrink:0; }
-  .sb-ext { font-size:9px; padding:1px 5px; border-radius:3px; font-family:var(--mono); flex-shrink:0; background:rgba(255,255,255,0.06); }
+  .sb-ext { font-size:9px; padding:1px 5px; border-radius:3px; font-family:'DM Mono',monospace; flex-shrink:0; background:rgba(255,255,255,0.06); }
   .sb-tree-file { padding:3px 8px; }
   .sb-folder { display:flex; align-items:center; gap:6px; padding:5px 8px; margin:0 4px; font-size:11px; color:var(--text-2); white-space:nowrap; }
   .sb-folder-name { font-size:11px; }
-  .inner-wrap { flex:1; display:flex; min-width:0; }
-  .inner { flex:1; background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+  .inner-wrap { flex:1; padding:8px; display:flex; min-width:0; }
+  .inner { flex:1; border-radius:10px; border:1px solid var(--border); background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden; min-width:0; }
   .inner-titlebar { display:flex; align-items:center; gap:6px; padding:9px 12px; background:var(--bg-bar); flex-shrink:0; border-bottom:1px solid var(--border); }
   .tb-filename { font-size:13px; font-weight:600; color:var(--text-1); }
-  .tb-badge { font-size:10px; font-weight:700; font-family:var(--mono); padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); }
+  .tb-badge { font-size:10px; font-weight:700; font-family:'DM Mono',monospace; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); }
   .tb-dot { width:7px; height:7px; border-radius:50%; background:var(--amber); flex-shrink:0; }
   .tb-spacer { flex:1; }
   .icon-btn { width:30px; height:30px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--text-3); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
@@ -434,33 +434,33 @@
   .drop-item svg { width:13px; height:13px; flex-shrink:0; opacity:.6; }
   .drop-item:hover { background:var(--active-bg); color:var(--text-1); }
   .drop-item.danger { color:var(--red); }
-  .drop-item.danger:hover { background:rgba(239,68,68,0.10); }
+  .drop-item.danger:hover { background:rgba(248,113,113,0.10); }
   .drop-sep { height:1px; background:var(--border); margin:3px 4px; }
   .editor-wrap { flex:1; overflow:auto; display:flex; min-height:0; }
   .editor-wrap::-webkit-scrollbar { width:6px; height:6px; }
   .editor-wrap::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.10); border-radius:3px; }
   .line-numbers { padding:14px 0; background:rgba(0,0,0,0.12); border-right:1px solid var(--border); flex-shrink:0; user-select:none; min-width:52px; text-align:right; }
-  .ln { padding:0 14px 0 8px; font-size:12.5px; line-height:1.75; font-family:var(--mono); color:var(--text-3); }
+  .ln { padding:0 14px 0 8px; font-size:12.5px; line-height:1.75; font-family:'DM Mono',monospace; color:var(--text-3); }
   .ln.active { color:var(--accent); }
   .code-wrap { flex:1; position:relative; }
   .code-highlight { padding:14px 20px; pointer-events:none; }
-  .code-line { font-size:12.5px; line-height:1.75; font-family:var(--mono); color:var(--text-1); white-space:pre; min-height:1.75em; border-radius:3px; margin:0 -4px; padding:0 4px; }
-  .code-line.active-line { background:rgba(var(--accent-rgb),0.07); }
-  .code-textarea { position:absolute; inset:0; padding:14px 20px; font-size:12.5px; line-height:1.75; font-family:var(--mono); color:transparent; background:transparent; border:none; outline:none; resize:none; caret-color:var(--accent); white-space:pre; width:100%; height:100%; }
+  .code-line { font-size:12.5px; line-height:1.75; font-family:'DM Mono',monospace; color:var(--text-1); white-space:pre; min-height:1.75em; border-radius:3px; margin:0 -4px; padding:0 4px; }
+  .code-line.active-line { background:rgba(124,111,255,0.07); }
+  .code-textarea { position:absolute; inset:0; padding:14px 20px; font-size:12.5px; line-height:1.75; font-family:'DM Mono',monospace; color:transparent; background:transparent; border:none; outline:none; resize:none; caret-color:var(--accent); white-space:pre; width:100%; height:100%; }
   :global(.kw)  { color:#c084fc; font-style:italic; }
-  :global(.str) { color:var(--green); }
+  :global(.str) { color:#4ade80; }
   :global(.cmt) { color:rgba(255,255,255,0.3); font-style:italic; }
-  :global(.num) { color:var(--amber); }
-  :global(.fn)  { color:var(--blue); }
+  :global(.num) { color:#fbbf24; }
+  :global(.fn)  { color:#60a5fa; }
   :global(.tp)  { color:#f97316; }
   :global(.bi)  { color:#e879f9; }
   .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
-  .empty-icon { width:56px; height:56px; border-radius:14px; background:rgba(var(--accent-rgb),0.08); border:1px solid rgba(var(--accent-rgb),0.12); display:flex; align-items:center; justify-content:center; }
+  .empty-icon { width:56px; height:56px; border-radius:14px; background:rgba(124,111,255,0.08); border:1px solid rgba(124,111,255,0.12); display:flex; align-items:center; justify-content:center; }
   .empty-icon svg { width:26px; height:26px; color:var(--accent); opacity:.4; }
   .empty-title { font-size:13px; font-weight:600; color:var(--text-2); }
   .empty-desc { font-size:11px; color:var(--text-3); }
-  .statusbar { display:flex; align-items:center; gap:8px; padding:6px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 11px 11px; font-family:var(--mono); }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(34,197,94,0.6); }
+  .statusbar { display:flex; align-items:center; gap:8px; padding:6px 14px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3); border-radius:0 0 10px 10px; font-family:'DM Mono',monospace; }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
   .st-sep { color:var(--border); }
   .st-right { margin-left:auto; display:flex; gap:8px; }
   .spinner { width:12px; height:12px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; animation:spin .7s linear infinite; }
@@ -477,7 +477,7 @@
   .modal-share-tab:hover { color:var(--text-2); }
   .modal-share-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
   .modal-breadcrumb { display:flex; align-items:center; gap:4px; padding:8px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .modal-bc-part { font-size:10px; color:var(--text-3); cursor:pointer; font-family:var(--mono); }
+  .modal-bc-part { font-size:10px; color:var(--text-3); cursor:pointer; font-family:'DM Mono',monospace; }
   .modal-bc-part:hover { color:var(--text-2); }
   .modal-files { flex:1; overflow-y:auto; padding:6px 10px; }
   .modal-files::-webkit-scrollbar { width:3px; }
@@ -486,10 +486,10 @@
   .modal-file:hover { background:var(--active-bg); color:var(--text-1); }
   .modal-file-ico { width:26px; height:26px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.05); }
   .modal-file-ico svg { width:13px; height:13px; color:var(--text-3); }
-  .modal-file-ico.dir { background:rgba(245,158,11,0.10); }
+  .modal-file-ico.dir { background:rgba(251,191,36,0.10); }
   .modal-file-ico.dir svg { color:var(--amber); }
   .modal-file-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .modal-file-ext { font-size:9px; padding:1px 5px; border-radius:3px; background:rgba(255,255,255,0.06); font-family:var(--mono); flex-shrink:0; }
+  .modal-file-ext { font-size:9px; padding:1px 5px; border-radius:3px; background:rgba(255,255,255,0.06); font-family:'DM Mono',monospace; flex-shrink:0; }
   .modal-footer { display:flex; justify-content:flex-end; padding:10px 16px; border-top:1px solid var(--border); background:var(--bg-bar); flex-shrink:0; }
   .modal-btn { padding:6px 14px; border-radius:7px; border:1px solid var(--border); background:var(--ibtn-bg); color:var(--text-2); font-size:11px; cursor:pointer; font-family:inherit; transition:all .15s; }
   .modal-btn:hover { color:var(--text-1); border-color:var(--border-hi); }

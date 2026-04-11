@@ -574,7 +574,7 @@
 {/if}
 
 <style>
-  .sys-root { width:100%; height:100%; display:flex; overflow:hidden; position:relative; background:var(--bg-frame); }
+  .sys-root { width:100%; height:100%; display:flex; overflow:hidden; position:relative; }
   .sys-content { flex:1; overflow-y:auto; padding:18px 20px; }
   .sys-content::-webkit-scrollbar { width:3px; }
   .sys-content::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }
@@ -645,7 +645,7 @@
     padding:5px 0; border-bottom:1px solid var(--border); font-size:11px;
   }
   .summary-row span:first-child { color:var(--text-3); }
-  .summary-row span:last-child  { color:var(--text-1); font-family:var(--mono); }
+  .summary-row span:last-child  { color:var(--text-1); font-family:'DM Mono',monospace; }
   .modal-footer {
     display:flex; align-items:center; justify-content:flex-end; gap:8px;
     padding:12px 18px; border-top:1px solid var(--border);
@@ -690,7 +690,7 @@
     font-size:9px; font-weight:600; text-transform:uppercase;
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3);
   }
-  .user-badge.admin { background:rgba(var(--accent-rgb),0.12); border-color:rgba(var(--accent-rgb),0.30); color:var(--accent); }
+  .user-badge.admin { background:rgba(124,111,255,0.12); border-color:rgba(124,111,255,0.30); color:var(--accent); }
 
   /* ── SHARES ── */
   .share-list { display:flex; flex-direction:column; gap:6px; }
@@ -701,7 +701,7 @@
   }
   .share-icon { font-size:16px; flex-shrink:0; }
   .share-name { font-size:12px; font-weight:600; color:var(--text-1); }
-  .share-path { font-size:10px; color:var(--text-3); font-family:var(--mono); margin-top:1px; }
+  .share-path { font-size:10px; color:var(--text-3); font-family:'DM Mono',monospace; margin-top:1px; }
   .share-meta { font-size:10px; color:var(--text-3); margin-top:2px; }
   .share-desc { color:var(--text-3); }
   .share-actions { margin-left:auto; display:flex; gap:4px; flex-shrink:0; }
@@ -712,13 +712,13 @@
     transition:all .15s;
   }
   .share-action-btn:hover { color:var(--text-1); border-color:var(--border-hi); }
-  .share-action-btn.danger:hover { color:var(--red); border-color:rgba(239,68,68,0.25); }
+  .share-action-btn.danger:hover { color:var(--red); border-color:rgba(248,113,113,0.25); }
   .share-perms { margin-left:auto; display:flex; gap:5px; }
   .perm-tag {
     padding:2px 7px; border-radius:4px; font-size:9px; font-weight:600;
     background:var(--ibtn-bg); border:1px solid var(--border); color:var(--text-3);
   }
-  .perm-tag.warn { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.25); color:var(--amber); }
+  .perm-tag.warn { background:rgba(251,191,36,0.10); border-color:rgba(251,191,36,0.25); color:var(--amber); }
 
   /* ── SHARE FORM ── */
   .share-form { display:flex; flex-direction:column; gap:14px; max-width:520px; }
@@ -727,7 +727,7 @@
   .form-input, .form-select {
     padding:9px 12px; border-radius:8px;
     background:rgba(255,255,255,0.04); border:1px solid var(--border);
-    color:var(--text-1); font-size:12px; font-family:var(--font);
+    color:var(--text-1); font-size:12px; font-family:'DM Sans',sans-serif;
     outline:none; transition:border-color .2s;
   }
   .form-input:focus, .form-select:focus { border-color:var(--accent); }
@@ -766,7 +766,7 @@
   .perm-admin-tag {
     font-size:8px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
     padding:1px 5px; border-radius:3px;
-    background:rgba(var(--accent-rgb),0.12); color:var(--accent);
+    background:rgba(124,111,255,0.12); color:var(--accent);
   }
   .perm-select { padding:5px 28px 5px 8px; font-size:10px; min-width:140px; }
 
@@ -777,12 +777,12 @@
     padding:8px 0; border-bottom:1px solid var(--border);
   }
   .field-label { font-size:11px; color:var(--text-2); }
-  .field-value { font-size:11px; color:var(--text-1); font-family:var(--mono); }
+  .field-value { font-size:11px; color:var(--text-1); font-family:'DM Mono',monospace; }
 
   /* ── UPDATES ── */
   .update-card {
     margin-top:12px; padding:12px 14px; border-radius:8px;
-    border:1px solid rgba(34,197,94,0.25); background:rgba(34,197,94,0.06);
+    border:1px solid rgba(74,222,128,0.25); background:rgba(74,222,128,0.06);
     font-size:11px; color:var(--green);
   }
   .update-version { font-size:12px; font-weight:600; color:var(--amber); margin-bottom:4px; }

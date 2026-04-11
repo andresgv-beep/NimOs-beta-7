@@ -1,9 +1,11 @@
 <script>
   import { user } from '$lib/stores/auth.js';
+  import TabNav from '$lib/components/TabNav.svelte';
   import StoragePanel from '$lib/apps/StoragePanel.svelte';
 
   let activeTab = 'resumen';
 
+  // Sidebar items — Storage-specific sections
   const sidebarItems = [
     { id: 'resumen',   label: 'Resumen',                icon: 'resumen'  },
     { id: 'disks',     label: 'Discos',                  icon: 'disk'     },
@@ -17,194 +19,178 @@
   $: userName = $user?.username || 'User';
   $: userRole = $user?.role     || 'user';
 
+  // Tab label for titlebar subtitle
   const tabLabel = { resumen:'Resumen', detalle:'Gestionar', disks:'Discos', pools:'Crear volumen', health:'Salud', restore:'Restaurar volumen', snapshots:'Puntos de restauración' };
 </script>
 
-<div class="app">
-  <!-- ── SIDEBAR ── -->
-  <aside class="sidebar">
+<div class="storage-app-root">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
     <div class="sb-header">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-1);flex-shrink:0">
+        <path d="M3 5c0 1.66 4 3 9 3s9-1.34 9-3v14c0 1.66-4 3-9 3s-9-1.34-9-3z" fill="currentColor" opacity="0.12"/>
         <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-        <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
       </svg>
-      <span class="sb-title">Almacenamiento</span>
+      <span class="sb-app-title">Almacenamiento</span>
     </div>
 
     <div class="sb-search">⌕ Buscar…</div>
 
-    <div class="sb-label">Almacenamiento</div>
+    <div class="sb-section">Almacenamiento</div>
     {#each sidebarItems as item}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="sb-item" class:active={activeTab === item.id} on:click={() => activeTab = item.id}>
-        <svg class="sb-icon" viewBox="0 0 24 24">
+        <svg class="sb-svg" viewBox="0 0 24 24">
           {#if item.icon === 'resumen'}
-            <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="3" width="7" height="7" rx="2" class="sb-fill"/><rect x="14" y="3" width="7" height="7" rx="2" class="sb-fill"/><rect x="3" y="14" width="7" height="7" rx="2" class="sb-fill"/><rect x="14" y="14" width="7" height="7" rx="2" class="sb-fill"/>
+            <rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>
           {:else if item.icon === 'disk'}
-            <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>
+            <circle cx="12" cy="12" r="9" class="sb-fill"/><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" class="sb-dot"/>
           {:else if item.icon === 'snapshot'}
-            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            <circle cx="13" cy="14" r="8" class="sb-fill"/><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
           {/if}
         </svg>
         {item.label}
       </div>
     {/each}
 
-    <div class="sb-sep"></div>
-    <div class="sb-label">Mantenimiento</div>
+    <div class="sb-section" style="margin-top:8px">Mantenimiento</div>
     {#each maintItems as item}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="sb-item" class:active={activeTab === item.id} on:click={() => activeTab = item.id}>
-        <svg class="sb-icon" viewBox="0 0 24 24">
+        <svg class="sb-svg" viewBox="0 0 24 24">
           {#if item.icon === 'health'}
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            <path d="M9 3l-3 9H2l4 9h0l3-9h4l3-9" class="sb-fill" style="opacity:0.08"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
           {:else if item.icon === 'restore'}
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            <rect x="3" y="15" width="18" height="6" rx="2" class="sb-fill"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           {/if}
         </svg>
         {item.label}
       </div>
     {/each}
 
-    <div class="sb-footer">
-      <div class="sb-user">
+    <div class="sb-bottom">
+      <div class="sb-user-card">
         <div class="sb-avatar">{userName[0].toUpperCase()}</div>
-        <div>
+        <div class="sb-user-info">
           <div class="sb-user-name">{userName}</div>
           <div class="sb-user-role">{userRole}</div>
         </div>
       </div>
     </div>
-  </aside>
+  </div>
 
-  <!-- ── MAIN ── -->
-  <div class="main">
-    <div class="topbar">
-      <span class="tb-title">Almacenamiento</span>
-      <span class="tb-sep"></span>
-      <span class="tb-sub">{tabLabel[activeTab] || ''}</span>
-    </div>
+  <!-- INNER -->
+  <div class="inner-wrap">
+    <div class="inner">
+      <!-- TITLEBAR -->
+      <div class="inner-titlebar">
+        <div class="tb-title">Almacenamiento</div>
+        <div class="tb-sub">— {tabLabel[activeTab] || ''}</div>
+      </div>
 
-    <div class="content">
-      <StoragePanel bind:activeTab />
-    </div>
+      <!-- CONTENT -->
+      <div class="inner-content no-pad">
+        <StoragePanel bind:activeTab />
+      </div>
 
-    <div class="statusbar">
-      <div class="status-dot"></div>
-      <span>NimOS v7.0-beta</span>
+      <div class="statusbar">
+        <div class="status-dot"></div>
+        <span>NimOS Beta 5</span>
+      </div>
     </div>
   </div>
 </div>
 
 <style>
-  /* ═══════════════════════════════════
-     StorageApp — flat layout
-     Sidebar (--bg-sidebar) | Main (--bg-panel)
-     No inner-wrap. No double background.
-     ═══════════════════════════════════ */
-  .app {
-    width: 100%; height: 100%;
-    display: flex; overflow: hidden;
-    font-family: var(--font);
-    color: var(--text-1);
+  .storage-app-root {
+    width:100%; height:100%;
+    display:flex; overflow:hidden;
+    font-family:'DM Sans',-apple-system,sans-serif;
+    color:var(--text-1);
   }
 
-  /* ── Sidebar ── */
+  /* ── SIDEBAR ── */
   .sidebar {
-    width: 200px; flex-shrink: 0;
-    display: flex; flex-direction: column;
-    background: var(--bg-sidebar);
-    border-right: 1px solid var(--border);
-    padding: 44px 8px 10px;
+    width:200px; flex-shrink:0;
+    display:flex; flex-direction:column;
+    padding:12px 8px;
+    background:var(--bg-sidebar);
   }
   .sb-header {
-    display: flex; align-items: center; gap: 9px;
-    padding: 4px 10px 16px;
+    display:flex; align-items:center; gap:9px;
+    padding:28px 10px 14px;
   }
-  .sb-header svg { color: var(--text-0); flex-shrink: 0; }
-  .sb-title { font-size: 14px; font-weight: 800; color: var(--text-0); letter-spacing: -0.02em; }
+  .sb-app-title { font-size:16px; font-weight:700; color:var(--text-1); }
 
   .sb-search {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 10px; border-radius: 6px;
-    border: 1px solid var(--border); background: var(--bg-panel);
-    font-size: 11px; color: var(--text-3);
-    margin-bottom: 12px; cursor: text;
+    display:flex; align-items:center; gap:6px;
+    padding:6px 10px; border-radius:8px; margin-bottom:10px;
+    border:1px solid var(--border); background:var(--ibtn-bg);
+    font-size:11px; color:var(--text-3);
   }
-  .sb-label {
-    font-size: 9.5px; font-weight: 700; color: var(--text-3);
-    letter-spacing: 0.08em; text-transform: uppercase;
-    padding: 0 10px 4px; margin-top: 4px;
+  .sb-section {
+    font-size:9px; font-weight:600; color:var(--text-3);
+    text-transform:uppercase; letter-spacing:.08em;
+    padding:0 10px 4px; margin-top:4px;
   }
   .sb-item {
-    display: flex; align-items: center; gap: 9px;
-    padding: 7px 10px; border-radius: 6px;
-    font-size: 12.5px; font-weight: 500; color: var(--text-2);
-    cursor: pointer; transition: all 0.15s;
-    border: 1px solid transparent; margin-bottom: 1px;
+    display:flex; align-items:center; gap:8px;
+    padding:7px 10px; border-radius:8px; cursor:pointer;
+    font-size:12px; color:var(--text-2);
+    border:1px solid transparent; transition:all .15s;
   }
-  .sb-item:hover { background: rgba(255,255,255,0.04); color: var(--text-1); }
-  .sb-item.active {
-    background: var(--accent-dim);
-    color: var(--accent);
-    border-color: rgba(255,255,255,0.04);
-  }
-  .sb-icon {
-    width: 15px; height: 15px; flex-shrink: 0;
-    stroke: currentColor; fill: none;
-    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-    opacity: 0.5;
-  }
-  .sb-item.active .sb-icon { opacity: 1; }
-  .sb-sep { height: 1px; background: var(--border); margin: 8px 10px; }
+  .sb-item:hover { background:rgba(128,128,128,0.10); color:var(--text-1); }
+  .sb-item.active { background:var(--active-bg); color:var(--text-1); border-color:var(--border-hi); }
+  .sb-svg { width:16px; height:16px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .sb-svg .sb-fill { fill:currentColor; opacity:0.12; stroke:none; }
+  .sb-svg .sb-dot { fill:currentColor; opacity:0.5; stroke:none; }
+  .sb-item.active .sb-svg { color:var(--accent); }
+  .sb-item.active .sb-svg .sb-fill { opacity:0.2; }
+  .sb-item.active .sb-svg .sb-dot { opacity:0.8; }
 
-  .sb-footer { margin-top: auto; border-top: 1px solid var(--border); padding-top: 10px; }
-  .sb-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+  .sb-bottom { margin-top:auto; border-top:1px solid var(--border); padding-top:8px; }
+  .sb-user-card {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 10px;
+  }
   .sb-avatar {
-    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-    background: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; color: white;
+    width:30px; height:30px; border-radius:8px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff;
   }
-  .sb-user-name { font-size: 12px; font-weight: 600; color: var(--text-0); }
-  .sb-user-role { font-size: 9.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  .sb-user-name { font-size:12px; font-weight:600; color:var(--text-1); }
+  .sb-user-role { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; }
 
-  /* ── Main ── */
-  .main {
-    flex: 1; display: flex; flex-direction: column;
-    background: var(--bg-panel);
-    overflow: hidden;
+  /* ── INNER ── */
+  .inner-wrap { flex:1; padding:8px; display:flex; }
+  .inner {
+    flex:1; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden;
   }
-  .topbar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 20px;
-    background: var(--bg-bar);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+  .inner-titlebar {
+    display:flex; align-items:center; gap:8px;
+    padding:14px 16px 12px; background:var(--bg-bar); flex-shrink:0;
   }
-  .tb-title { font-size: 13px; font-weight: 700; color: var(--text-0); }
-  .tb-sep { width: 1px; height: 14px; background: var(--border-hi); }
-  .tb-sub { font-size: 11.5px; color: var(--text-3); font-weight: 500; }
+  .tb-title { font-size:13px; font-weight:600; color:var(--text-1); }
+  .tb-sub { font-size:11px; color:var(--text-3); margin-left:2px; }
+  .tb-tabs { margin-left:auto; }
+  .inner-content { flex:1; overflow-y:auto; padding:20px; }
+  .inner-content.no-pad { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+  .inner-content::-webkit-scrollbar { width:3px; }
+  .inner-content::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.15); border-radius:2px; }
 
-  .content {
-    flex: 1; overflow: hidden;
-    display: flex; flex-direction: column;
-  }
-
+  /* ── STATUSBAR ── */
   .statusbar {
-    display: flex; align-items: center; gap: 14px;
-    padding: 6px 20px;
-    border-top: 1px solid var(--border);
-    background: var(--bg-bar);
-    font-size: 10.5px; font-family: var(--mono);
-    color: var(--text-3); flex-shrink: 0;
+    display:flex; align-items:center; gap:12px;
+    padding:8px 16px; border-top:1px solid var(--border);
+    background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3);
+    border-radius:0 0 10px 10px; font-family:'DM Mono',monospace;
   }
-  .status-dot {
-    width: 4px; height: 4px; border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 4px rgba(34,197,94,0.5);
-  }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
 </style>

@@ -103,13 +103,13 @@
   .network-app-root {
     width:100%; height:100%;
     display:flex; overflow:hidden;
-    font-family:var(--font); background:var(--bg-frame);
+    font-family:'DM Sans',-apple-system,sans-serif;
     color:var(--text-1);
   }
 
   /* ── SIDEBAR ── */
   .sidebar {
-    width:200px; flex-shrink:0; border-right:1px solid var(--border);
+    width:200px; flex-shrink:0;
     display:flex; flex-direction:column;
     padding:12px 8px;
     background:var(--bg-sidebar);
@@ -157,9 +157,9 @@
   .sb-user-role { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; }
 
   /* ── INNER ── */
-  .inner-wrap { flex:1; display:flex; }
+  .inner-wrap { flex:1; padding:8px; display:flex; }
   .inner {
-    flex:1;
+    flex:1; border-radius:10px; border:1px solid var(--border);
     background:var(--bg-inner); display:flex; flex-direction:column; overflow:hidden;
   }
   .inner-titlebar {
@@ -179,7 +179,7 @@
     display:flex; align-items:center; gap:12px;
     padding:8px 16px; border-top:1px solid var(--border);
     background:var(--bg-bar); flex-shrink:0; font-size:10px; color:var(--text-3);
-    border-radius:0 0 11px 11px; font-family:var(--mono);
+    border-radius:0 0 10px 10px; font-family:'DM Mono',monospace;
   }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(34,197,94,0.6); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 4px rgba(74,222,128,0.6); }
 </style>
