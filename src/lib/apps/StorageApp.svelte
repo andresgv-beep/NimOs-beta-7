@@ -13,7 +13,13 @@
   let pools = [];
   let shares = [];
   let poolFileStats = {}; // poolName → { video, image, audio, document, other }
-  let detailPool = null; // when set, shows the "Gestionar" view for this pool
+  let detailPool = null;
+  let eligible = [];
+  let capabilities = { zfs: false, btrfs: false, mdadm: false, recommended: 'btrfs' };
+  let newPool = { name: '', type: 'zfs', profile: 'raidz1', disks: [] };
+  let showCreatePool = false;
+  let creating = false;
+  let poolMsg = ''; // when set, shows the "Gestionar" view for this pool
 
   // ── App icon: duotone database ──
   const appIcon = [
@@ -71,13 +77,20 @@
   async function load() {
     loading = true;
     try {
-      const [statusRes, sharesRes] = await Promise.all([
+      const [statusRes, sharesRes, disksRes, capRes] = await Promise.all([
         fetch('/api/storage/status', { headers: hdrs() }),
         fetch('/api/shares', { headers: hdrs() }),
+        fetch('/api/storage/disks', { headers: hdrs() }),
+        fetch('/api/storage/capabilities', { headers: hdrs() }),
       ]);
       const data = await statusRes.json();
       pools = data.pools || [];
       shares = await sharesRes.json();
+      const diskData = await disksRes.json();
+      eligible = diskData.eligible || [];
+      const caps = await capRes.json();
+      capabilities = caps;
+      if (caps.recommended) newPool.type = caps.recommended;
 
       // Aggregate fileStats per pool
       const agg = {};
@@ -290,6 +303,53 @@
     } catch (e) { alert('Error: ' + e.message); }
     destroying = false;
   }
+
+  function toggleDisk(path) {
+    if (newPool.disks.includes(path)) {
+      newPool.disks = newPool.disks.filter(p => p !== path);
+    } else {
+      newPool.disks = [...newPool.disks, path];
+    }
+  }
+
+  async function createPool() {
+    if (!newPool.name.trim()) { poolMsg = 'Introduce un nombre'; return; }
+    if (newPool.disks.length === 0) { poolMsg = 'Selecciona al menos un disco'; return; }
+    creating = true; poolMsg = '';
+    try {
+      const body = {
+        name: newPool.name.trim(),
+        type: newPool.type,
+        disks: newPool.disks,
+      };
+      if (newPool.type === 'zfs') body.vdevType = newPool.profile;
+      else if (newPool.type === 'btrfs') body.profile = newPool.profile;
+
+      const res = await fetch('/api/storage/pool', {
+        method: 'POST',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        poolMsg = '';
+        newPool = { name: '', type: capabilities.recommended || 'zfs', profile: 'raidz1', disks: [] };
+        showCreatePool = false;
+        active = 'resumen';
+        await load();
+      } else {
+        poolMsg = data.error || 'Error al crear pool';
+      }
+    } catch (e) { poolMsg = 'Error de conexión'; }
+    creating = false;
+  }
+
+  const zfsProfiles = [
+    { id: 'single', label: 'Simple (sin protección)', min: 1 },
+    { id: 'mirror', label: 'Espejo (mirror)', min: 2 },
+    { id: 'raidz1', label: 'RAIDZ1 (puede perder 1 disco)', min: 3 },
+    { id: 'raidz2', label: 'RAIDZ2 (puede perder 2 discos)', min: 5 },
+  ];
 </script>
 
 <AppShell title="Almacenamiento" {appIcon} {sections} bind:active showSearch>
@@ -544,7 +604,133 @@
     {/if}
 
   {:else if active === 'disks'}
-    <Card><SectionLabel>Discos físicos</SectionLabel><div class="state-msg">En desarrollo</div></Card>
+    {#if showCreatePool}
+      <!-- Create Pool form -->
+      <Card>
+        <div class="create-header">
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="back-btn" on:click={() => showCreatePool = false}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+            Volver
+          </div>
+          <span style="font-size:18px;font-weight:600">Crear volumen</span>
+        </div>
+
+        <div class="create-form">
+          <div class="form-group">
+            <label class="form-label">Nombre del volumen</label>
+            <input class="form-input" bind:value={newPool.name} placeholder="mi-volumen">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Sistema de archivos</label>
+            <div class="form-options">
+              {#if capabilities.zfs}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div class="form-option" class:selected={newPool.type === 'zfs'} on:click={() => { newPool.type = 'zfs'; newPool.profile = 'raidz1'; }}>
+                  <span class="opt-title">ZFS</span>
+                  <span class="opt-desc">Recomendado · snapshots, compresión, reparación</span>
+                </div>
+              {/if}
+              {#if capabilities.btrfs}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div class="form-option" class:selected={newPool.type === 'btrfs'} on:click={() => { newPool.type = 'btrfs'; newPool.profile = 'single'; }}>
+                  <span class="opt-title">BTRFS</span>
+                  <span class="opt-desc">Snapshots, compresión, flexible</span>
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          {#if newPool.type === 'zfs'}
+            <div class="form-group">
+              <label class="form-label">Protección</label>
+              <div class="form-options">
+                {#each zfsProfiles as p}
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div class="form-option" class:selected={newPool.profile === p.id} class:disabled={eligible.length < p.min}
+                    on:click={() => { if (eligible.length >= p.min) newPool.profile = p.id; }}>
+                    <span class="opt-title">{p.label}</span>
+                    <span class="opt-desc">Mínimo {p.min} disco{p.min > 1 ? 's' : ''}</span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          <div class="form-group">
+            <label class="form-label">Discos ({newPool.disks.length} seleccionados)</label>
+            {#each eligible as disk}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="disk-select" class:selected={newPool.disks.includes('/dev/' + disk.name)} on:click={() => toggleDisk('/dev/' + disk.name)}>
+                <div class="disk-check">{newPool.disks.includes('/dev/' + disk.name) ? '✓' : ''}</div>
+                <div class="disk-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                    <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+                  </svg>
+                </div>
+                <div style="flex:1">
+                  <div class="d-name">{disk.model || disk.name}</div>
+                  <div class="d-cell">/dev/{disk.name} · {disk.size || '—'}</div>
+                </div>
+              </div>
+            {/each}
+            {#if eligible.length === 0}
+              <div class="state-msg">No hay discos disponibles</div>
+            {/if}
+          </div>
+
+          {#if poolMsg}
+            <div class="pool-msg">{poolMsg}</div>
+          {/if}
+
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <Button on:click={() => showCreatePool = false}>Cancelar</Button>
+            <Button variant="primary" disabled={creating} on:click={createPool}>
+              {creating ? 'Creando...' : 'Crear volumen'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    {:else}
+      <!-- Disk list + create button -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <SectionLabel>Discos disponibles</SectionLabel>
+        <Button variant="primary" on:click={() => showCreatePool = true}>+ Crear volumen</Button>
+      </div>
+
+      {#if eligible.length > 0}
+        <Card>
+          <div class="dtable-head">
+            <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
+          </div>
+          {#each eligible as disk}
+            <div class="dtable-row">
+              <div class="disk-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                  <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+                </svg>
+              </div>
+              <div class="d-name">{disk.model || disk.name}</div>
+              <div class="d-cell">/dev/{disk.name}</div>
+              <div class="d-cell">{disk.size || '—'}</div>
+              <div class="d-cell">{disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}</div>
+              <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
+              <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+            </div>
+          {/each}
+        </Card>
+      {:else}
+        <Card><div class="state-msg">Todos los discos están en uso o no se detectaron discos disponibles.</div></Card>
+      {/if}
+    {/if}
   {:else if active === 'snapshots'}
     <Card><SectionLabel>Puntos de restauración</SectionLabel><div class="state-msg">En desarrollo</div></Card>
   {:else if active === 'health'}
@@ -825,4 +1011,50 @@
     outline:none; transition:border-color 0.15s;
   }
   .confirm-input:focus { border-color:var(--c-crit); }
+
+  /* ── Create pool form ── */
+  .create-header { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+  .create-form { display:flex; flex-direction:column; gap:20px; }
+  .form-group { display:flex; flex-direction:column; gap:8px; }
+  .form-label {
+    font-size:10px; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:1.2px; font-weight:500;
+  }
+  .form-input {
+    padding:10px 14px; border-radius:var(--radius-md);
+    border:1px solid var(--glass-border); background:var(--bg-elev-2);
+    color:var(--text-primary); font-family:var(--font-sans); font-size:14px;
+    outline:none; width:100%; max-width:400px;
+  }
+  .form-input:focus { border-color:var(--accent); }
+  .form-options { display:flex; flex-wrap:wrap; gap:8px; }
+  .form-option {
+    padding:12px 16px; border-radius:var(--radius-md);
+    border:1px solid var(--glass-border); background:var(--bg-elev-2);
+    cursor:pointer; transition:all 0.15s; min-width:180px;
+  }
+  .form-option:hover { border-color:var(--accent); }
+  .form-option.selected { border-color:var(--accent); background:var(--accent-dim); }
+  .form-option.disabled { opacity:0.35; cursor:not-allowed; }
+  .opt-title { display:block; font-size:13px; font-weight:600; color:var(--text-primary); }
+  .opt-desc { display:block; font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .disk-select {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 14px; border-radius:var(--radius-md);
+    border:1px solid var(--glass-border); background:var(--bg-elev-2);
+    cursor:pointer; transition:all 0.15s;
+  }
+  .disk-select:hover { border-color:var(--accent); }
+  .disk-select.selected { border-color:var(--accent); background:var(--accent-dim); }
+  .disk-select + .disk-select { margin-top:6px; }
+  .disk-check {
+    width:22px; height:22px; border-radius:6px;
+    border:2px solid var(--glass-border); background:var(--bg-app);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; color:var(--accent); flex-shrink:0;
+  }
+  .disk-select.selected .disk-check { border-color:var(--accent); background:var(--accent-dim); }
+
+  .pool-msg { font-size:13px; color:var(--c-crit); }
 </style>
