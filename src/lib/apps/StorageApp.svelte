@@ -844,9 +844,10 @@
   .muted { color:var(--text-muted); }
 
   .expand-toggle {
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    padding:10px 0 2px; cursor:pointer;
-    font-size:12px; color:var(--text-muted);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 0; margin-top:8px; cursor:pointer;
+    font-size:12px; font-weight:500; color:var(--text-muted);
+    border-top:1px solid var(--glass-border);
     transition:color 0.15s;
   }
   .expand-toggle:hover { color:var(--text-primary); }
