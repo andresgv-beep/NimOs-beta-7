@@ -210,6 +210,48 @@
     if (!r) return '';
     return `${r.current}/${r.expected} discos · puede perder ${r.canLose}`;
   }
+
+  // ── Pool actions ──
+  async function startScrub(poolName) {
+    try {
+      const res = await fetch('/api/storage/scrub', {
+        method: 'POST',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pool: poolName }),
+      });
+      const data = await res.json();
+      if (data.ok) alert('Verificación de integridad iniciada');
+      else alert(data.error || 'Error');
+    } catch (e) { alert('Error: ' + e.message); }
+  }
+
+  async function createSnapshot(poolName) {
+    try {
+      const res = await fetch('/api/storage/snapshot', {
+        method: 'POST',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pool: poolName }),
+      });
+      const data = await res.json();
+      if (data.ok) alert('Punto de restauración creado');
+      else alert(data.error || 'Error');
+    } catch (e) { alert('Error: ' + e.message); }
+  }
+
+  async function destroyPool(poolName) {
+    const confirm1 = prompt(`Para destruir "${poolName}", escribe ELIMINAR:`);
+    if (confirm1 !== 'ELIMINAR') return;
+    try {
+      const res = await fetch('/api/storage/pool/destroy', {
+        method: 'POST',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: poolName }),
+      });
+      const data = await res.json();
+      if (data.ok) { detailPool = null; await load(); }
+      else alert(data.error || 'Error al destruir');
+    } catch (e) { alert('Error: ' + e.message); }
+  }
 </script>
 
 <AppShell title="Almacenamiento" {appIcon} {sections} bind:active showSearch>
@@ -251,20 +293,16 @@
         <Card>
           <SectionLabel>Acciones</SectionLabel>
           <div class="actions-col">
-            <Button variant="primary">
+            <Button variant="primary" on:click={() => startScrub(detailPool.name)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>
               Verificar integridad
             </Button>
-            <Button>
+            <Button on:click={() => createSnapshot(detailPool.name)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
-              Exportar pool
-            </Button>
-            <Button>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2 2-2-2 2-2z"/></svg>
-              Reparar / Resilver
+              Punto de restauración
             </Button>
             <div class="btn-divider"></div>
-            <Button variant="danger">
+            <Button variant="danger" on:click={() => destroyPool(detailPool.name)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
               Destruir volumen
             </Button>
@@ -380,7 +418,7 @@
         <div class="pool-bottom">
           <div class="pool-actions">
             <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
-            <Button variant="primary">+ Punto de restauración</Button>
+            <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Punto de restauración</Button>
           </div>
 
           {#if poolFileStats[pool.name]}
