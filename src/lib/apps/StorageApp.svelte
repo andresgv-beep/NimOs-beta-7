@@ -19,7 +19,8 @@
   let newPool = { name: '', type: 'zfs', profile: 'raidz1', disks: [] };
   let showCreatePool = false;
   let creating = false;
-  let poolMsg = ''; // when set, shows the "Gestionar" view for this pool
+  let poolMsg = '';
+  let expandedPools = {}; // poolName → boolean // when set, shows the "Gestionar" view for this pool
 
   // ── App icon: duotone database ──
   const appIcon = [
@@ -481,7 +482,7 @@
     {#each pools as pool, i}
       {#if i > 0}<div style="height:14px"></div>{/if}
       <Card>
-        <!-- Header -->
+        <!-- Header — always visible -->
         <div class="pool-header">
           <div>
             <div class="pool-name">{pool.name}</div>
@@ -490,7 +491,7 @@
           <Badge status={poolStatus(pool)}>{poolStatusLabel(pool)}</Badge>
         </div>
 
-        <!-- Capacity with segmented bar -->
+        <!-- Capacity — always visible -->
         <div class="capacity">
           <div class="cap-row">
             <div class="bar-track">
@@ -513,83 +514,100 @@
           </div>
         </div>
 
-        <!-- Actions + Donut -->
-        <div class="pool-bottom">
-          <div class="pool-actions">
-            <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
-            <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Punto de restauración</Button>
-          </div>
-
-          {#if poolFileStats[pool.name]}
-            <div class="donut-wrap">
-              <div class="legend">
-                {#each categories as cat}
-                  {#if (poolFileStats[pool.name]?.[cat.key] || 0) > 0}
-                    <div class="legend-row">
-                      <span class="legend-dot" style="background:{cat.color}"></span>
-                      <span>{cat.label}</span>
-                      <span class="legend-size">{formatBytes(poolFileStats[pool.name][cat.key])}</span>
-                    </div>
-                  {/if}
-                {/each}
-              </div>
-              <div class="donut">
-                <svg width="120" height="120" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
-                  {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
-                    <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
-                      stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
-                      style="transform:rotate(-90deg);transform-origin:50% 50%"/>
-                  {/each}
-                </svg>
-                <div class="donut-center">
-                  <div class="donut-val">{pool.totalFormatted || '—'}</div>
-                  <div class="donut-lbl">TOTAL</div>
-                </div>
-              </div>
-            </div>
-          {/if}
+        <!-- Expand toggle -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="expand-toggle" on:click={() => expandedPools[pool.name] = !expandedPools[pool.name]}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+            {#if expandedPools[pool.name]}
+              <polyline points="18 15 12 9 6 15"/>
+            {:else}
+              <polyline points="6 9 12 15 18 9"/>
+            {/if}
+          </svg>
+          <span>{expandedPools[pool.name] ? 'Menos detalles' : 'Más detalles'}</span>
         </div>
 
-        <!-- SMART disk table -->
-        {#if pool.disks?.length > 0}
-          <div class="smart-section">
-            <SectionLabel>Estado SMART</SectionLabel>
-            <div class="dtable-head">
-              <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
+        <!-- Expandable content -->
+        {#if expandedPools[pool.name]}
+          <!-- Actions + Donut -->
+          <div class="pool-bottom">
+            <div class="pool-actions">
+              <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
+              <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Punto de restauración</Button>
             </div>
-            {#each pool.disks as disk}
-              <div class="dtable-row">
-                <div class="disk-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                    <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-                  </svg>
-                </div>
-                <div class="d-name">{disk.model || disk.name}</div>
-                <div class="d-cell">/dev/{disk.name}</div>
-                <div class="d-cell">{disk.size || '—'}</div>
-                <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>
-                  {disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}
-                </div>
-                <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
-                <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
-              </div>
-            {/each}
-          </div>
-        {/if}
 
-        <!-- Diagnostics -->
-        {#if pool.poolHealth?.diagnostics?.length > 0}
-          <div class="diag-section">
-            <SectionLabel>Diagnóstico</SectionLabel>
-            {#each pool.poolHealth.diagnostics as diag}
-              <div class="diag-row">
-                <div class="diag-dot" class:crit={diag.severity >= 4} class:warn={diag.severity >= 2 && diag.severity < 4}></div>
-                <span>{diag.detail}</span>
+            {#if poolFileStats[pool.name]}
+              <div class="donut-wrap">
+                <div class="legend">
+                  {#each categories as cat}
+                    {#if (poolFileStats[pool.name]?.[cat.key] || 0) > 0}
+                      <div class="legend-row">
+                        <span class="legend-dot" style="background:{cat.color}"></span>
+                        <span>{cat.label}</span>
+                        <span class="legend-size">{formatBytes(poolFileStats[pool.name][cat.key])}</span>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+                <div class="donut">
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
+                    {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
+                      <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
+                        stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
+                        style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+                    {/each}
+                  </svg>
+                  <div class="donut-center">
+                    <div class="donut-val">{pool.totalFormatted || '—'}</div>
+                    <div class="donut-lbl">TOTAL</div>
+                  </div>
+                </div>
               </div>
-            {/each}
+            {/if}
           </div>
+
+          <!-- SMART disk table -->
+          {#if pool.disks?.length > 0}
+            <div class="smart-section">
+              <SectionLabel>Estado SMART</SectionLabel>
+              <div class="dtable-head">
+                <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
+              </div>
+              {#each pool.disks as disk}
+                <div class="dtable-row">
+                  <div class="disk-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
+                      <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
+                    </svg>
+                  </div>
+                  <div class="d-name">{disk.model || disk.name}</div>
+                  <div class="d-cell">/dev/{disk.name}</div>
+                  <div class="d-cell">{disk.size || '—'}</div>
+                  <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>
+                    {disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}
+                  </div>
+                  <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
+                  <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          <!-- Diagnostics -->
+          {#if pool.poolHealth?.diagnostics?.length > 0}
+            <div class="diag-section">
+              <SectionLabel>Diagnóstico</SectionLabel>
+              {#each pool.poolHealth.diagnostics as diag}
+                <div class="diag-row">
+                  <div class="diag-dot" class:crit={diag.severity >= 4} class:warn={diag.severity >= 2 && diag.severity < 4}></div>
+                  <span>{diag.detail}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
       </Card>
     {/each}
@@ -824,6 +842,14 @@
   .cap-info { display:flex; justify-content:space-between; margin-top:12px; font-size:13px; max-width:62%; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
+
+  .expand-toggle {
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px 0 2px; cursor:pointer;
+    font-size:12px; color:var(--text-muted);
+    transition:color 0.15s;
+  }
+  .expand-toggle:hover { color:var(--text-primary); }
 
   .pool-bottom {
     display:flex; justify-content:space-between; align-items:flex-end;
