@@ -145,15 +145,18 @@
     { key: 'other',    label: 'Otros',       color: '#64748b' },
   ];
 
-  function getDonutSegments(stats, total) {
-    if (!stats || !total) return [];
+  function getDonutSegments(stats, pool) {
+    if (!stats) return [];
+    // Total used across all categories
+    const totalUsed = Object.values(stats).reduce((a, b) => a + b, 0);
+    if (totalUsed <= 0) return [];
     const circumference = 2 * Math.PI * 48; // r=48
     let offset = 0;
     const segs = [];
     for (const cat of categories) {
       const val = stats[cat.key] || 0;
       if (val <= 0) continue;
-      const pct = val / total;
+      const pct = val / totalUsed; // relative to used, not total — donut always full
       const len = pct * circumference;
       segs.push({ ...cat, value: val, dasharray: `${len} ${circumference}`, offset: -offset });
       offset += len;
@@ -162,8 +165,15 @@
   }
 
   function getBarSegments(stats, total) {
-    if (!stats || !total) return [];
-    return categories.map(c => ({ ...c, value: stats[c.key] || 0, pct: ((stats[c.key] || 0) / total) * 100 })).filter(s => s.pct > 0);
+    if (!stats) return [];
+    const totalUsed = Object.values(stats).reduce((a, b) => a + b, 0);
+    if (totalUsed <= 0) return [];
+    // Bar width = usagePercent of total disk, segments = proportional within used
+    return categories.map(c => ({
+      ...c,
+      value: stats[c.key] || 0,
+      pct: ((stats[c.key] || 0) / totalUsed) * 100
+    })).filter(s => s.pct > 0);
   }
 
   // ── System-level status (across all pools) ──
@@ -245,12 +255,14 @@
         <div class="capacity">
           <div class="cap-row">
             <div class="bar-track">
-              {#each getBarSegments(poolFileStats[pool.name], pool.total) as seg}
-                <div class="bar-seg" style="width:{seg.pct}%;background:{seg.color}" title="{seg.label}"></div>
-              {/each}
-              {#if !poolFileStats[pool.name] || getBarSegments(poolFileStats[pool.name], pool.total).length === 0}
-                <div class="bar-fill" style="width:{pool.usagePercent || 0}%"></div>
-              {/if}
+              <div class="bar-used" style="width:{Math.max(pool.usagePercent || 0, 1)}%;display:flex">
+                {#each getBarSegments(poolFileStats[pool.name], pool.total) as seg}
+                  <div class="bar-seg" style="width:{seg.pct}%;background:{seg.color}" title="{seg.label}: {formatBytes(seg.value)}"></div>
+                {/each}
+                {#if !poolFileStats[pool.name] || getBarSegments(poolFileStats[pool.name], pool.total).length === 0}
+                  <div class="bar-seg" style="width:100%;background:var(--accent)"></div>
+                {/if}
+              </div>
             </div>
             <div class="cap-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
               {pool.usagePercent || 0}<span class="sym">%</span>
@@ -285,7 +297,7 @@
               <div class="donut">
                 <svg width="120" height="120" viewBox="0 0 120 120">
                   <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
-                  {#each getDonutSegments(poolFileStats[pool.name], pool.total) as seg}
+                  {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
                     <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
                       stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
                       style="transform:rotate(-90deg);transform-origin:50% 50%"/>
@@ -374,11 +386,10 @@
     flex:1; height:13px; border-radius:8px;
     background:var(--bg-elev-2); overflow:hidden;
     border:1px solid var(--glass-border);
-    display:flex;
   }
-  .bar-seg { height:100%; transition:filter 0.2s; }
+  .bar-used { height:100%; display:flex; overflow:hidden; border-radius:8px; }
+  .bar-seg { height:100%; transition:filter 0.2s; min-width:2px; }
   .bar-seg:hover { filter:brightness(1.3); }
-  .bar-fill { height:100%; border-radius:8px; background:var(--accent); transition:width 0.5s; }
   .cap-pct {
     font-size:42px; font-weight:700; letter-spacing:-1.5px; line-height:1;
     color:var(--c-ok); white-space:nowrap; font-family:var(--font-mono);
