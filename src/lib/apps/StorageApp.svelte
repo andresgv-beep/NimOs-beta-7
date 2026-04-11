@@ -496,12 +496,7 @@
               <div class="pill-sub">{pool.type?.toUpperCase()} · {vdevLabel(pool.vdevType)} · {pool.disks?.length || 0} discos</div>
             </div>
             <div class="pill-bar">
-              {#each getBarSegments(poolFileStats[pool.name], pool.total) as seg}
-                <div class="bar-seg" style="width:{seg.pct}%;background:{seg.color}"></div>
-              {/each}
-              {#if !poolFileStats[pool.name] || getBarSegments(poolFileStats[pool.name], pool.total).length === 0}
-                <div class="bar-seg" style="width:{Math.max(pool.usagePercent || 0, 0.3)}%;background:var(--accent)"></div>
-              {/if}
+              <div class="bar-seg" style="width:{Math.max(pool.usagePercent || 0, 0.3)}%;background:var(--accent)"></div>
             </div>
             <div class="pill-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
               {pool.usagePercent || 0}<span class="sym">%</span>
@@ -769,7 +764,7 @@
 
   .pool-pill {
     background:var(--glass-bg); border:1px solid var(--glass-border);
-    border-radius:12px; cursor:default;
+    border-radius:12px; cursor:default; overflow:hidden;
   }
   .pool-head {
     display:grid;
@@ -777,7 +772,9 @@
     align-items:center; gap:18px;
     padding:16px 20px; cursor:pointer;
     transition:background 0.18s;
+    border-radius:12px;
   }
+  .pool-pill.open .pool-head { border-radius:12px 12px 0 0; }
   .pool-head:hover { background:var(--bg-elev-2); }
   .pool-head:hover .chev { transform:translateX(3px); color:var(--text-primary); }
   .pool-pill.open .pool-head { background:var(--bg-elev-2); }
