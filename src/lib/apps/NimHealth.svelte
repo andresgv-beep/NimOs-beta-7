@@ -25,7 +25,24 @@
     try {
       const r = await fetch('/api/services', { headers: hdrs() });
       const d = await r.json();
-      services = d.services || [];
+      const raw = d.services || [];
+      // Flatten: keep parent services + inject Docker children as individual rows
+      let flat = [];
+      for (const svc of raw) {
+        flat.push(svc);
+        if (svc.children && svc.children.length > 0) {
+          for (const child of svc.children) {
+            flat.push({
+              ...child,
+              _isChild: true,
+              _parentId: svc.id,
+              poolName: svc.poolName,
+              owner: svc.owner,
+            });
+          }
+        }
+      }
+      services = flat;
     } catch { services = []; }
   }
 
@@ -80,13 +97,22 @@
   }
   function fmtSpeed(b) { if (!b) return '0'; if (b >= 1e6) return (b / 1e6).toFixed(1); if (b >= 1e3) return (b / 1e3).toFixed(1); return '0'; }
   function fmtUptime(svc) {
-    if (svc.status !== 'running' || !svc.startedAt) return '—';
+    if (svc.status !== 'running') return '—';
+    if (svc.uptime) return svc.uptime; // Docker children ya traen uptime formateado
+    if (!svc.startedAt) return '—';
     const ms = Date.now() - new Date(svc.startedAt).getTime();
     const h = Math.floor(ms / 3600000);
     if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24).toString().padStart(2, '0') + 'h';
     return h + 'h ' + Math.floor((ms % 3600000) / 60000).toString().padStart(2, '0') + 'm';
   }
-  function appInitials(svc) { return (svc.appName || svc.appId || '?').slice(0, 2).toUpperCase(); }
+  function appInitials(svc) { return (svc.name || svc.appName || svc.appId || '?').slice(0, 2).toUpperCase(); }
+  function svcDisplayName(svc) { return svc.name || svc.appName || svc.appId || '?'; }
+  function svcIcon(svc) { return svc.icon || ''; }
+  function svcVersion(svc) {
+    if (svc.image) { const parts = svc.image.split(':'); return parts[1] || ''; }
+    if (svc.containerImage) { const parts = svc.containerImage.split(':'); return parts[1] || ''; }
+    return '';
+  }
 
   function sparkPoints(history) {
     if (!history || history.length === 0) return '';
@@ -153,7 +179,16 @@
           {#each filteredServices as svc}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <tr class:selected={selectedService?.id===svc.id} on:click={() => loadDetail(svc)}>
-              <td class="name-cell"><div class="app-icon">{appInitials(svc)}</div><span class="app-name">{svc.appName||svc.appId}</span>{#if svc.containerImage}<span class="app-ver">{svc.containerImage.split(':')[1]||''}</span>{/if}</td>
+              <td class="name-cell">
+                {#if svcIcon(svc)}
+                  <img class="app-icon-img" src="{svcIcon(svc)}" alt="" />
+                {:else}
+                  <div class="app-icon">{appInitials(svc)}</div>
+                {/if}
+                <span class="app-name">{svcDisplayName(svc)}</span>
+                {#if svcVersion(svc)}<span class="app-ver">{svcVersion(svc)}</span>{/if}
+                {#if svc._isChild}<span class="child-badge">docker</span>{/if}
+              </td>
               <td><span class="state" class:run={svc.status==='running'} class:stop={svc.status==='stopped'} class:err={svc.status==='error'||svc.status==='failed'} class:starting={svc.status==='starting'||svc.status==='stopping'}><span class="dot"></span>{svc.status}</span></td>
               <td class="num" class:warn={svc.cpuPercent>50} class:crit={svc.cpuPercent>80}>{#if svc.status==='running'}<b>{(svc.cpuPercent||0).toFixed(1)}</b>%{:else}—{/if}</td>
               <td class="num">{#if svc.status==='running'}<b>{fmtBytes(svc.memoryUsage||0)}</b>{:else}—{/if}</td>
@@ -175,7 +210,7 @@
     </div>
 
     {#if selectedService}
-      <div class="footer"><span class="f-lbl">Seleccionado:</span><span class="f-val">{selectedService.appName||selectedService.appId}</span><span class="f-sep">·</span><span class="f-val" style="color:{selectedService.status==='running'?'var(--c-ok)':selectedService.status==='error'?'var(--c-crit)':'var(--text-muted)'}">{selectedService.status}</span>{#if selectedService.poolName}<span class="f-sep">·</span><span class="f-lbl">pool</span><span class="f-val">{selectedService.poolName}</span>{/if}<span class="f-sep">·</span><span class="f-lbl">id</span><span class="f-val">{selectedService.id}</span></div>
+      <div class="footer"><span class="f-lbl">Seleccionado:</span><span class="f-val">{svcDisplayName(selectedService)}</span><span class="f-sep">·</span><span class="f-val" style="color:{selectedService.status==='running'?'var(--c-ok)':selectedService.status==='error'?'var(--c-crit)':'var(--text-muted)'}">{selectedService.status}</span>{#if selectedService.poolName}<span class="f-sep">·</span><span class="f-lbl">pool</span><span class="f-val">{selectedService.poolName}</span>{/if}<span class="f-sep">·</span><span class="f-lbl">id</span><span class="f-val">{selectedService.id}</span></div>
     {/if}
 
   {:else if view==='detail' && selectedService}
@@ -185,7 +220,7 @@
     <div class="detail-nav">
       <!-- svelte-ignore a11y_click_events_have_key_events --><!-- svelte-ignore a11y_no_static_element_interactions -->
       <span class="back-btn" on:click={goBack}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</span>
-      <span class="detail-name">{selectedService.appName||selectedService.appId}</span>
+      <span class="detail-name">{svcDisplayName(selectedService)}</span>
       <span class="state" class:run={selectedService.status==='running'} class:stop={selectedService.status==='stopped'} class:err={selectedService.status==='error'}><span class="dot"></span>{selectedService.status}</span>
     </div>
     <div class="detail-content">
@@ -259,7 +294,9 @@
   td.num.warn{color:var(--c-warn)}td.num.warn b{color:var(--c-warn)}
   td.num.crit{color:var(--c-crit)}td.num.crit b{color:var(--c-crit)}
   .app-icon{width:22px;height:22px;border-radius:5px;background:var(--bg-elev-2);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:var(--text-secondary);font-family:var(--font-mono)}
+  .app-icon-img{width:22px;height:22px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--bg-elev-2);border:1px solid var(--glass-border)}
   .app-name{font-weight:500;color:var(--text-primary)}.app-ver{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-left:6px}
+  .child-badge{font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(59,130,246,0.1);color:var(--accent);margin-left:4px;text-transform:uppercase;letter-spacing:0.5px}
   .state{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500}.state .dot{width:6px;height:6px;border-radius:50%}
   .state.run{color:var(--c-ok)}.state.run .dot{background:var(--c-ok);box-shadow:0 0 0 2px rgba(16,185,129,0.2)}
   .state.stop{color:#64748b}.state.stop .dot{background:#64748b}
