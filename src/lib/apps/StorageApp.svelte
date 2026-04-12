@@ -537,8 +537,7 @@
                       <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
                       {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
                         <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
-                          stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
-                          style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+                          stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"/>
                       {/each}
                     </svg>
                     <div class="donut-center">
@@ -760,7 +759,7 @@
 {/if}
 
 <style>
-  /* ── Pool pills ── */
+  /* ── Pool pills — copied exactly from pool-pills-preview.html ── */
   .pool-list { display:flex; flex-direction:column; gap:8px; }
 
   .pool-pill {
@@ -769,13 +768,11 @@
   }
   .pool-head {
     display:grid;
-    grid-template-columns:32px minmax(100px,1.2fr) minmax(80px,2fr) auto 60px 16px;
-    align-items:center; gap:14px;
-    padding:14px 18px; cursor:pointer;
+    grid-template-columns:32px 1.5fr 2fr auto 70px 20px;
+    align-items:center; gap:18px;
+    padding:16px 20px; cursor:pointer;
     transition:background 0.18s;
-    border-radius:12px;
   }
-  .pool-pill.open .pool-head { border-radius:12px 12px 0 0; }
   .pool-head:hover { background:var(--bg-elev-2); }
   .pool-head:hover .chev { transform:translateX(3px); color:var(--text-primary); }
   .pool-pill.open .pool-head { background:var(--bg-elev-2); }
@@ -790,8 +787,8 @@
   .pool-icon svg { width:18px; height:18px; display:block; }
 
   .pool-ident { min-width:0; }
-  .pill-name { font-size:16px; font-weight:700; letter-spacing:-0.3px; color:var(--text-primary); line-height:1.2; }
-  .pill-sub { font-size:11px; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); }
+  .pill-name { font-size:16px; font-weight:700; letter-spacing:-0.3px; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pill-sub { font-size:11px; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   .pill-bar {
     height:7px; border-radius:5px;
@@ -827,40 +824,39 @@
   }
   .pool-pill.open .pool-body { max-height:520px; opacity:1; }
 
+  /* Detail panel — grid layout from prototype */
   .pool-detail {
     border-top:1px solid var(--glass-border);
-    padding:18px 20px;
-    display:flex; justify-content:space-between; align-items:flex-end;
-    gap:16px; min-height:130px;
+    padding:22px 24px 20px;
+    display:grid; grid-template-columns:1fr auto; gap:20px;
+    align-items:center;
   }
-  .detail-left { flex-shrink:0; }
-  .detail-right { display:flex; align-items:center; gap:14px; margin-left:auto; }
+  .detail-left { display:flex; flex-direction:column; gap:16px; }
+  .detail-right { display:flex; align-items:center; gap:18px; }
   .pill-actions { display:flex; gap:10px; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
 
-  /* Donut + legend */
-  .legend {
-    display:grid; grid-auto-flow:column; grid-template-rows:repeat(4, auto);
-    gap:6px 18px;
-  }
-  .legend-row {
-    display:flex; align-items:center; gap:6px;
-    font-size:11px; color:var(--text-primary); white-space:nowrap;
-  }
-  .legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  .legend-size { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
+  /* Legend — 3 rows then next column */
+  .legend { display:grid; grid-auto-flow:column; grid-template-rows:repeat(3, auto); gap:8px 22px; }
+  .legend-row { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--text-primary); white-space:nowrap; }
+  .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .legend-size { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); }
 
-  .donut { position:relative; width:100px; height:100px; flex-shrink:0; }
-  .donut svg { display:block; width:100%; height:100%; }
+  /* Donut — 110px from prototype */
+  .donut { position:relative; width:110px; height:110px; flex-shrink:0; }
+  .donut svg { display:block; transform:rotate(-90deg); width:100%; height:100%; }
   .donut-center {
     position:absolute; inset:0;
     display:flex; flex-direction:column;
     align-items:center; justify-content:center;
     pointer-events:none;
   }
-  .donut-val { font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--text-primary); letter-spacing:-0.3px; }
-  .donut-lbl { font-size:8px; color:var(--text-muted); margin-top:1px; text-transform:uppercase; letter-spacing:0.8px; }
+  .donut-val { font-family:var(--font-mono); font-size:16px; font-weight:600; color:var(--text-primary); }
+  .donut-lbl { font-size:9px; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
+
+  /* Buttons inside pills — smaller than default */
+  .pill-actions :global(.btn) { font-size:12px; padding:9px 16px; border-radius:8px; }
 
   .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
 
