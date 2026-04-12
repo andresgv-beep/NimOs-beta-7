@@ -147,8 +147,8 @@
     if (!b) return '0 B';
     if (b >= 1099511627776) return (b / 1099511627776).toFixed(1) + ' TB';
     if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
-    if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
-    if (b >= 1024) return (b / 1024).toFixed(1) + ' KB';
+    if (b >= 1048576) return Math.round(b / 1048576) + ' MB';
+    if (b >= 1024) return Math.round(b / 1024) + ' KB';
     return b + ' B';
   }
 
@@ -493,7 +493,7 @@
             </div>
             <div class="pool-ident">
               <div class="pill-name">{pool.name}</div>
-              <div class="pill-sub">{pool.type?.toUpperCase()} · {vdevLabel(pool.vdevType)} · {pool.disks?.length || 0} discos</div>
+              <div class="pill-sub">{pool.type?.toUpperCase()}{pool.vdevType ? ' · ' + vdevLabel(pool.vdevType) : ''} · {pool.disks?.length || 0} disco{pool.disks?.length !== 1 ? 's' : ''}</div>
             </div>
             <div class="pill-bar">
               <div class="bar-seg" style="width:{Math.max(pool.usagePercent || 0, 0.3)}%;background:var(--accent)"></div>
@@ -833,10 +833,10 @@
     border-top:1px solid var(--glass-border);
     padding:18px 20px;
     display:flex; justify-content:space-between; align-items:flex-end;
-    gap:16px;
+    gap:16px; min-height:130px;
   }
-  .detail-left { display:flex; flex-direction:column; justify-content:flex-end; }
-  .detail-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+  .detail-left { flex-shrink:0; }
+  .detail-right { display:flex; align-items:center; gap:14px; margin-left:auto; }
   .pill-actions { display:flex; gap:10px; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
