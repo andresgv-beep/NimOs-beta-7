@@ -79,11 +79,12 @@
   async function load() {
     loading = true;
     try {
-      const [statusRes, sharesRes, disksRes, capRes] = await Promise.all([
+      const [statusRes, sharesRes, disksRes, capRes, restoreRes] = await Promise.all([
         fetch('/api/storage/status', { headers: hdrs() }),
         fetch('/api/shares', { headers: hdrs() }),
         fetch('/api/storage/disks', { headers: hdrs() }),
         fetch('/api/storage/capabilities', { headers: hdrs() }),
+        fetch('/api/storage/restorable', { headers: hdrs() }),
       ]);
       pools = (await statusRes.json()).pools || [];
       shares = await sharesRes.json();
@@ -91,6 +92,7 @@
       const caps = await capRes.json();
       capabilities = caps;
       if (caps.recommended) newPool.type = caps.recommended;
+      restorable = (await restoreRes.json()).pools || [];
 
       const agg = {};
       for (const s of shares) {
@@ -244,7 +246,7 @@
   $: filteredEligible = eligible.filter(d => !restorableDisks.has(d.name));
 
   let refreshInterval;
-  onMount(()=>{ load(); refreshInterval=setInterval(load,30000); scanRestorable(); });
+  onMount(()=>{ load(); refreshInterval=setInterval(load,30000); });
   onDestroy(()=>{ if(refreshInterval) clearInterval(refreshInterval); });
 
   // Restore
