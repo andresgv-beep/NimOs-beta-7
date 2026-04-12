@@ -72,12 +72,6 @@
         { tag: 'path', attrs: { d: 'M9 3l-3 9H2l4 9h0l3-9h4l3-9', 'data-fill': '', style: 'opacity:0.08' }},
         { tag: 'path', attrs: { d: 'M22 12h-4l-3 9L9 3l-3 9H2' }},
       ]},
-      { id: 'restore', label: 'Restaurar volumen', paths: [
-        { tag: 'rect', attrs: { x:3, y:15, width:18, height:6, rx:2, 'data-fill': '' }},
-        { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }},
-        { tag: 'polyline', attrs: { points: '17 8 12 3 7 8' }},
-        { tag: 'line', attrs: { x1:12, y1:3, x2:12, y2:15 }},
-      ]},
     ]}
   ];
 
@@ -248,6 +242,34 @@
   let refreshInterval;
   onMount(()=>{ load(); refreshInterval=setInterval(load,30000); });
   onDestroy(()=>{ if(refreshInterval) clearInterval(refreshInterval); });
+
+  // Restore
+  let restorable = [];
+  let scanning = false;
+  let restoring = null;
+  let restoreMenu = null;
+
+  async function scanRestorable() {
+    scanning = true;
+    try {
+      const d = await (await fetch('/api/storage/restorable', { headers:hdrs() })).json();
+      restorable = d.pools || [];
+    } catch { restorable = []; }
+    scanning = false;
+  }
+
+  async function restorePool(pool) {
+    restoreMenu = null;
+    restoring = pool.name;
+    try {
+      const d = await (await fetch('/api/storage/pool/restore', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({ zpoolName:pool.zpoolName, name:pool.name, restoreConfig:pool.hasBackup }) })).json();
+      if (d.ok) {
+        restorable = restorable.filter(p => p.name !== pool.name);
+        await load();
+      } else alert(d.error || 'Error restaurando');
+    } catch(e) { alert('Error: '+e.message); }
+    restoring = null;
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -440,14 +462,66 @@
       {:else}
         <Card><div class="state-msg">Todos los discos están en uso.</div></Card>
       {/if}
+
+      <!-- Restaurar volumen section -->
+      <div style="height:24px"></div>
+      <div class="restore-head">
+        <SectionLabel>Restaurar volumen</SectionLabel>
+        <button class="btn-scan" on:click={scanRestorable} disabled={scanning}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>
+          {scanning ? 'Escaneando...' : 'Escanear discos'}
+        </button>
+      </div>
+
+      {#if restorable.length > 0}
+        <Card>
+          <div class="card-label">Pools detectados · pendientes de montar</div>
+          {#each restorable as rpool}
+            <div class="pool-item">
+              <div class="pool-info">
+                <div class="pool-item-name">
+                  {rpool.name}
+                  {#if rpool.health === 'ONLINE' || rpool.state === 'ONLINE'}
+                    <span class="status-pill status-ok"><span class="dot"></span>Íntegro</span>
+                  {:else}
+                    <span class="status-pill status-warn"><span class="dot"></span>{rpool.health || rpool.state || 'Desconocido'}</span>
+                  {/if}
+                </div>
+                <div class="pool-meta">{rpool.type?.toUpperCase() || 'ZFS'} · {rpool.disks?.length || '?'} discos{rpool.hasBackup ? ' · Backup de config disponible' : ''}</div>
+                <div class="pool-disks-chips">
+                  {#each (rpool.disks || []) as d}
+                    <div class="disk-chip">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg>
+                      {d}
+                    </div>
+                  {/each}
+                </div>
+              </div>
+              <div class="pool-item-actions">
+                <div class="kebab" on:click|stopPropagation={()=> restoreMenu = restoreMenu===rpool.name ? null : rpool.name}>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+                </div>
+                {#if restoreMenu === rpool.name}
+                  <div class="menu" style="right:0;top:40px">
+                    <div class="menu-item" on:click={()=>restorePool(rpool)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+                      {restoring === rpool.name ? 'Montando...' : 'Montar pool'}
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </Card>
+      {:else if scanning}
+        <Card><div class="state-msg">Buscando pools en los discos...</div></Card>
+      {/if}
     {/if}
 
   {:else if active === 'snapshots'}
     <Card><SectionLabel>Puntos de restauración</SectionLabel><div class="state-msg">En desarrollo</div></Card>
   {:else if active === 'health'}
     <Card><SectionLabel>Salud del sistema</SectionLabel><div class="state-msg">En desarrollo</div></Card>
-  {:else if active === 'restore'}
-    <Card><SectionLabel>Restaurar volumen</SectionLabel><div class="state-msg">En desarrollo</div></Card>
   {/if}
 </AppShell>
 
@@ -603,4 +677,40 @@
   .dep-stopped{font-size:11px;color:var(--text-muted);font-style:italic}
   .dep-hint{font-size:11px;color:var(--text-muted)}
   .confirm-input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--bg-elev-2);color:var(--text-primary);font-family:var(--font-mono);font-size:14px;outline:none}.confirm-input:focus{border-color:var(--c-crit)}
+
+  /* Restore section */
+  .restore-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .btn-scan{
+    font-family:var(--font-sans);font-size:13px;font-weight:500;
+    padding:10px 16px;border-radius:9px;cursor:pointer;
+    background:var(--bg-elev-2);border:1px solid var(--glass-border);color:var(--text-primary);
+    display:inline-flex;align-items:center;gap:8px;transition:all .15s;
+  }
+  .btn-scan:hover{background:var(--bg-elev-1)}
+  .btn-scan:disabled{opacity:0.5;cursor:not-allowed}
+  .btn-scan svg{width:14px;height:14px;color:var(--text-secondary)}
+  .card-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px}
+  .pool-item{
+    display:grid;grid-template-columns:1fr auto;gap:20px;
+    padding:16px;border-radius:10px;
+    border:1px solid var(--glass-border);background:var(--bg-elev-2);
+    align-items:center;position:relative;
+  }
+  .pool-item+.pool-item{margin-top:10px}
+  .pool-info{min-width:0}
+  .pool-item-name{font-size:17px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .pool-meta{font-size:12px;color:var(--text-secondary);margin-bottom:4px}
+  .pool-disks-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .disk-chip{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:11px;padding:4px 10px;border-radius:6px;
+    background:var(--bg-elev-1);border:1px solid var(--glass-border);
+    color:var(--text-secondary);font-family:var(--font-mono);
+  }
+  .disk-chip svg{width:11px;height:11px;color:var(--text-muted)}
+  .pool-item-actions{position:relative}
+  .status-pill{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:500;padding:4px 11px;border-radius:13px}
+  .status-pill .dot{width:6px;height:6px;border-radius:50%}
+  .status-ok{background:rgba(16,185,129,0.12);color:var(--c-ok);border:1px solid rgba(16,185,129,0.3)}.status-ok .dot{background:var(--c-ok)}
+  .status-warn{background:rgba(245,158,11,0.12);color:var(--c-warn);border:1px solid rgba(245,158,11,0.3)}.status-warn .dot{background:var(--c-warn)}
 </style>
