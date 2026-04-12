@@ -114,8 +114,8 @@
     if (p.disks?.some(d => d.smartStatus === 'critical')) return 'warn';
     return 'ok';
   }
-  function diskStatus(d) { return d.smartStatus === 'critical' ? 'crit' : d.smartStatus === 'warning' ? 'warn' : 'ok'; }
-  function diskStatusLabel(d) { const s = diskStatus(d); return s === 'crit' ? 'Crítico' : s === 'warn' ? 'Atención' : 'Sano'; }
+  function diskStatus(d) { return d.smartStatus === 'critical' ? 'crit' : d.smartStatus === 'warning' ? 'warn' : d.smartStatus === 'ok' ? 'ok' : 'unknown'; }
+  function diskStatusLabel(d) { const s = diskStatus(d); return s === 'crit' ? 'Crítico' : s === 'warn' ? 'Atención' : s === 'ok' ? 'Sano' : '—'; }
   function fmtH(h) { return !h ? '—' : h >= 1000 ? (h/1000).toFixed(1)+'k h' : h+' h'; }
   function fmtB(b) {
     if (!b) return '0 B';
@@ -663,6 +663,7 @@
   .smart-ok{background:rgba(16,185,129,0.12);color:var(--c-ok);border:1px solid rgba(16,185,129,0.3)}.smart-ok .dot{background:var(--c-ok)}
   .smart-warn{background:rgba(245,158,11,0.12);color:var(--c-warn);border:1px solid rgba(245,158,11,0.3)}.smart-warn .dot{background:var(--c-warn)}
   .smart-crit{background:rgba(239,68,68,0.12);color:var(--c-crit);border:1px solid rgba(239,68,68,0.3)}.smart-crit .dot{background:var(--c-crit)}
+  .smart-unknown{background:var(--bg-elev-2);color:var(--text-muted);border:1px solid var(--glass-border)}.smart-unknown .dot{background:var(--text-muted)}
 
   /* Create pool */
   .create-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
