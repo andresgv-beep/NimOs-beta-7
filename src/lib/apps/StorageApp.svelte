@@ -195,12 +195,19 @@
 
   async function openDestroyModal(pool) {
     openMenu = null;
+    restoreMenu = null;
     destroyPool = pool;
     destroyInput = ''; destroying = false; stoppingService = {};
-    try {
-      const r = await fetch(`/api/services/dependencies?pool=${encodeURIComponent(pool.name)}`, { headers:hdrs() });
-      destroyDeps = (await r.json()).dependencies || [];
-    } catch { destroyDeps = []; }
+    // For mounted pools, check service dependencies
+    if (pools.find(p => p.name === pool.name)) {
+      try {
+        const r = await fetch(`/api/services/dependencies?pool=${encodeURIComponent(pool.name)}`, { headers:hdrs() });
+        destroyDeps = (await r.json()).dependencies || [];
+      } catch { destroyDeps = []; }
+    } else {
+      // Exported pool — no running services
+      destroyDeps = [];
+    }
     showDestroy = true;
   }
   async function stopSvcForDestroy(svc) {
@@ -212,6 +219,11 @@
     if (!canDestroy||!destroyPool) return;
     destroying = true;
     try {
+      // If pool is exported (not in active pools), restore it first so destroy can find it
+      const isMounted = pools.find(p => p.name === destroyPool.name);
+      if (!isMounted && destroyPool.zpoolName) {
+        await fetch('/api/storage/pool/restore', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({ zpoolName:destroyPool.zpoolName, name:destroyPool.name, restoreConfig:false }) });
+      }
       const d = await (await fetch('/api/storage/pool/destroy',{method:'POST',headers:{...hdrs(),'Content-Type':'application/json'},body:JSON.stringify({name:destroyPool.name})})).json();
       if (d.ok) { showDestroy=false; destroyPool=null; await load(); } else alert(d.error||'Error');
     } catch(e) { alert('Error: '+e.message); }
@@ -396,7 +408,6 @@
               <div class="menu-item" on:click={()=>startScrub(pool.name)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Verificar integridad</div>
               <div class="menu-divider"></div>
               <div class="menu-item" on:click={()=>exportPool(pool)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Desmontar volumen</div>
-              <div class="menu-item danger" on:click={()=>openDestroyModal(pool)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 3h4v2H4V6h4z"/><path d="M6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/></svg>Destruir volumen</div>
             </div>
           {/if}
         </div>
@@ -512,6 +523,11 @@
                     <div class="menu-item" on:click={()=>restorePool(rpool)}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
                       {restoring === rpool.name ? 'Montando...' : 'Montar pool'}
+                    </div>
+                    <div class="menu-divider"></div>
+                    <div class="menu-item danger" on:click={()=>openDestroyModal(rpool)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 3h4v2H4V6h4z"/><path d="M6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/></svg>
+                      Destruir volumen
                     </div>
                   </div>
                 {/if}
