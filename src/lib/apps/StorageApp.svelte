@@ -239,8 +239,12 @@
     {id:'raidz2',label:'RAIDZ2 (puede perder 2)',min:5},
   ];
 
+  // Filter out disks that belong to restorable (exported) pools
+  $: restorableDisks = new Set(restorable.flatMap(r => (r.identity?.disks || []).map(d => d.replace('/dev/',''))));
+  $: filteredEligible = eligible.filter(d => !restorableDisks.has(d.name));
+
   let refreshInterval;
-  onMount(()=>{ load(); refreshInterval=setInterval(load,30000); });
+  onMount(()=>{ load(); refreshInterval=setInterval(load,30000); scanRestorable(); });
   onDestroy(()=>{ if(refreshInterval) clearInterval(refreshInterval); });
 
   // Restore
@@ -443,10 +447,10 @@
         <SectionLabel>Discos disponibles</SectionLabel>
         <Button variant="primary" size="sm" on:click={()=>showCreatePool=true}>+ Crear volumen</Button>
       </div>
-      {#if eligible.length > 0}
+      {#if filteredEligible.length > 0}
         <Card>
           <div class="disk-head"><div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Rol</div><div>Estado</div></div>
-          {#each eligible as disk}
+          {#each filteredEligible as disk}
             <div class="disk-row">
               <div class="disk-icon-mini"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
               <div class="disk-name">{disk.model||disk.name}</div>
@@ -487,9 +491,9 @@
                     <span class="status-pill status-warn"><span class="dot"></span>{rpool.health || rpool.state || 'Desconocido'}</span>
                   {/if}
                 </div>
-                <div class="pool-meta">{rpool.type?.toUpperCase() || 'ZFS'} · {rpool.disks?.length || '?'} discos{rpool.hasBackup ? ' · Backup de config disponible' : ''}</div>
+                <div class="pool-meta">{rpool.type?.toUpperCase() || 'ZFS'}{rpool.vdevType ? ' · '+vdevLabel(rpool.vdevType) : ''} · {rpool.identity?.disks?.length || '?'} discos{rpool.size ? ' · '+rpool.size : ''}{rpool.hasBackup ? ' · Backup disponible' : ''}</div>
                 <div class="pool-disks-chips">
-                  {#each (rpool.disks || []) as d}
+                  {#each (rpool.identity?.disks || []) as d}
                     <div class="disk-chip">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg>
                       {d}
