@@ -1,7 +1,7 @@
 export const APP_META = {
   files:        { name: 'Files',           icon: '/icons/files.png',       width: 860, height: 540 },
   nimsettings:  { name: 'NimSettings',     icon: '/icons/settings.png',    width: 880, height: 580 },
-  storage:      { name: 'Storage',         icon: '/icons/storage.png',     width: 900, height: 580 },
+  storage:      { name: 'Storage',         icon: '/icons/storage.png',     width: 1050, height: 620 },
   network:      { name: 'Network',         icon: '/icons/network.png',     width: 860, height: 560 },
   nimtorrent:   { name: 'NimTorrent',      icon: '/icons/nimtorrent.png',  width: 820, height: 520 },
   transfermanager: { name: 'Transferencias', icon: '', width: 640, height: 480, hidden: true },
