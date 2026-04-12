@@ -511,8 +511,8 @@
             <div class="pool-detail">
               <div class="detail-left">
                 <div class="pill-actions">
-                  <Button on:click={() => { detailPool = pool; }}>Gestionar</Button>
-                  <Button variant="primary" on:click={() => createSnapshot(pool.name)}>+ Snapshot</Button>
+                  <Button size="sm" on:click={() => { detailPool = pool; }}>Gestionar</Button>
+                  <Button size="sm" variant="primary" on:click={() => createSnapshot(pool.name)}>+ Snapshot</Button>
                 </div>
               </div>
 
@@ -856,7 +856,6 @@
   .donut-lbl { font-size:9px; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
 
   /* Buttons inside pills — smaller than default */
-  .pill-actions :global(.btn) { font-size:12px; padding:9px 16px; border-radius:8px; }
 
   .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
 
