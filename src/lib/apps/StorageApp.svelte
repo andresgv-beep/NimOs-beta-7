@@ -848,10 +848,10 @@
   }
   .legend-row {
     display:flex; align-items:center; gap:8px;
-    font-size:12px; color:var(--text-primary);
+    font-size:12px; color:var(--text-primary); white-space:nowrap;
   }
   .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-  .legend-size { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-left:4px; }
+  .legend-size { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); }
 
   .donut { position:relative; width:120px; height:120px; }
   .donut svg { display:block; }
