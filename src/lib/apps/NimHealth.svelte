@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { token, hdrs } from '$lib/stores/auth.js';
+  import { APP_META } from '$lib/apps.js';
 
   let view = 'dashboard';
   let services = [];
@@ -107,7 +108,16 @@
   }
   function appInitials(svc) { return (svc.name || svc.appName || svc.appId || '?').slice(0, 2).toUpperCase(); }
   function svcDisplayName(svc) { return svc.name || svc.appName || svc.appId || '?'; }
-  function svcIcon(svc) { return svc.icon || ''; }
+  function svcIcon(svc) {
+    // Docker children traen icon del backend
+    if (svc.icon) return svc.icon;
+    // Servicios del sistema: buscar en APP_META por appId
+    const appId = svc.appId || svc.id?.split('@')[0] || '';
+    if (APP_META[appId]?.icon) return APP_META[appId].icon;
+    // containers → tiene su propio icono
+    if (appId === 'containers' && APP_META['appstore']?.icon) return '/icons/containers.png';
+    return '';
+  }
   function svcVersion(svc) {
     if (svc.image) { const parts = svc.image.split(':'); return parts[1] || ''; }
     if (svc.containerImage) { const parts = svc.containerImage.split(':'); return parts[1] || ''; }
@@ -294,7 +304,7 @@
   td.num.warn{color:var(--c-warn)}td.num.warn b{color:var(--c-warn)}
   td.num.crit{color:var(--c-crit)}td.num.crit b{color:var(--c-crit)}
   .app-icon{width:22px;height:22px;border-radius:5px;background:var(--bg-elev-2);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:var(--text-secondary);font-family:var(--font-mono)}
-  .app-icon-img{width:22px;height:22px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--bg-elev-2);border:1px solid var(--glass-border)}
+  .app-icon-img{width:22px;height:22px;border-radius:5px;object-fit:contain;flex-shrink:0}
   .app-name{font-weight:500;color:var(--text-primary)}.app-ver{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-left:6px}
   .child-badge{font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(59,130,246,0.1);color:var(--accent);margin-left:4px;text-transform:uppercase;letter-spacing:0.5px}
   .state{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500}.state .dot{width:6px;height:6px;border-radius:50%}
