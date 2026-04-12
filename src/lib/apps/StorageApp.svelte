@@ -534,16 +534,16 @@
                 {#if poolFileStats[pool.name]}
                   <div class="donut">
                     <svg width="110" height="110" viewBox="0 0 120 120">
-                      <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
+                      <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="12"/>
                       {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
-                        <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
+                        <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="12"
                           stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"
                           style="transform:rotate(-90deg);transform-origin:50% 50%"/>
                       {/each}
                     </svg>
                     <div class="donut-center">
-                      <div class="donut-val">{pool.totalFormatted || '—'}</div>
-                      <div class="donut-lbl">TOTAL</div>
+                      <div class="donut-val">{formatBytes(Object.values(poolFileStats[pool.name] || {}).reduce((a,b) => a+b, 0))}</div>
+                      <div class="donut-lbl">USADO</div>
                     </div>
                   </div>
                 {/if}
@@ -859,8 +859,8 @@
     align-items:center; justify-content:center;
     pointer-events:none;
   }
-  .donut-val { font-family:var(--font-mono); font-size:18px; font-weight:600; color:var(--text-primary); }
-  .donut-lbl { font-size:10px; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
+  .donut-val { font-family:var(--font-mono); font-size:14px; font-weight:600; color:var(--text-primary); }
+  .donut-lbl { font-size:9px; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
 
   .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
 
