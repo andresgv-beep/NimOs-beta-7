@@ -96,10 +96,10 @@ func serveStatic(w http.ResponseWriter, r *http.Request) {
 					"default-src 'self'; "+
 						"script-src 'self' 'unsafe-inline'; "+
 						"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "+
-						"img-src 'self' data: blob:; "+
-						"connect-src 'self'; "+
+						"img-src 'self' data: blob: https://raw.githubusercontent.com; "+
+						"connect-src 'self' https://raw.githubusercontent.com; "+
 						"font-src 'self' https://fonts.gstatic.com; "+
-						"frame-src 'self'; "+
+						"frame-src 'self' http://127.0.0.1:* http://localhost:*; "+
 						"frame-ancestors 'self'; "+
 						"object-src 'none'; "+
 						"base-uri 'self'")
