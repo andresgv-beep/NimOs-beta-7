@@ -107,6 +107,9 @@
         <span class="tb-sep"></span>
         <span class="tb-sub">{subtitle}</span>
       {/if}
+      <div class="tb-actions">
+        <slot name="titlebar-actions" />
+      </div>
     </div>
     <div class="content">
       <slot />
@@ -222,6 +225,7 @@
   .tb-title { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
   .tb-sep { width: 1px; height: 16px; background: var(--glass-border); }
   .tb-sub { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+  .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
   .content {
     flex: 1; overflow-y: auto;
