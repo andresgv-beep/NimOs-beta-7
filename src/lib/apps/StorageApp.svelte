@@ -771,9 +771,9 @@
   }
   .pool-head {
     display:grid;
-    grid-template-columns:32px 1.5fr 2fr auto 70px 20px;
-    align-items:center; gap:18px;
-    padding:16px 20px; cursor:pointer;
+    grid-template-columns:32px minmax(100px,1.2fr) minmax(80px,2fr) auto 60px 16px;
+    align-items:center; gap:14px;
+    padding:14px 18px; cursor:pointer;
     transition:background 0.18s;
     border-radius:12px;
   }
@@ -831,30 +831,30 @@
 
   .pool-detail {
     border-top:1px solid var(--glass-border);
-    padding:22px 24px 20px;
+    padding:18px 20px;
     display:flex; justify-content:space-between; align-items:flex-end;
+    gap:16px;
   }
   .detail-left { display:flex; flex-direction:column; justify-content:flex-end; }
-  .detail-right { display:flex; align-items:center; gap:18px; }
+  .detail-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
   .pill-actions { display:flex; gap:10px; }
   .mono { font-family:var(--font-mono); color:var(--text-primary); }
   .muted { color:var(--text-muted); }
 
   /* Donut + legend */
-  .donut-wrap { display:flex; align-items:center; gap:18px; }
   .legend {
     display:grid; grid-auto-flow:column; grid-template-rows:repeat(4, auto);
-    gap:8px 22px;
+    gap:6px 18px;
   }
   .legend-row {
-    display:flex; align-items:center; gap:8px;
-    font-size:12px; color:var(--text-primary); white-space:nowrap;
+    display:flex; align-items:center; gap:6px;
+    font-size:11px; color:var(--text-primary); white-space:nowrap;
   }
-  .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-  .legend-size { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); }
+  .legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .legend-size { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
 
-  .donut { position:relative; width:120px; height:120px; }
-  .donut svg { display:block; }
+  .donut { position:relative; width:100px; height:100px; flex-shrink:0; }
+  .donut svg { display:block; width:100%; height:100%; }
   .donut-center {
     position:absolute; inset:0;
     display:flex; flex-direction:column;
