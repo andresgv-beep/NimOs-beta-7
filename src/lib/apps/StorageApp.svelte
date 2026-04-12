@@ -727,7 +727,7 @@
   .modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center}
   .modal{background:var(--bg-elev-1);border:1px solid var(--glass-border);border-radius:14px;width:520px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
   .modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--glass-border)}
-  .modal-title{font-size:16px;font-weight:600}
+  .modal-title{font-size:16px;font-weight:600;color:var(--text-primary)}
   .modal-close{font-size:18px;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:4px}.modal-close:hover{color:var(--text-primary);background:var(--bg-elev-2)}
   .modal-body{padding:20px 22px}
   .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--glass-border)}
