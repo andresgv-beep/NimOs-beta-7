@@ -111,6 +111,12 @@
 
 <div class="nh-root">
   {#if view === 'dashboard'}
+    <!-- TITLEBAR -->
+    <div class="nh-titlebar">
+      <span class="nh-title">NimHealth</span>
+      <span class="nh-sub">Task Manager</span>
+    </div>
+
     <div class="hw-bar">
       {#each [
         { label:'CPU', value:`${cpu.percent}%`, sub:`${cpu.cores} cores · load ${cpu.load}`, hist:cpuHistory, color:'var(--accent)' },
@@ -133,11 +139,11 @@
           <span class="chip" class:active={filter===f} on:click={() => filter=f}>{label}</span>
         {/each}
       </div>
+      <div class="tb-counter"><b>{filteredServices.length}</b> apps · <b>{runningCount}</b> activas</div>
       <div class="search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" placeholder="Buscar app..." bind:value={search}>
+        <input type="text" placeholder="Buscar..." bind:value={search}>
       </div>
-      <div class="tb-counter"><b>{filteredServices.length}</b> apps · <b>{runningCount}</b> activas</div>
     </div>
 
     <div class="table-wrap">
@@ -213,6 +219,9 @@
 
 <style>
   .nh-root{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;font-family:var(--font-sans,'IBM Plex Sans',sans-serif);color:var(--text-primary);background:var(--bg-app)}
+  .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px;height:48px;background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
+  .nh-title{font-size:15px;font-weight:600;color:var(--text-primary);letter-spacing:-0.2px}
+  .nh-sub{font-size:13px;color:var(--text-muted)}
   .hw-bar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);padding:10px 24px;flex-shrink:0}
   .hw-stat{display:flex;align-items:center;gap:14px;padding:0 18px;border-right:1px solid var(--glass-border)}
   .hw-stat:last-child{border-right:none}.hw-stat:first-child{padding-left:0}
@@ -226,9 +235,9 @@
   .chip{font-size:11px;font-weight:500;padding:6px 12px;border-radius:6px;background:transparent;border:1px solid transparent;color:var(--text-secondary);cursor:pointer;transition:all .12s}
   .chip:hover{background:var(--bg-elev-2);color:var(--text-primary)}
   .chip.active{background:rgba(59,130,246,0.12);color:var(--accent);border-color:rgba(59,130,246,0.3)}
-  .search-box{flex:1;max-width:280px;display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:7px;background:var(--bg-elev-1);border:1px solid var(--glass-border)}
-  .search-box svg{width:13px;height:13px;color:var(--text-muted);flex-shrink:0}
-  .search-box input{background:transparent;border:none;outline:none;font-family:inherit;font-size:12px;color:var(--text-primary);width:100%}
+  .search-box{max-width:180px;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;background:var(--bg-elev-1);border:1px solid var(--glass-border)}
+  .search-box svg{width:12px;height:12px;color:var(--text-muted);flex-shrink:0}
+  .search-box input{background:transparent;border:none;outline:none;font-family:inherit;font-size:11px;color:var(--text-primary);width:100%}
   .search-box input::placeholder{color:var(--text-muted)}
   .tb-counter{margin-left:auto;font-size:11px;color:var(--text-muted);font-family:var(--font-mono)}.tb-counter b{color:var(--text-primary);font-weight:600}
   .table-wrap{flex:1;overflow-y:auto;padding:0 24px}.table-wrap::-webkit-scrollbar{width:3px}.table-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:3px}
