@@ -12,17 +12,30 @@
   let loading = true;
   let pools = [];
   let shares = [];
-  let poolFileStats = {}; // poolName → { video, image, audio, document, other }
-  let detailPool = null;
+  let poolFileStats = {};
   let eligible = [];
-  let capabilities = { zfs: false, btrfs: false, mdadm: false, recommended: 'btrfs' };
+  let capabilities = { zfs: false, btrfs: false, mdadm: false, recommended: 'zfs' };
+  let expandedPools = {};
+  let openMenu = null; // pool name with kebab open
+
+  // Create pool
   let newPool = { name: '', type: 'zfs', profile: 'raidz1', disks: [] };
   let showCreatePool = false;
   let creating = false;
   let poolMsg = '';
-  let expandedPools = {}; // poolName → boolean // when set, shows the "Gestionar" view for this pool
 
-  // ── App icon: duotone database ──
+  // Destroy
+  let showDestroy = false;
+  let destroyPool = null;
+  let destroyDeps = [];
+  let destroyInput = '';
+  let destroying = false;
+  let stoppingService = {};
+
+  $: allDepsStopped = destroyDeps.every(d => d.status !== 'running' && d.status !== 'starting');
+  $: canDestroy = destroyInput === 'ELIMINAR' && allDepsStopped;
+
+  // ── App icon ──
   const appIcon = [
     { tag: 'path', attrs: { d: 'M3 5c0 1.66 4 3 9 3s9-1.34 9-3v14c0 1.66-4 3-9 3s-9-1.34-9-3z', fill: 'currentColor', opacity: '0.12', stroke: 'none' }},
     { tag: 'ellipse', attrs: { cx: 12, cy: 5, rx: 9, ry: 3 }},
@@ -30,48 +43,42 @@
     { tag: 'path', attrs: { d: 'M3 12c0 1.66 4 3 9 3s9-1.34 9-3', fill: 'none' }},
   ];
 
-  // ── Sidebar navigation ──
+  // ── Sidebar ──
   const sections = [
-    {
-      label: 'Almacenamiento',
-      items: [
-        { id: 'resumen', label: 'Resumen', paths: [
-          { tag: 'rect', attrs: { x:3, y:3, width:7, height:7, rx:2, 'data-fill': '' }},
-          { tag: 'rect', attrs: { x:14, y:3, width:7, height:7, rx:2, 'data-fill': '' }},
-          { tag: 'rect', attrs: { x:3, y:14, width:7, height:7, rx:2, 'data-fill': '' }},
-          { tag: 'rect', attrs: { x:14, y:14, width:7, height:7, rx:2, 'data-fill': '' }},
-          { tag: 'rect', attrs: { x:3, y:3, width:7, height:7, rx:2 }},
-          { tag: 'rect', attrs: { x:14, y:3, width:7, height:7, rx:2 }},
-          { tag: 'rect', attrs: { x:3, y:14, width:7, height:7, rx:2 }},
-          { tag: 'rect', attrs: { x:14, y:14, width:7, height:7, rx:2 }},
-        ]},
-        { id: 'disks', label: 'Discos', paths: [
-          { tag: 'circle', attrs: { cx:12, cy:12, r:9, 'data-fill': '' }},
-          { tag: 'circle', attrs: { cx:12, cy:12, r:9 }},
-          { tag: 'circle', attrs: { cx:12, cy:12, r:2.5, 'data-dot': '' }},
-        ]},
-        { id: 'snapshots', label: 'Puntos de restauración', paths: [
-          { tag: 'circle', attrs: { cx:13, cy:14, r:8, 'data-fill': '' }},
-          { tag: 'polyline', attrs: { points: '1 4 1 10 7 10' }},
-          { tag: 'path', attrs: { d: 'M3.51 15a9 9 0 1 0 2.13-9.36L1 10' }},
-        ]},
-      ]
-    },
-    {
-      label: 'Mantenimiento',
-      items: [
-        { id: 'health', label: 'Salud', paths: [
-          { tag: 'path', attrs: { d: 'M9 3l-3 9H2l4 9h0l3-9h4l3-9', 'data-fill': '', style: 'opacity:0.08' }},
-          { tag: 'path', attrs: { d: 'M22 12h-4l-3 9L9 3l-3 9H2' }},
-        ]},
-        { id: 'restore', label: 'Restaurar volumen', paths: [
-          { tag: 'rect', attrs: { x:3, y:15, width:18, height:6, rx:2, 'data-fill': '' }},
-          { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }},
-          { tag: 'polyline', attrs: { points: '17 8 12 3 7 8' }},
-          { tag: 'line', attrs: { x1:12, y1:3, x2:12, y2:15 }},
-        ]},
-      ]
-    }
+    { label: 'Almacenamiento', items: [
+      { id: 'resumen', label: 'Resumen', paths: [
+        { tag: 'rect', attrs: { x:3, y:3, width:7, height:7, rx:2, 'data-fill': '' }},
+        { tag: 'rect', attrs: { x:14, y:3, width:7, height:7, rx:2, 'data-fill': '' }},
+        { tag: 'rect', attrs: { x:3, y:14, width:7, height:7, rx:2, 'data-fill': '' }},
+        { tag: 'rect', attrs: { x:14, y:14, width:7, height:7, rx:2, 'data-fill': '' }},
+        { tag: 'rect', attrs: { x:3, y:3, width:7, height:7, rx:2 }},
+        { tag: 'rect', attrs: { x:14, y:3, width:7, height:7, rx:2 }},
+        { tag: 'rect', attrs: { x:3, y:14, width:7, height:7, rx:2 }},
+        { tag: 'rect', attrs: { x:14, y:14, width:7, height:7, rx:2 }},
+      ]},
+      { id: 'disks', label: 'Discos', paths: [
+        { tag: 'circle', attrs: { cx:12, cy:12, r:9, 'data-fill': '' }},
+        { tag: 'circle', attrs: { cx:12, cy:12, r:9 }},
+        { tag: 'circle', attrs: { cx:12, cy:12, r:2.5, 'data-dot': '' }},
+      ]},
+      { id: 'snapshots', label: 'Puntos de restauración', paths: [
+        { tag: 'circle', attrs: { cx:13, cy:14, r:8, 'data-fill': '' }},
+        { tag: 'polyline', attrs: { points: '1 4 1 10 7 10' }},
+        { tag: 'path', attrs: { d: 'M3.51 15a9 9 0 1 0 2.13-9.36L1 10' }},
+      ]},
+    ]},
+    { label: 'Mantenimiento', items: [
+      { id: 'health', label: 'Salud', paths: [
+        { tag: 'path', attrs: { d: 'M9 3l-3 9H2l4 9h0l3-9h4l3-9', 'data-fill': '', style: 'opacity:0.08' }},
+        { tag: 'path', attrs: { d: 'M22 12h-4l-3 9L9 3l-3 9H2' }},
+      ]},
+      { id: 'restore', label: 'Restaurar volumen', paths: [
+        { tag: 'rect', attrs: { x:3, y:15, width:18, height:6, rx:2, 'data-fill': '' }},
+        { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }},
+        { tag: 'polyline', attrs: { points: '17 8 12 3 7 8' }},
+        { tag: 'line', attrs: { x1:12, y1:3, x2:12, y2:15 }},
+      ]},
+    ]}
   ];
 
   // ── Data ──
@@ -84,613 +91,345 @@
         fetch('/api/storage/disks', { headers: hdrs() }),
         fetch('/api/storage/capabilities', { headers: hdrs() }),
       ]);
-      const data = await statusRes.json();
-      pools = data.pools || [];
+      pools = (await statusRes.json()).pools || [];
       shares = await sharesRes.json();
-      const diskData = await disksRes.json();
-      eligible = diskData.eligible || [];
+      eligible = (await disksRes.json()).eligible || [];
       const caps = await capRes.json();
       capabilities = caps;
       if (caps.recommended) newPool.type = caps.recommended;
 
-      // Aggregate fileStats per pool
       const agg = {};
       for (const s of shares) {
         const pn = s.pool || s.volume;
-        if (!pn) continue;
-        if (!agg[pn]) agg[pn] = { video: 0, image: 0, audio: 0, document: 0, other: 0 };
-        if (s.fileStats) {
-          agg[pn].video += s.fileStats.video || 0;
-          agg[pn].image += s.fileStats.image || 0;
-          agg[pn].audio += s.fileStats.audio || 0;
-          agg[pn].document += s.fileStats.document || 0;
-          agg[pn].other += s.fileStats.other || 0;
-        }
+        if (!pn || !s.fileStats) continue;
+        if (!agg[pn]) agg[pn] = { video:0, image:0, audio:0, document:0, other:0 };
+        for (const k of ['video','image','audio','document','other']) agg[pn][k] += s.fileStats[k] || 0;
       }
       poolFileStats = agg;
-    } catch (e) {
-      console.error('[Storage] load failed', e);
-    }
+    } catch (e) { console.error('[Storage] load failed', e); }
     loading = false;
   }
 
   // ── Helpers ──
-  function poolStatus(pool) {
-    const ph = pool.poolHealth;
-    if (ph?.status === 'critical' || pool.health === 'FAULTED') return 'crit';
-    if (ph?.status === 'degraded' || pool.health === 'DEGRADED') return 'warn';
-    // Check if any disk has SMART issues
-    if (pool.disks?.some(d => d.smartStatus === 'critical')) return 'warn';
+  function poolStatus(p) {
+    const ph = p.poolHealth;
+    if (ph?.status === 'critical' || p.health === 'FAULTED') return 'crit';
+    if (ph?.status === 'degraded' || p.health === 'DEGRADED') return 'warn';
+    if (p.disks?.some(d => d.smartStatus === 'critical')) return 'warn';
     return 'ok';
   }
-  function poolStatusLabel(pool) {
-    const s = poolStatus(pool);
-    return s === 'crit' ? 'En riesgo' : s === 'warn' ? 'Atención' : 'Sano';
-  }
-  function diskStatus(disk) {
-    if (disk.smartStatus === 'critical') return 'crit';
-    if (disk.smartStatus === 'warning') return 'warn';
-    return 'ok';
-  }
-  function diskStatusLabel(disk) {
-    const s = diskStatus(disk);
-    return s === 'crit' ? 'Crítico' : s === 'warn' ? 'Atención' : 'Sano';
-  }
-  function formatHours(h) {
-    if (!h) return '—';
-    return h >= 1000 ? (h / 1000).toFixed(1) + 'k h' : h + ' h';
-  }
-  function vdevLabel(t) {
-    return { raidz1:'RAIDZ1', raidz2:'RAIDZ2', raidz3:'RAIDZ3', mirror:'Espejo', single:'Simple', stripe:'Stripe' }[t] || t || '—';
-  }
-  function formatBytes(b) {
+  function diskStatus(d) { return d.smartStatus === 'critical' ? 'crit' : d.smartStatus === 'warning' ? 'warn' : 'ok'; }
+  function diskStatusLabel(d) { const s = diskStatus(d); return s === 'crit' ? 'Crítico' : s === 'warn' ? 'Atención' : 'Sano'; }
+  function fmtH(h) { return !h ? '—' : h >= 1000 ? (h/1000).toFixed(1)+'k h' : h+' h'; }
+  function fmtB(b) {
     if (!b) return '0 B';
-    if (b >= 1099511627776) return (b / 1099511627776).toFixed(1) + ' TB';
-    if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
-    if (b >= 1048576) return Math.round(b / 1048576) + ' MB';
-    if (b >= 1024) return Math.round(b / 1024) + ' KB';
-    return b + ' B';
+    if (b >= 1099511627776) return (b/1099511627776).toFixed(1)+' TB';
+    if (b >= 1073741824) return (b/1073741824).toFixed(1)+' GB';
+    if (b >= 1048576) return Math.round(b/1048576)+' MB';
+    if (b >= 1024) return Math.round(b/1024)+' KB';
+    return b+' B';
   }
+  function vdevLabel(t) { return {raidz1:'RAIDZ1',raidz2:'RAIDZ2',raidz3:'RAIDZ3',mirror:'Espejo',single:'Simple',stripe:'Stripe'}[t]||t||''; }
+  function pillSub(p) {
+    let s = p.type?.toUpperCase() || '';
+    const vl = vdevLabel(p.vdevType);
+    if (vl) s += ' · ' + vl;
+    s += ' · ' + (p.disks?.length||0) + ' disco' + ((p.disks?.length||0) !== 1 ? 's' : '');
+    return s;
+  }
+  function barColor(pct) { return pct > 90 ? 'crit' : pct > 80 ? 'warn' : 'ok'; }
 
   const categories = [
-    { key: 'video',    label: 'Vídeo',      color: '#3b82f6' },
-    { key: 'audio',    label: 'Audio',       color: '#f59e0b' },
-    { key: 'image',    label: 'Imágenes',    color: '#10b981' },
-    { key: 'document', label: 'Documentos',  color: '#8b5cf6' },
-    { key: 'other',    label: 'Otros',       color: '#64748b' },
+    { key:'video', label:'Vídeo', color:'#3b82f6' },
+    { key:'audio', label:'Audio', color:'#f59e0b' },
+    { key:'image', label:'Imágenes', color:'#10b981' },
+    { key:'document', label:'Documentos', color:'#8b5cf6' },
+    { key:'other', label:'Otros', color:'#64748b' },
   ];
 
-  function getDonutSegments(stats, pool) {
+  function donutSegs(stats) {
     if (!stats) return [];
-    // Total used across all categories
-    const totalUsed = Object.values(stats).reduce((a, b) => a + b, 0);
-    if (totalUsed <= 0) return [];
-    const circumference = 2 * Math.PI * 48; // r=48
-    let offset = 0;
-    const segs = [];
-    for (const cat of categories) {
-      const val = stats[cat.key] || 0;
-      if (val <= 0) continue;
-      const pct = val / totalUsed; // relative to used, not total — donut always full
-      const len = pct * circumference;
-      segs.push({ ...cat, value: val, dasharray: `${len} ${circumference}`, offset: -offset });
-      offset += len;
-    }
-    return segs;
+    const tot = Object.values(stats).reduce((a,b)=>a+b,0);
+    if (tot <= 0) return [];
+    const C = 2*Math.PI*48;
+    let off = 0;
+    return categories.filter(c=>(stats[c.key]||0)>0).map(c => {
+      const len = (stats[c.key]/tot)*C;
+      const seg = { ...c, dash:`${len} ${C}`, off: -off };
+      off += len;
+      return seg;
+    });
   }
 
-  function getBarSegments(stats, total) {
-    if (!stats) return [];
-    const totalUsed = Object.values(stats).reduce((a, b) => a + b, 0);
-    if (totalUsed <= 0) return [];
-    // Bar width = usagePercent of total disk, segments = proportional within used
-    return categories.map(c => ({
-      ...c,
-      value: stats[c.key] || 0,
-      pct: ((stats[c.key] || 0) / totalUsed) * 100
-    })).filter(s => s.pct > 0);
+  // ── System status ──
+  $: totalDisks = pools.reduce((n,p)=>n+(p.disks?.length||0),0);
+  $: problemDisks = pools.flatMap(p=>(p.disks||[]).filter(d=>d.smartStatus!=='ok'));
+  $: sysStatus = pools.some(p=>poolStatus(p)==='crit')?'crit':pools.some(p=>poolStatus(p)==='warn')?'warn':'ok';
+  $: sysTitle = sysStatus==='crit'?'Grupo de almacenamiento en riesgo':sysStatus==='warn'?'Un volumen necesita tu atención':'El sistema funciona correctamente';
+  $: sysSub = `${pools.length} volumen${pools.length!==1?'es':''} · ${totalDisks} discos · ${problemDisks.length===0?'sin incidencias':problemDisks.length+' disco'+(problemDisks.length>1?'s':'')+' con avisos'}`;
+
+  // ── Actions ──
+  function togglePill(name) { expandedPools[name] = !expandedPools[name]; expandedPools = expandedPools; openMenu = null; }
+  function toggleMenu(name, e) { e.stopPropagation(); openMenu = openMenu === name ? null : name; }
+  function closeMenus() { openMenu = null; }
+
+  async function startScrub(name) {
+    openMenu = null;
+    const r = await fetch('/api/storage/scrub', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
+    const d = await r.json();
+    alert(d.ok ? 'Verificación iniciada' : (d.error||'Error'));
+  }
+  async function createSnapshot(name) {
+    openMenu = null;
+    const r = await fetch('/api/storage/snapshot', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
+    const d = await r.json();
+    alert(d.ok ? 'Snapshot creado' : (d.error||'Error'));
   }
 
-  // ── System-level status (across all pools) ──
-  $: totalDisks = pools.reduce((n, p) => n + (p.disks?.length || 0), 0);
-  $: problemDisks = pools.flatMap(p => (p.disks || []).filter(d => d.smartStatus !== 'ok'));
-  $: systemStatus = pools.some(p => poolStatus(p) === 'crit') ? 'crit'
-                   : pools.some(p => poolStatus(p) === 'warn') ? 'warn' : 'ok';
-  $: systemTitle = systemStatus === 'crit' ? 'Grupo de almacenamiento en riesgo'
-                 : systemStatus === 'warn' ? 'Un volumen necesita tu atención'
-                 : 'El sistema funciona correctamente';
-  $: systemSub = `${pools.length} volumen${pools.length !== 1 ? 'es' : ''} · ${totalDisks} discos · ${
-    problemDisks.length === 0 ? 'sin incidencias' : problemDisks.length + ' disco' + (problemDisks.length > 1 ? 's' : '') + ' con avisos'
-  }`;
-
-  let refreshInterval;
-  onMount(() => { load(); refreshInterval = setInterval(load, 30000); });
-  onDestroy(() => { if (refreshInterval) clearInterval(refreshInterval); });
-
-  // Keep detailPool in sync after refresh
-  $: if (detailPool && pools.length) {
-    detailPool = pools.find(p => p.name === detailPool.name) || null;
-  }
-
-  function redundancyLabel(pool) {
-    const r = pool.poolHealth?.redundancy;
-    if (!r) return '—';
-    const typeLabel = { raidz1:'Protección simple', raidz2:'Protección doble', raidz3:'Protección triple', mirror:'Espejo', single:'Sin protección', stripe:'Sin protección' };
-    const tl = typeLabel[r.type] || r.type;
-    return tl;
-  }
-  function redundancySub(pool) {
-    const r = pool.poolHealth?.redundancy;
-    if (!r) return '';
-    return `${r.current}/${r.expected} discos · puede perder ${r.canLose}`;
-  }
-
-  // ── Pool actions ──
-  let showDestroy = false;
-  let destroyDeps = [];
-  let destroyInput = '';
-  let destroying = false;
-  let stoppingService = {};
-
-  $: allDepsStopped = destroyDeps.every(d => d.status !== 'running' && d.status !== 'starting');
-  $: canDestroy = destroyInput === 'ELIMINAR' && allDepsStopped;
-
-  async function startScrub(poolName) {
+  async function openDestroy(pool) {
+    openMenu = null;
+    destroyPool = pool;
+    destroyInput = ''; destroying = false; stoppingService = {};
     try {
-      const res = await fetch('/api/storage/scrub', {
-        method: 'POST',
-        headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pool: poolName }),
-      });
-      const data = await res.json();
-      if (data.ok) alert('Verificación de integridad iniciada');
-      else alert(data.error || 'Error');
-    } catch (e) { alert('Error: ' + e.message); }
-  }
-
-  async function createSnapshot(poolName) {
-    try {
-      const res = await fetch('/api/storage/snapshot', {
-        method: 'POST',
-        headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pool: poolName }),
-      });
-      const data = await res.json();
-      if (data.ok) alert('Punto de restauración creado');
-      else alert(data.error || 'Error');
-    } catch (e) { alert('Error: ' + e.message); }
-  }
-
-  async function openDestroy() {
-    if (!detailPool) return;
-    destroyInput = '';
-    destroying = false;
-    stoppingService = {};
-    try {
-      const r = await fetch(`/api/services/dependencies?pool=${encodeURIComponent(detailPool.name)}`, { headers: hdrs() });
-      const d = await r.json();
-      destroyDeps = d.dependencies || [];
+      const r = await fetch(`/api/services/dependencies?pool=${encodeURIComponent(pool.name)}`, { headers:hdrs() });
+      destroyDeps = (await r.json()).dependencies || [];
     } catch { destroyDeps = []; }
     showDestroy = true;
   }
-
-  async function stopServiceForDestroy(svc) {
-    stoppingService = { ...stoppingService, [svc.id]: true };
-    try {
-      await fetch(`/api/services/${svc.id}/stop`, { method: 'POST', headers: hdrs() });
-      svc.status = 'stopped';
-      destroyDeps = [...destroyDeps];
-    } catch {}
-    stoppingService = { ...stoppingService, [svc.id]: false };
+  async function stopSvcForDestroy(svc) {
+    stoppingService = {...stoppingService,[svc.id]:true};
+    try { await fetch(`/api/services/${svc.id}/stop`,{method:'POST',headers:hdrs()}); svc.status='stopped'; destroyDeps=[...destroyDeps]; } catch {}
+    stoppingService = {...stoppingService,[svc.id]:false};
   }
-
   async function doDestroy() {
-    if (!canDestroy || !detailPool) return;
+    if (!canDestroy||!destroyPool) return;
     destroying = true;
     try {
-      const r = await fetch('/api/storage/pool/destroy', {
-        method: 'POST',
-        headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: detailPool.name }),
-      });
-      const d = await r.json();
-      if (d.ok) {
-        showDestroy = false;
-        detailPool = null;
-        await load();
-      } else {
-        alert(d.error || 'Error al destruir el volumen');
-      }
-    } catch (e) { alert('Error: ' + e.message); }
+      const d = await (await fetch('/api/storage/pool/destroy',{method:'POST',headers:{...hdrs(),'Content-Type':'application/json'},body:JSON.stringify({name:destroyPool.name})})).json();
+      if (d.ok) { showDestroy=false; destroyPool=null; await load(); } else alert(d.error||'Error');
+    } catch(e) { alert('Error: '+e.message); }
     destroying = false;
   }
 
-  function toggleDisk(path) {
-    if (newPool.disks.includes(path)) {
-      newPool.disks = newPool.disks.filter(p => p !== path);
-    } else {
-      newPool.disks = [...newPool.disks, path];
-    }
-  }
-
+  // Create pool
+  function toggleDisk(path) { newPool.disks = newPool.disks.includes(path) ? newPool.disks.filter(p=>p!==path) : [...newPool.disks,path]; }
   async function createPool() {
-    if (!newPool.name.trim()) { poolMsg = 'Introduce un nombre'; return; }
-    if (newPool.disks.length === 0) { poolMsg = 'Selecciona al menos un disco'; return; }
-    creating = true; poolMsg = '';
+    if (!newPool.name.trim()) { poolMsg='Introduce un nombre'; return; }
+    if (newPool.disks.length===0) { poolMsg='Selecciona al menos un disco'; return; }
+    creating=true; poolMsg='';
+    const body = { name:newPool.name.trim(), type:newPool.type, disks:newPool.disks };
+    if (newPool.type==='zfs') body.vdevType=newPool.profile;
+    else if (newPool.type==='btrfs') body.profile=newPool.profile;
     try {
-      const body = {
-        name: newPool.name.trim(),
-        type: newPool.type,
-        disks: newPool.disks,
-      };
-      if (newPool.type === 'zfs') body.vdevType = newPool.profile;
-      else if (newPool.type === 'btrfs') body.profile = newPool.profile;
-
-      const res = await fetch('/api/storage/pool', {
-        method: 'POST',
-        headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        poolMsg = '';
-        newPool = { name: '', type: capabilities.recommended || 'zfs', profile: 'raidz1', disks: [] };
-        showCreatePool = false;
-        active = 'resumen';
-        await load();
-      } else {
-        poolMsg = data.error || 'Error al crear pool';
-      }
-    } catch (e) { poolMsg = 'Error de conexión'; }
-    creating = false;
+      const d = await (await fetch('/api/storage/pool',{method:'POST',headers:{...hdrs(),'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+      if (d.ok) { newPool={name:'',type:capabilities.recommended||'zfs',profile:'raidz1',disks:[]}; showCreatePool=false; active='resumen'; await load(); }
+      else poolMsg = d.error||'Error';
+    } catch { poolMsg='Error de conexión'; }
+    creating=false;
   }
-
   const zfsProfiles = [
-    { id: 'single', label: 'Simple (sin protección)', min: 1 },
-    { id: 'mirror', label: 'Espejo (mirror)', min: 2 },
-    { id: 'raidz1', label: 'RAIDZ1 (puede perder 1 disco)', min: 3 },
-    { id: 'raidz2', label: 'RAIDZ2 (puede perder 2 discos)', min: 5 },
+    {id:'single',label:'Simple (sin protección)',min:1},
+    {id:'mirror',label:'Espejo (mirror)',min:2},
+    {id:'raidz1',label:'RAIDZ1 (puede perder 1)',min:3},
+    {id:'raidz2',label:'RAIDZ2 (puede perder 2)',min:5},
   ];
+
+  let refreshInterval;
+  onMount(()=>{ load(); refreshInterval=setInterval(load,30000); });
+  onDestroy(()=>{ if(refreshInterval) clearInterval(refreshInterval); });
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <AppShell title="Almacenamiento" {appIcon} {sections} bind:active showSearch>
 
-  {#if loading && pools.length === 0}
+  {#if loading && pools.length===0}
     <div class="state-msg">Cargando...</div>
 
   {:else if active === 'resumen'}
-    {#if detailPool}
-      <!-- ═══ GESTIONAR POOL ═══ -->
-      <div class="page-header">
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="back-btn" on:click={() => detailPool = null}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
-          Volver
-        </div>
-        <div class="header-title">
-          <span class="pool-name">{detailPool.name}</span>
-          <Badge status={poolStatus(detailPool)}>{poolStatusLabel(detailPool)}</Badge>
-        </div>
-      </div>
 
-      <!-- Info + Actions row -->
-      <div class="row-top">
-        <Card>
-          <SectionLabel>Información</SectionLabel>
-          <div class="info-grid">
-            <div class="info-k">Nombre</div><div class="info-v">{detailPool.name}</div>
-            <div class="info-k">Sistema de archivos</div><div class="info-v">{detailPool.type?.toUpperCase()}</div>
-            <div class="info-k">Protección</div><div class="info-v">{redundancyLabel(detailPool)}<span class="info-sub">{redundancySub(detailPool)}</span></div>
-            <div class="info-k">Punto de montaje</div><div class="info-v mono">{detailPool.mountPoint}</div>
-            <div class="info-k">Estado</div><div class="info-v">{detailPool.health}</div>
-            <div class="info-k">Compresión</div><div class="info-v">lz4</div>
-            <div class="info-k">Creado</div><div class="info-v mono">{detailPool.createdAt?.split('T')[0] || '—'}</div>
-          </div>
-        </Card>
-
-        <Card>
-          <SectionLabel>Acciones</SectionLabel>
-          <div class="actions-col">
-            <Button variant="primary" on:click={() => startScrub(detailPool.name)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>
-              Verificar integridad
-            </Button>
-            <Button on:click={() => createSnapshot(detailPool.name)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
-              Punto de restauración
-            </Button>
-            <div class="btn-divider"></div>
-            <Button variant="danger" on:click={openDestroy}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-              Destruir volumen
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <!-- Disks table full width -->
-      {#if detailPool.disks?.length > 0}
-        <Card>
-          <SectionLabel>Discos del volumen</SectionLabel>
-          <div class="dtable-head dtable-8col">
-            <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Rol</div><div>Estado</div>
-          </div>
-          {#each detailPool.disks as disk}
-            <div class="dtable-row dtable-8col">
-              <div class="disk-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                  <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-                </svg>
-              </div>
-              <div class="d-name">{disk.model || disk.name}</div>
-              <div class="d-cell">/dev/{disk.name}</div>
-              <div class="d-cell">{disk.size || '—'}</div>
-              <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>{disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}</div>
-              <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
-              <div><span class="role-pill">data</span></div>
-              <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
-            </div>
-          {/each}
-        </Card>
-      {/if}
-
-    {:else}
-      <!-- ═══ RESUMEN (pool list) ═══ -->
-      <!-- System status hero -->
+    <!-- Status hero -->
     {#if pools.length > 0}
       <Card>
-        <StatusHero
-          status={systemStatus}
-          title={systemTitle}
-          subtitle={systemSub}
-          stats={[
-            { label: 'Volúmenes', value: String(pools.length) },
-            { label: 'Discos', value: String(totalDisks) },
-          ]}
-        />
+        <StatusHero status={sysStatus} title={sysTitle} subtitle={sysSub}
+          stats={[{label:'Volúmenes',value:String(pools.length)},{label:'Discos',value:String(totalDisks)}]} />
         {#if problemDisks.length > 0}
-          <div class="status-disks">
+          <div class="hero-disks">
             <SectionLabel>Discos con incidencias</SectionLabel>
             {#each problemDisks as disk}
-              <div class="dtable-row">
-                <div class="disk-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                    <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-                  </svg>
-                </div>
-                <div class="d-name">{disk.model || disk.name}</div>
-                <div class="d-cell">/dev/{disk.name}</div>
-                <div class="d-cell">{disk.size || '—'}</div>
-                <div class="d-cell" class:temp-hot={disk.smart?.temperature > 50}>
-                  {disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}
-                </div>
-                <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
-                <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+              <div class="hdisk">
+                <span class="hdisk-name">{disk.model||disk.name}</span>
+                <span class="hdisk-dev">/dev/{disk.name}</span>
+                <Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge>
               </div>
             {/each}
           </div>
         {/if}
       </Card>
-
       <div style="height:14px"></div>
     {/if}
 
     <!-- Pool pills -->
-    <div class="pool-list">
+    <div class="pool-list" on:click={closeMenus}>
       {#each pools as pool}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="pool-pill" class:open={expandedPools[pool.name]}>
-          <div class="pool-head" on:click={() => expandedPools[pool.name] = !expandedPools[pool.name]}>
-            <div class="pool-icon">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-              </svg>
-            </div>
-            <div class="pool-ident">
-              <div class="pill-name">{pool.name}</div>
-              <div class="pill-sub">{pool.type?.toUpperCase()}{pool.vdevType ? ' · ' + vdevLabel(pool.vdevType) : ''} · {pool.disks?.length || 0} disco{pool.disks?.length !== 1 ? 's' : ''}</div>
-            </div>
-            <div class="pill-bar">
-              <div class="bar-seg" style="width:{Math.max(pool.usagePercent || 0, 0.3)}%;background:var(--accent)"></div>
-            </div>
-            <div class="pill-pct" class:warn={pool.usagePercent > 80} class:crit={pool.usagePercent > 95}>
-              {pool.usagePercent || 0}<span class="sym">%</span>
-            </div>
-            <div class="pill-total">{pool.totalFormatted || '—'}</div>
-            <div class="chev">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-            </div>
-          </div>
 
-          <div class="pool-body">
-            <div class="pool-detail">
-              <div class="detail-left">
-                <div class="pill-actions">
-                  <Button size="sm" on:click={() => { detailPool = pool; }}>Gestionar</Button>
-                  <Button size="sm" variant="primary" on:click={() => createSnapshot(pool.name)}>+ Snapshot</Button>
+          {#if expandedPools[pool.name]}
+            <!-- OPEN STATE -->
+            <div class="pool-head" on:click={()=>togglePill(pool.name)}>
+              <div class="pool-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
+              <div class="pool-ident"><div class="pill-name">{pool.name}</div><div class="pill-sub">{pillSub(pool)}</div></div>
+              <div class="bar">
+                <div class="bar-pct {barColor(pool.usagePercent||0)}" style="left:{Math.max(pool.usagePercent||0,2)}%">{pool.usagePercent||0}<span class="sym">%</span></div>
+                <div class="bar-fill {barColor(pool.usagePercent||0)}" style="width:{Math.max(pool.usagePercent||0,1)}%"></div>
+              </div>
+              <div class="cap-total">{pool.totalFormatted||'—'}</div>
+              <div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="kebab" on:click|stopPropagation={e=>toggleMenu(pool.name,e)}><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></div>
+            </div>
+
+            <!-- Expanded body: legend + donut -->
+            <div class="pool-body">
+              {#if poolFileStats[pool.name]}
+                <div class="legend">
+                  {#each categories as cat}
+                    {#if (poolFileStats[pool.name]?.[cat.key]||0) > 0}
+                      <div class="legend-row">
+                        <span class="legend-dot" style="background:{cat.color}"></span>
+                        {cat.label}
+                        <span class="legend-val">{fmtB(poolFileStats[pool.name][cat.key])}</span>
+                      </div>
+                    {/if}
+                  {/each}
                 </div>
-              </div>
-
-              <div class="detail-right">
-                {#if poolFileStats[pool.name]}
-                  <div class="legend">
-                    {#each categories as cat}
-                      {#if (poolFileStats[pool.name]?.[cat.key] || 0) > 0}
-                        <div class="legend-row">
-                          <span class="legend-dot" style="background:{cat.color}"></span>
-                          <span>{cat.label}</span>
-                          <span class="legend-size">{formatBytes(poolFileStats[pool.name][cat.key])}</span>
-                        </div>
-                      {/if}
+                <div class="donut">
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-1)" stroke-width="14"/>
+                    {#each donutSegs(poolFileStats[pool.name]) as seg}
+                      <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
+                        stroke-dasharray="{seg.dash}" stroke-dashoffset="{seg.off}"/>
                     {/each}
-                  </div>
-                {/if}
-
-                {#if poolFileStats[pool.name]}
-                  <div class="donut">
-                    <svg width="110" height="110" viewBox="0 0 120 120">
-                      <circle cx="60" cy="60" r="48" fill="none" stroke="var(--bg-elev-2)" stroke-width="14"/>
-                      {#each getDonutSegments(poolFileStats[pool.name], pool) as seg}
-                        <circle cx="60" cy="60" r="48" fill="none" stroke="{seg.color}" stroke-width="14"
-                          stroke-dasharray="{seg.dasharray}" stroke-dashoffset="{seg.offset}"/>
-                      {/each}
-                    </svg>
-                    <div class="donut-center">
-                      <div class="donut-val">{formatBytes(Object.values(poolFileStats[pool.name] || {}).reduce((a,b) => a+b, 0))}</div>
-                      <div class="donut-lbl">USADO</div>
-                    </div>
-                  </div>
-                {/if}
-              </div>
+                  </svg>
+                  <div class="donut-center"><div class="dv">{fmtB(Object.values(poolFileStats[pool.name]).reduce((a,b)=>a+b,0))}</div><div class="dl">Usado</div></div>
+                </div>
+              {:else}
+                <div class="state-msg" style="grid-column:1/-1">Sin datos de distribución</div>
+              {/if}
             </div>
-          </div>
+
+            <!-- Expanded disks -->
+            {#if pool.disks?.length > 0}
+              <div class="pool-disks">
+                <div class="disks-label">Discos del volumen</div>
+                <div class="disk-head"><div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Rol</div><div>Estado</div></div>
+                {#each pool.disks as disk}
+                  <div class="disk-row">
+                    <div class="disk-icon-mini"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
+                    <div class="disk-name">{disk.model||disk.name}</div>
+                    <div class="disk-cell">/dev/{disk.name}</div>
+                    <div class="disk-cell">{disk.size||'—'}</div>
+                    <div class="disk-cell">{disk.smart?.temperature ? disk.smart.temperature+'°C' : '—'}</div>
+                    <div class="disk-cell">{fmtH(disk.smart?.powerOnHours)}</div>
+                    <div><span class="role-pill">data</span></div>
+                    <div class="smart-badge smart-{diskStatus(disk)}"><span class="dot"></span>{diskStatusLabel(disk)}</div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+
+          {:else}
+            <!-- CLOSED STATE — flat pill -->
+            <div class="pool-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
+            <div class="pool-ident" on:click={()=>togglePill(pool.name)}><div class="pill-name">{pool.name}</div><div class="pill-sub">{pillSub(pool)}</div></div>
+            <div class="bar" on:click={()=>togglePill(pool.name)}>
+              <div class="bar-pct {barColor(pool.usagePercent||0)}" style="left:{Math.max(pool.usagePercent||0,2)}%">{pool.usagePercent||0}<span class="sym">%</span></div>
+              <div class="bar-fill {barColor(pool.usagePercent||0)}" style="width:{Math.max(pool.usagePercent||0,1)}%"></div>
+            </div>
+            <div class="cap-total">{pool.totalFormatted||'—'}</div>
+            <div class="chev" on:click={()=>togglePill(pool.name)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="kebab" on:click|stopPropagation={e=>toggleMenu(pool.name,e)}><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></div>
+          {/if}
+
+          <!-- Kebab menu -->
+          {#if openMenu === pool.name}
+            <div class="menu">
+              <div class="menu-item" on:click={()=>createSnapshot(pool.name)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>Punto de restauración</div>
+              <div class="menu-item" on:click={()=>startScrub(pool.name)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Verificar integridad</div>
+              <div class="menu-divider"></div>
+              <div class="menu-item danger" on:click={()=>openDestroy(pool)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 3h4v2H4V6h4z"/><path d="M6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/></svg>Quitar volumen</div>
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
 
     {#if pools.length === 0}
-      <Card>
-        <div class="state-msg">
-          <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Sin volúmenes</div>
-          <div>Crea un volumen para empezar a almacenar datos.</div>
-        </div>
-      </Card>
-    {/if}
+      <Card><div class="state-msg"><div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Sin volúmenes</div><div>Ve a Discos para crear uno.</div></div></Card>
     {/if}
 
   {:else if active === 'disks'}
     {#if showCreatePool}
-      <!-- Create Pool form -->
       <Card>
         <div class="create-header">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="back-btn" on:click={() => showCreatePool = false}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
-            Volver
-          </div>
+          <div class="back-btn" on:click={()=>showCreatePool=false}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>Volver</div>
           <span style="font-size:18px;font-weight:600">Crear volumen</span>
         </div>
-
         <div class="create-form">
-          <div class="form-group">
-            <label class="form-label">Nombre del volumen</label>
-            <input class="form-input" bind:value={newPool.name} placeholder="mi-volumen">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Sistema de archivos</label>
-            <div class="form-options">
-              {#if capabilities.zfs}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="form-option" class:selected={newPool.type === 'zfs'} on:click={() => { newPool.type = 'zfs'; newPool.profile = 'raidz1'; }}>
-                  <span class="opt-title">ZFS</span>
-                  <span class="opt-desc">Recomendado · snapshots, compresión, reparación</span>
-                </div>
-              {/if}
-              {#if capabilities.btrfs}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="form-option" class:selected={newPool.type === 'btrfs'} on:click={() => { newPool.type = 'btrfs'; newPool.profile = 'single'; }}>
-                  <span class="opt-title">BTRFS</span>
-                  <span class="opt-desc">Snapshots, compresión, flexible</span>
-                </div>
-              {/if}
+          <div class="fg"><label class="fl">Nombre</label><input class="fi" bind:value={newPool.name} placeholder="mi-volumen"></div>
+          <div class="fg"><label class="fl">Sistema de archivos</label>
+            <div class="fo">
+              {#if capabilities.zfs}<div class="fopt" class:sel={newPool.type==='zfs'} on:click={()=>{newPool.type='zfs';newPool.profile='raidz1'}}><b>ZFS</b><span>Recomendado</span></div>{/if}
+              {#if capabilities.btrfs}<div class="fopt" class:sel={newPool.type==='btrfs'} on:click={()=>{newPool.type='btrfs';newPool.profile='single'}}><b>BTRFS</b><span>Flexible</span></div>{/if}
             </div>
           </div>
-
-          {#if newPool.type === 'zfs'}
-            <div class="form-group">
-              <label class="form-label">Protección</label>
-              <div class="form-options">
-                {#each zfsProfiles as p}
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="form-option" class:selected={newPool.profile === p.id} class:disabled={eligible.length < p.min}
-                    on:click={() => { if (eligible.length >= p.min) newPool.profile = p.id; }}>
-                    <span class="opt-title">{p.label}</span>
-                    <span class="opt-desc">Mínimo {p.min} disco{p.min > 1 ? 's' : ''}</span>
-                  </div>
-                {/each}
-              </div>
+          {#if newPool.type==='zfs'}
+            <div class="fg"><label class="fl">Protección</label>
+              <div class="fo">{#each zfsProfiles as p}<div class="fopt" class:sel={newPool.profile===p.id} class:dis={eligible.length<p.min} on:click={()=>{if(eligible.length>=p.min) newPool.profile=p.id}}><b>{p.label}</b><span>Mín {p.min} disco{p.min>1?'s':''}</span></div>{/each}</div>
             </div>
           {/if}
-
-          <div class="form-group">
-            <label class="form-label">Discos ({newPool.disks.length} seleccionados)</label>
+          <div class="fg"><label class="fl">Discos ({newPool.disks.length})</label>
             {#each eligible as disk}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="disk-select" class:selected={newPool.disks.includes('/dev/' + disk.name)} on:click={() => toggleDisk('/dev/' + disk.name)}>
-                <div class="disk-check">{newPool.disks.includes('/dev/' + disk.name) ? '✓' : ''}</div>
-                <div class="disk-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                    <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-                  </svg>
-                </div>
-                <div style="flex:1">
-                  <div class="d-name">{disk.model || disk.name}</div>
-                  <div class="d-cell">/dev/{disk.name} · {disk.size || '—'}</div>
-                </div>
+              <div class="dsel" class:sel={newPool.disks.includes('/dev/'+disk.name)} on:click={()=>toggleDisk('/dev/'+disk.name)}>
+                <div class="dchk">{newPool.disks.includes('/dev/'+disk.name)?'✓':''}</div>
+                <div class="disk-icon-mini"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
+                <div style="flex:1"><div class="disk-name">{disk.model||disk.name}</div><div class="disk-cell">/dev/{disk.name} · {disk.size||'—'}</div></div>
               </div>
             {/each}
-            {#if eligible.length === 0}
-              <div class="state-msg">No hay discos disponibles</div>
-            {/if}
+            {#if eligible.length===0}<div class="state-msg">No hay discos disponibles</div>{/if}
           </div>
-
-          {#if poolMsg}
-            <div class="pool-msg">{poolMsg}</div>
-          {/if}
-
-          <div style="display:flex;gap:10px;margin-top:16px">
-            <Button on:click={() => showCreatePool = false}>Cancelar</Button>
-            <Button variant="primary" disabled={creating} on:click={createPool}>
-              {creating ? 'Creando...' : 'Crear volumen'}
-            </Button>
+          {#if poolMsg}<div style="color:var(--c-crit);font-size:13px">{poolMsg}</div>{/if}
+          <div style="display:flex;gap:10px;margin-top:8px">
+            <Button on:click={()=>showCreatePool=false}>Cancelar</Button>
+            <Button variant="primary" disabled={creating} on:click={createPool}>{creating?'Creando...':'Crear volumen'}</Button>
           </div>
         </div>
       </Card>
     {:else}
-      <!-- Disk list + create button -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <SectionLabel>Discos disponibles</SectionLabel>
-        <Button variant="primary" on:click={() => showCreatePool = true}>+ Crear volumen</Button>
+        <Button variant="primary" size="sm" on:click={()=>showCreatePool=true}>+ Crear volumen</Button>
       </div>
-
       {#if eligible.length > 0}
         <Card>
-          <div class="dtable-head">
-            <div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Estado</div>
-          </div>
+          <div class="disk-head"><div></div><div>Modelo</div><div>Dispositivo</div><div>Capacidad</div><div>Temp</div><div>Horas</div><div>Rol</div><div>Estado</div></div>
           {#each eligible as disk}
-            <div class="dtable-row">
-              <div class="disk-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/>
-                  <path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/>
-                </svg>
-              </div>
-              <div class="d-name">{disk.model || disk.name}</div>
-              <div class="d-cell">/dev/{disk.name}</div>
-              <div class="d-cell">{disk.size || '—'}</div>
-              <div class="d-cell">{disk.smart?.temperature ? disk.smart.temperature + '°C' : '—'}</div>
-              <div class="d-cell">{formatHours(disk.smart?.powerOnHours)}</div>
-              <div><Badge status={diskStatus(disk)}>{diskStatusLabel(disk)}</Badge></div>
+            <div class="disk-row">
+              <div class="disk-icon-mini"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
+              <div class="disk-name">{disk.model||disk.name}</div>
+              <div class="disk-cell">/dev/{disk.name}</div>
+              <div class="disk-cell">{disk.size||'—'}</div>
+              <div class="disk-cell">{disk.smart?.temperature?disk.smart.temperature+'°C':'—'}</div>
+              <div class="disk-cell">{fmtH(disk.smart?.powerOnHours)}</div>
+              <div><span class="role-pill">libre</span></div>
+              <div class="smart-badge smart-{diskStatus(disk)}"><span class="dot"></span>{diskStatusLabel(disk)}</div>
             </div>
           {/each}
         </Card>
       {:else}
-        <Card><div class="state-msg">Todos los discos están en uso o no se detectaron discos disponibles.</div></Card>
+        <Card><div class="state-msg">Todos los discos están en uso.</div></Card>
       {/if}
     {/if}
+
   {:else if active === 'snapshots'}
     <Card><SectionLabel>Puntos de restauración</SectionLabel><div class="state-msg">En desarrollo</div></Card>
   {:else if active === 'health'}
@@ -700,367 +439,156 @@
   {/if}
 </AppShell>
 
-<!-- Destroy modal (renders outside AppShell content flow) -->
-{#if showDestroy && detailPool}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-overlay" on:click|self={() => showDestroy = false}>
+<!-- Destroy modal -->
+{#if showDestroy && destroyPool}
+  <div class="modal-overlay" on:click|self={()=>showDestroy=false}>
     <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title">Destruir {detailPool.name}</span>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <span class="modal-close" on:click={() => showDestroy = false}>✕</span>
-      </div>
+      <div class="modal-header"><span class="modal-title">Destruir {destroyPool.name}</span><span class="modal-close" on:click={()=>showDestroy=false}>✕</span></div>
       <div class="modal-body">
-        <div class="destroy-warn">
-          Esta acción eliminará permanentemente todos los datos del volumen, incluyendo carpetas compartidas, configuraciones de apps y puntos de restauración.
-        </div>
-
-        {#if destroyDeps.length > 0}
-          <div class="modal-section">Servicios que dependen de este volumen</div>
-          <div class="deps-list">
-            {#each destroyDeps as dep}
-              <div class="dep-item">
-                <span class="dep-dot" style="background:{dep.status === 'running' ? 'var(--c-ok)' : 'var(--text-muted)'}"></span>
-                <span class="dep-name">{dep.app || dep.appId}</span>
-                <span class="dep-status">{dep.status === 'running' ? 'activo' : dep.status}</span>
-                {#if dep.status === 'running' || dep.status === 'starting'}
-                  <button class="dep-stop" disabled={stoppingService[dep.id]} on:click={() => stopServiceForDestroy(dep)}>
-                    {stoppingService[dep.id] ? 'Deteniendo...' : 'Detener'}
-                  </button>
-                {:else}
-                  <span class="dep-stopped">Detenido</span>
-                {/if}
-              </div>
-            {/each}
-          </div>
-          {#if !allDepsStopped}
-            <div class="deps-hint">Debes detener todos los servicios antes de destruir el volumen.</div>
-          {/if}
+        <div class="destroy-warn">Esta acción eliminará permanentemente todos los datos del volumen.</div>
+        {#if destroyDeps.length>0}
+          <div class="msec">Servicios dependientes</div>
+          {#each destroyDeps as dep}
+            <div class="dep-item">
+              <span class="dep-dot" style="background:{dep.status==='running'?'var(--c-ok)':'var(--text-muted)'}"></span>
+              <span class="dep-name">{dep.app||dep.appId}</span>
+              <span class="dep-status">{dep.status==='running'?'activo':dep.status}</span>
+              {#if dep.status==='running'||dep.status==='starting'}
+                <button class="dep-stop" disabled={stoppingService[dep.id]} on:click={()=>stopSvcForDestroy(dep)}>{stoppingService[dep.id]?'Deteniendo...':'Detener'}</button>
+              {:else}<span class="dep-stopped">Detenido</span>{/if}
+            </div>
+          {/each}
+          {#if !allDepsStopped}<div class="dep-hint">Detén todos los servicios primero.</div>{/if}
         {/if}
-
-        <div style="margin-top:16px">
-          <div class="modal-section">Confirmar destrucción</div>
-          <div class="confirm-hint">
-            Escribe <strong style="color:var(--c-crit)">ELIMINAR</strong> para confirmar:
-          </div>
-          <input class="confirm-input" bind:value={destroyInput} placeholder="Escribe ELIMINAR">
-        </div>
+        <div class="msec" style="margin-top:16px">Confirmar</div>
+        <div class="dep-hint" style="margin-bottom:6px">Escribe <strong style="color:var(--c-crit)">ELIMINAR</strong>:</div>
+        <input class="confirm-input" bind:value={destroyInput} placeholder="ELIMINAR">
       </div>
       <div class="modal-footer">
-        <Button on:click={() => showDestroy = false}>Cancelar</Button>
-        <Button variant="danger" disabled={!canDestroy || destroying} on:click={doDestroy}>
-          {destroying ? 'Destruyendo...' : 'Destruir volumen'}
-        </Button>
+        <Button on:click={()=>showDestroy=false}>Cancelar</Button>
+        <Button variant="danger" disabled={!canDestroy||destroying} on:click={doDestroy}>{destroying?'Destruyendo...':'Destruir'}</Button>
       </div>
     </div>
   </div>
 {/if}
 
 <style>
-  /* ── Pool pills — copied exactly from pool-pills-preview.html ── */
-  .pool-list { display:flex; flex-direction:column; gap:8px; }
+  .state-msg{font-size:13px;color:var(--text-muted);padding:20px 0;text-align:center}
 
-  .pool-pill {
-    background:var(--glass-bg); border:1px solid var(--glass-border);
-    border-radius:12px; cursor:default; overflow:hidden;
-  }
-  .pool-head {
-    display:grid;
-    grid-template-columns:32px 1.5fr 2fr auto 70px 20px;
-    align-items:center; gap:18px;
-    padding:16px 20px; cursor:pointer;
-    transition:background 0.18s;
-  }
-  .pool-head:hover { background:var(--bg-elev-2); }
-  .pool-head:hover .chev { transform:translateX(3px); color:var(--text-primary); }
-  .pool-pill.open .pool-head { background:var(--bg-elev-2); }
-  .pool-pill.open .chev { transform:rotate(90deg); color:var(--text-primary); }
+  /* ── Hero disks ── */
+  .hero-disks{margin-top:18px;padding-top:16px;border-top:1px solid var(--glass-border)}
+  .hdisk{display:flex;align-items:center;gap:12px;padding:6px 0;font-size:12px}
+  .hdisk-name{font-weight:500;color:var(--text-primary)}
+  .hdisk-dev{font-family:var(--font-mono);color:var(--text-muted);font-size:11px}
 
-  .pool-icon {
-    width:32px; height:32px; border-radius:8px;
-    display:flex; align-items:center; justify-content:center;
-    background:var(--bg-elev-2); border:1px solid var(--glass-border);
-    color:var(--text-primary);
+  /* ── Pool pills — from prototype ── */
+  .pool-list{display:flex;flex-direction:column;gap:8px}
+  .pool-pill{
+    display:grid;grid-template-columns:36px 1.5fr 2.4fr 80px 28px 28px;
+    align-items:center;gap:18px;padding:14px 20px 10px;
+    background:var(--glass-bg);border:1px solid var(--glass-border);
+    border-radius:12px;transition:background .18s;position:relative;
   }
-  .pool-icon svg { width:18px; height:18px; display:block; }
+  .pool-pill:hover{background:var(--bg-elev-2)}
+  .pool-pill.open{grid-template-columns:1fr;padding:0;gap:0;background:var(--bg-elev-2)}
+  .pool-pill.open .pool-head{
+    display:grid;grid-template-columns:36px 1.5fr 2.4fr 80px 28px 28px;
+    align-items:center;gap:18px;padding:14px 20px 10px;
+  }
+  .pool-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--bg-elev-2);border:1px solid var(--glass-border);color:var(--text-primary)}
+  .pool-icon svg{width:20px;height:20px;display:block}
+  .pool-ident{min-width:0;cursor:pointer}
+  .pill-name{font-size:16px;font-weight:700;letter-spacing:-0.3px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill-sub{font-size:11px;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  .pool-ident { min-width:0; }
-  .pill-name { font-size:16px; font-weight:700; letter-spacing:-0.3px; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .pill-sub { font-size:11px; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar{position:relative;height:7px;border-radius:4px;background:var(--bg-elev-2);border:1px solid var(--glass-border);margin-top:9px;cursor:pointer}
+  .bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s}
+  .bar-fill.warn{background:var(--c-warn)}.bar-fill.crit{background:var(--c-crit)}
+  .bar-pct{position:absolute;bottom:100%;transform:translateX(-50%);margin-bottom:3px;font-family:var(--font-mono);font-size:13px;font-weight:700;letter-spacing:-0.3px;color:var(--text-primary);line-height:1;white-space:nowrap;pointer-events:none}
+  .bar-pct.warn{color:var(--c-warn)}.bar-pct.crit{color:var(--c-crit)}
+  .bar-pct .sym{font-size:10px;font-weight:600;opacity:0.7}
+  .cap-total{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);text-align:right;white-space:nowrap}
+  .chev{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;transition:all .15s;justify-self:end}
+  .chev:hover{background:var(--bg-elev-1);color:var(--text-primary)}
+  .chev svg{width:13px;height:13px;transition:transform .25s}
+  .pool-pill.open .chev svg{transform:rotate(90deg)}.pool-pill.open .chev{color:var(--text-primary)}
+  .kebab{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;transition:all .15s;justify-self:end}
+  .kebab:hover{background:var(--bg-elev-1);color:var(--text-primary)}
+  .kebab svg{width:15px;height:15px}
 
-  .pill-bar {
-    height:7px; border-radius:5px;
-    background:var(--bg-elev-2); border:1px solid var(--glass-border);
-    overflow:hidden; display:flex;
-  }
-  .bar-seg { height:100%; }
+  /* Menu */
+  .menu{position:absolute;right:18px;top:58px;z-index:1000;background:var(--bg-elev-1);border:1px solid var(--glass-border);border-radius:10px;padding:5px;min-width:220px;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+  .menu-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:6px;font-size:12px;color:var(--text-primary);cursor:pointer;transition:background .1s}
+  .menu-item:hover{background:var(--bg-elev-2)}
+  .menu-item svg{width:14px;height:14px;color:var(--text-secondary);flex-shrink:0}
+  .menu-item.danger{color:var(--c-crit)}.menu-item.danger svg{color:var(--c-crit)}
+  .menu-divider{height:1px;background:var(--glass-border);margin:4px 0}
 
-  .pill-pct {
-    font-family:var(--font-mono); font-size:20px; font-weight:700;
-    letter-spacing:-0.5px; line-height:1; white-space:nowrap;
-    color:var(--text-primary);
-  }
-  .pill-pct .sym { font-size:14px; font-weight:600; margin-left:1px; opacity:0.7; }
-  .pill-pct.warn { color:var(--c-warn); }
-  .pill-pct.crit { color:var(--c-crit); }
+  /* Expanded body */
+  .pool-body{border-top:1px solid var(--glass-border);padding:20px 24px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;animation:fadeUp .3s ease both}
+  .legend{display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);gap:8px 24px}
+  .legend-row{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--text-primary);white-space:nowrap}
+  .legend-val{margin-left:auto;font-family:var(--font-mono);color:var(--text-muted);font-size:11px}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .donut{position:relative;width:120px;height:120px;flex-shrink:0}
+  .donut svg{transform:rotate(-90deg)}
+  .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .dv{font-size:17px;font-weight:600;font-family:var(--font-mono)}
+  .dl{font-size:9px;color:var(--text-muted);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-  .pill-total {
-    font-family:var(--font-mono); font-size:12px;
-    color:var(--text-secondary); text-align:right; white-space:nowrap;
-  }
+  /* Disk table */
+  .pool-disks{border-top:1px solid var(--glass-border);padding:18px 24px 20px}
+  .disks-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
+  .disk-head,.disk-row{display:grid;grid-template-columns:36px 1.4fr 1fr 0.7fr 0.55fr 0.65fr 0.55fr 100px;gap:12px;padding:0 10px}
+  .disk-head{padding-bottom:8px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;align-items:center}
+  .disk-row{align-items:center;padding-top:9px;padding-bottom:9px;border-radius:8px;font-size:12px;transition:background .15s}
+  .disk-row+.disk-row{margin-top:2px}
+  .disk-row:hover{background:var(--bg-elev-1)}
+  .disk-icon-mini{width:34px;height:34px;border-radius:7px;background:var(--bg-elev-1);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--text-secondary)}
+  .disk-icon-mini svg{width:20px;height:20px}
+  .disk-name{font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .disk-cell{font-family:var(--font-mono);color:var(--text-secondary);white-space:nowrap}
+  .role-pill{display:inline-block;font-size:10px;padding:3px 7px;border-radius:5px;background:var(--bg-elev-1);color:var(--text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.5px}
+  .smart-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:13px}
+  .smart-badge .dot{width:6px;height:6px;border-radius:50%}
+  .smart-ok{background:rgba(16,185,129,0.12);color:var(--c-ok);border:1px solid rgba(16,185,129,0.3)}.smart-ok .dot{background:var(--c-ok)}
+  .smart-warn{background:rgba(245,158,11,0.12);color:var(--c-warn);border:1px solid rgba(245,158,11,0.3)}.smart-warn .dot{background:var(--c-warn)}
+  .smart-crit{background:rgba(239,68,68,0.12);color:var(--c-crit);border:1px solid rgba(239,68,68,0.3)}.smart-crit .dot{background:var(--c-crit)}
 
-  .chev {
-    color:var(--text-muted); display:flex; align-items:center; justify-content:center;
-    transition:transform 0.18s, color 0.18s;
-  }
-  .chev svg { width:14px; height:14px; }
+  /* Create pool */
+  .create-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+  .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .15s}
+  .back-btn:hover{color:var(--text-primary);background:var(--bg-elev-2)}
+  .create-form{display:flex;flex-direction:column;gap:18px}
+  .fg{display:flex;flex-direction:column;gap:8px}
+  .fl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;font-weight:500}
+  .fi{padding:10px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--bg-elev-2);color:var(--text-primary);font-family:var(--font-sans);font-size:14px;outline:none;max-width:400px}
+  .fi:focus{border-color:var(--accent)}
+  .fo{display:flex;flex-wrap:wrap;gap:8px}
+  .fopt{padding:12px 16px;border-radius:8px;border:1px solid var(--glass-border);background:var(--bg-elev-2);cursor:pointer;transition:all .15s;min-width:160px}
+  .fopt:hover{border-color:var(--accent)}.fopt.sel{border-color:var(--accent);background:rgba(59,130,246,0.1)}.fopt.dis{opacity:0.35;cursor:not-allowed}
+  .fopt b{display:block;font-size:13px;color:var(--text-primary)}.fopt span{display:block;font-size:11px;color:var(--text-muted);margin-top:2px}
+  .dsel{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--bg-elev-2);cursor:pointer;transition:all .15s}
+  .dsel:hover{border-color:var(--accent)}.dsel.sel{border-color:var(--accent);background:rgba(59,130,246,0.1)}.dsel+.dsel{margin-top:6px}
+  .dchk{width:22px;height:22px;border-radius:6px;border:2px solid var(--glass-border);background:var(--bg-app);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0}
+  .dsel.sel .dchk{border-color:var(--accent);background:rgba(59,130,246,0.1)}
 
-  /* Expandable body */
-  .pool-body {
-    max-height:0; opacity:0; overflow:hidden;
-    transition:max-height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.25s ease;
-  }
-  .pool-pill.open .pool-body { max-height:520px; opacity:1; }
-
-  /* Detail panel — grid layout from prototype */
-  .pool-detail {
-    border-top:1px solid var(--glass-border);
-    padding:22px 24px 20px;
-    display:grid; grid-template-columns:1fr auto; gap:20px;
-    align-items:center;
-  }
-  .detail-left { display:flex; flex-direction:column; gap:16px; }
-  .detail-right { display:flex; align-items:center; gap:18px; }
-  .pill-actions { display:flex; gap:10px; }
-  .mono { font-family:var(--font-mono); color:var(--text-primary); }
-  .muted { color:var(--text-muted); }
-
-  /* Legend — 3 rows then next column */
-  .legend { display:grid; grid-auto-flow:column; grid-template-rows:repeat(3, auto); gap:8px 22px; }
-  .legend-row { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--text-primary); white-space:nowrap; }
-  .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-  .legend-size { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); }
-
-  /* Donut — 110px from prototype */
-  .donut { position:relative; width:110px; height:110px; flex-shrink:0; }
-  .donut svg { display:block; transform:rotate(-90deg); width:100%; height:100%; }
-  .donut-center {
-    position:absolute; inset:0;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    pointer-events:none;
-  }
-  .donut-val { font-family:var(--font-mono); font-size:16px; font-weight:600; color:var(--text-primary); }
-  .donut-lbl { font-size:9px; color:var(--text-muted); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
-
-  /* Buttons inside pills — smaller than default */
-
-  .smart-section { border-top:1px solid var(--glass-border); padding-top:18px; }
-
-  .dtable-head, .dtable-row {
-    display:grid;
-    grid-template-columns:28px 1.6fr 1.2fr 0.7fr 0.6fr 0.7fr auto;
-    gap:12px; padding:0;
-    width:100%;
-  }
-  .dtable-head {
-    padding-bottom:8px;
-    font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;
-    align-items:center;
-  }
-  .dtable-row {
-    align-items:center; padding-top:9px; padding-bottom:9px;
-    border-radius:8px; font-size:12px; cursor:pointer; transition:background 0.15s;
-  }
-  .dtable-row + .dtable-row { margin-top:2px; }
-  .dtable-row:hover { background:var(--bg-elev-2); }
-
-  .disk-icon {
-    width:26px; height:26px; border-radius:6px;
-    background:var(--bg-elev-2);
-    display:flex; align-items:center; justify-content:center;
-    color:var(--text-secondary);
-  }
-  .disk-icon svg { width:16px; height:16px; display:block; }
-  .dtable-row:hover .disk-icon { color:var(--text-primary); }
-
-  .d-name { font-weight:500; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .d-cell { font-family:var(--font-mono); color:var(--text-secondary); white-space:nowrap; }
-  .temp-hot { color:var(--c-warn); }
-
-  .diag-section { border-top:1px solid var(--glass-border); padding-top:18px; margin-top:18px; }
-  .diag-row {
-    display:flex; align-items:center; gap:10px;
-    padding:8px 12px; border-radius:6px; font-size:12px;
-    color:var(--text-secondary);
-  }
-  .diag-dot {
-    width:8px; height:8px; border-radius:50%; flex-shrink:0;
-    background:var(--c-info);
-  }
-  .diag-dot.warn { background:var(--c-warn); }
-  .diag-dot.crit { background:var(--c-crit); }
-
-  .state-msg { font-size:13px; color:var(--text-muted); padding:20px 0; text-align:center; }
-
-  .status-disks {
-    margin-top:20px; padding-top:18px;
-    border-top:1px solid var(--glass-border);
-  }
-
-  /* ── Gestionar view ── */
-  .page-header {
-    display:flex; align-items:center; gap:20px; margin-bottom:24px;
-  }
-  .back-btn {
-    display:inline-flex; align-items:center; gap:6px;
-    font-size:13px; color:var(--text-secondary);
-    cursor:pointer; padding:6px 10px; border-radius:6px;
-    transition:all 0.15s; background:transparent;
-  }
-  .back-btn:hover { color:var(--text-primary); background:var(--bg-elev-2); }
-  .header-title { display:flex; align-items:center; gap:14px; }
-
-  .row-top {
-    display:grid; grid-template-columns:1.4fr 1fr;
-    gap:18px; margin-bottom:18px;
-  }
-
-  .info-grid {
-    display:grid; grid-template-columns:140px 1fr;
-    gap:13px 16px; font-size:13px;
-  }
-  .info-k { color:var(--text-secondary); }
-  .info-v { color:var(--text-primary); font-weight:500; text-align:right; }
-  .info-v.mono { font-family:var(--font-mono); font-weight:400; }
-  .info-sub {
-    display:block; font-size:11px; color:var(--text-muted);
-    font-weight:400; margin-top:2px;
-  }
-
-  .actions-col { display:flex; flex-direction:column; gap:10px; }
-  .btn-divider { height:1px; background:var(--glass-border); margin:6px 0; }
-
-  .role-pill {
-    display:inline-block; font-size:10px;
-    padding:3px 8px; border-radius:5px;
-    background:var(--bg-elev-2); color:var(--text-secondary);
-    font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.5px;
-  }
-
-  /* 8-column disk table for gestionar */
-  .dtable-8col {
-    grid-template-columns:28px 1.5fr 0.9fr 0.6fr 0.5fr 0.55fr 0.5fr auto;
-  }
-
-  /* ── Destroy modal ── */
-  .modal-overlay {
-    position:fixed; inset:0; z-index:9999;
-    background:rgba(0,0,0,0.6);
-    display:flex; align-items:center; justify-content:center;
-  }
-  .modal {
-    background:var(--bg-elev-1); border:1px solid var(--glass-border);
-    border-radius:var(--radius-lg); width:520px; max-width:90vw;
-    box-shadow:0 20px 60px rgba(0,0,0,0.5);
-  }
-  .modal-header {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:18px 22px; border-bottom:1px solid var(--glass-border);
-  }
-  .modal-title { font-size:16px; font-weight:600; color:var(--text-primary); }
-  .modal-close {
-    font-size:18px; color:var(--text-muted); cursor:pointer;
-    padding:4px 8px; border-radius:4px; transition:all 0.15s;
-  }
-  .modal-close:hover { color:var(--text-primary); background:var(--bg-elev-2); }
-  .modal-body { padding:20px 22px; }
-  .modal-footer {
-    display:flex; justify-content:flex-end; gap:10px;
-    padding:16px 22px; border-top:1px solid var(--glass-border);
-  }
-  .destroy-warn {
-    font-size:13px; color:var(--c-crit);
-    background:var(--c-crit-dim); border:1px solid var(--c-crit-border);
-    border-radius:var(--radius-md); padding:14px 16px; line-height:1.5;
-  }
-  .modal-section {
-    font-size:10px; color:var(--text-muted); text-transform:uppercase;
-    letter-spacing:1.2px; margin-bottom:10px; margin-top:4px;
-  }
-  .deps-list { display:flex; flex-direction:column; gap:4px; }
-  .dep-item {
-    display:flex; align-items:center; gap:10px;
-    padding:8px 12px; border-radius:6px; font-size:13px;
-    background:var(--bg-elev-2);
-  }
-  .dep-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-  .dep-name { font-weight:500; color:var(--text-primary); flex:1; }
-  .dep-status { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
-  .dep-stop {
-    font-family:var(--font-sans); font-size:11px; font-weight:500;
-    padding:4px 10px; border-radius:5px; cursor:pointer;
-    border:1px solid var(--c-warn-border); background:var(--c-warn-dim);
-    color:var(--c-warn); transition:all 0.15s;
-  }
-  .dep-stop:hover { filter:brightness(1.1); }
-  .dep-stop:disabled { opacity:0.5; cursor:not-allowed; }
-  .dep-stopped { font-size:11px; color:var(--text-muted); font-style:italic; }
-  .deps-hint { font-size:11px; color:var(--text-muted); margin-top:8px; }
-  .confirm-hint { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
-  .confirm-input {
-    width:100%; padding:10px 14px; border-radius:var(--radius-md);
-    border:1px solid var(--glass-border); background:var(--bg-elev-2);
-    color:var(--text-primary); font-family:var(--font-mono); font-size:14px;
-    outline:none; transition:border-color 0.15s;
-  }
-  .confirm-input:focus { border-color:var(--c-crit); }
-
-  /* ── Create pool form ── */
-  .create-header { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
-  .create-form { display:flex; flex-direction:column; gap:20px; }
-  .form-group { display:flex; flex-direction:column; gap:8px; }
-  .form-label {
-    font-size:10px; color:var(--text-muted); text-transform:uppercase;
-    letter-spacing:1.2px; font-weight:500;
-  }
-  .form-input {
-    padding:10px 14px; border-radius:var(--radius-md);
-    border:1px solid var(--glass-border); background:var(--bg-elev-2);
-    color:var(--text-primary); font-family:var(--font-sans); font-size:14px;
-    outline:none; width:100%; max-width:400px;
-  }
-  .form-input:focus { border-color:var(--accent); }
-  .form-options { display:flex; flex-wrap:wrap; gap:8px; }
-  .form-option {
-    padding:12px 16px; border-radius:var(--radius-md);
-    border:1px solid var(--glass-border); background:var(--bg-elev-2);
-    cursor:pointer; transition:all 0.15s; min-width:180px;
-  }
-  .form-option:hover { border-color:var(--accent); }
-  .form-option.selected { border-color:var(--accent); background:var(--accent-dim); }
-  .form-option.disabled { opacity:0.35; cursor:not-allowed; }
-  .opt-title { display:block; font-size:13px; font-weight:600; color:var(--text-primary); }
-  .opt-desc { display:block; font-size:11px; color:var(--text-muted); margin-top:2px; }
-
-  .disk-select {
-    display:flex; align-items:center; gap:12px;
-    padding:10px 14px; border-radius:var(--radius-md);
-    border:1px solid var(--glass-border); background:var(--bg-elev-2);
-    cursor:pointer; transition:all 0.15s;
-  }
-  .disk-select:hover { border-color:var(--accent); }
-  .disk-select.selected { border-color:var(--accent); background:var(--accent-dim); }
-  .disk-select + .disk-select { margin-top:6px; }
-  .disk-check {
-    width:22px; height:22px; border-radius:6px;
-    border:2px solid var(--glass-border); background:var(--bg-app);
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px; font-weight:700; color:var(--accent); flex-shrink:0;
-  }
-  .disk-select.selected .disk-check { border-color:var(--accent); background:var(--accent-dim); }
-
-  .pool-msg { font-size:13px; color:var(--c-crit); }
+  /* Destroy modal */
+  .modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center}
+  .modal{background:var(--bg-elev-1);border:1px solid var(--glass-border);border-radius:14px;width:520px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--glass-border)}
+  .modal-title{font-size:16px;font-weight:600}
+  .modal-close{font-size:18px;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:4px}.modal-close:hover{color:var(--text-primary);background:var(--bg-elev-2)}
+  .modal-body{padding:20px 22px}
+  .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--glass-border)}
+  .destroy-warn{font-size:13px;color:var(--c-crit);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px 16px;line-height:1.5}
+  .msec{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin:12px 0 8px}
+  .dep-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:13px;background:var(--bg-elev-2);margin-bottom:4px}
+  .dep-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .dep-name{font-weight:500;flex:1}.dep-status{font-size:11px;color:var(--text-muted);font-family:var(--font-mono)}
+  .dep-stop{font-family:var(--font-sans);font-size:11px;font-weight:500;padding:4px 10px;border-radius:5px;cursor:pointer;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.1);color:var(--c-warn)}.dep-stop:disabled{opacity:0.5;cursor:not-allowed}
+  .dep-stopped{font-size:11px;color:var(--text-muted);font-style:italic}
+  .dep-hint{font-size:11px;color:var(--text-muted)}
+  .confirm-input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--bg-elev-2);color:var(--text-primary);font-family:var(--font-mono);font-size:14px;outline:none}.confirm-input:focus{border-color:var(--c-crit)}
 </style>
