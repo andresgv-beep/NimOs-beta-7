@@ -257,25 +257,21 @@ func detectStorageDisksGo() map[string]interface{} {
 			continue
 		}
 
-		// Everything else — check for existing pool signatures
-		hasPoolSignature := false
-		for _, p := range partitions {
-			pm, _ := p.(map[string]interface{})
-			fstype, _ := pm["fstype"].(string)
-			if fstype == "zfs_member" || fstype == "btrfs" {
-				hasPoolSignature = true
-				break
-			}
-		}
-
-		if hasPoolSignature {
-			diskInfo["classification"] = "has_pool"
-			diskInfo["hasExistingData"] = true
-			// Don't add to eligible — these disks belong to exported pools
-			continue
-		}
-
+		// Everything else is eligible
 		diskInfo["classification"] = "eligible"
+
+		// Add SMART status from cache (lightweight — no smartctl call)
+		smartStatus, smartDetails := getSmartDetailsForDisk(devName)
+		diskInfo["smartStatus"] = smartStatus
+		smart := map[string]interface{}{
+			"temperature":  smartDetails.Temperature,
+			"powerOnHours": smartDetails.PowerOnHours,
+			"pendingSectors": smartDetails.PendingSectors,
+			"uncorrectable": smartDetails.Uncorrectable,
+			"reallocatedSectors": smartDetails.ReallocatedSectors,
+		}
+		diskInfo["smart"] = smart
+
 		eligible = append(eligible, diskInfo)
 	}
 
