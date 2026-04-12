@@ -180,9 +180,12 @@
 
   {:else if view==='detail' && selectedService}
     <div class="nh-titlebar">
+      <span class="nh-title">NimHealth</span>
+    </div>
+    <div class="detail-nav">
       <!-- svelte-ignore a11y_click_events_have_key_events --><!-- svelte-ignore a11y_no_static_element_interactions -->
       <span class="back-btn" on:click={goBack}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</span>
-      <span class="nh-title">{selectedService.appName||selectedService.appId}</span>
+      <span class="detail-name">{selectedService.appName||selectedService.appId}</span>
       <span class="state" class:run={selectedService.status==='running'} class:stop={selectedService.status==='stopped'} class:err={selectedService.status==='error'}><span class="dot"></span>{selectedService.status}</span>
     </div>
     <div class="detail-content">
@@ -270,6 +273,8 @@
   .empty-row{text-align:center;padding:28px;color:var(--text-muted);font-size:12px}
   .footer{display:flex;align-items:center;gap:8px;padding:8px 24px;flex-shrink:0;border-top:1px solid var(--glass-border);background:var(--bg-elev-1);font-size:11px;font-family:var(--font-mono)}
   .f-lbl{color:var(--text-muted)}.f-val{color:var(--text-primary);font-weight:500}.f-sep{color:rgba(255,255,255,0.1)}
+  .detail-nav{display:flex;align-items:center;gap:14px;padding:10px 24px;flex-shrink:0;border-bottom:1px solid var(--glass-border)}
+  .detail-name{font-size:16px;font-weight:700;color:var(--text-primary);letter-spacing:-0.3px}
   .detail-content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}.detail-content::-webkit-scrollbar{width:3px}.detail-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:3px}
   .d-card{background:var(--glass-bg,rgba(30,34,48,0.55));border:1px solid var(--glass-border);border-radius:12px;padding:16px 18px}
   .d-card-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
