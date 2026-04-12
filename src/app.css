@@ -15,7 +15,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'IBM Plex
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
-  --bg-app: #0c0e14;
+  --bg-app: #181c28;
   --bg-elev-1: #151823;
   --bg-elev-2: #1f2330;
 
