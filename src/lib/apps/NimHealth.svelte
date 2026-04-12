@@ -179,10 +179,10 @@
     {/if}
 
   {:else if view==='detail' && selectedService}
-    <div class="detail-bar">
+    <div class="nh-titlebar">
       <!-- svelte-ignore a11y_click_events_have_key_events --><!-- svelte-ignore a11y_no_static_element_interactions -->
       <span class="back-btn" on:click={goBack}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Volver</span>
-      <span class="detail-title">{selectedService.appName||selectedService.appId}</span>
+      <span class="nh-title">{selectedService.appName||selectedService.appId}</span>
       <span class="state" class:run={selectedService.status==='running'} class:stop={selectedService.status==='stopped'} class:err={selectedService.status==='error'}><span class="dot"></span>{selectedService.status}</span>
     </div>
     <div class="detail-content">
@@ -219,9 +219,11 @@
 
 <style>
   .nh-root{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;font-family:var(--font-sans,'IBM Plex Sans',sans-serif);color:var(--text-primary);background:var(--bg-app)}
-  .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px;height:48px;background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
+  .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px 0 80px;height:48px;background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
   .nh-title{font-size:15px;font-weight:600;color:var(--text-primary);letter-spacing:-0.2px}
   .nh-sub{font-size:13px;color:var(--text-muted)}
+  .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .15s}
+  .back-btn:hover{color:var(--text-primary);background:var(--bg-elev-2)}.back-btn svg{width:14px;height:14px}
   .hw-bar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);padding:10px 24px;flex-shrink:0}
   .hw-stat{display:flex;align-items:center;gap:14px;padding:0 18px;border-right:1px solid var(--glass-border)}
   .hw-stat:last-child{border-right:none}.hw-stat:first-child{padding-left:0}
@@ -268,10 +270,6 @@
   .empty-row{text-align:center;padding:28px;color:var(--text-muted);font-size:12px}
   .footer{display:flex;align-items:center;gap:8px;padding:8px 24px;flex-shrink:0;border-top:1px solid var(--glass-border);background:var(--bg-elev-1);font-size:11px;font-family:var(--font-mono)}
   .f-lbl{color:var(--text-muted)}.f-val{color:var(--text-primary);font-weight:500}.f-sep{color:rgba(255,255,255,0.1)}
-  .detail-bar{display:flex;align-items:center;gap:14px;padding:12px 24px;flex-shrink:0;background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border)}
-  .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .15s}
-  .back-btn:hover{color:var(--text-primary);background:var(--bg-elev-2)}.back-btn svg{width:14px;height:14px}
-  .detail-title{font-size:17px;font-weight:700;color:var(--text-primary);letter-spacing:-0.3px}
   .detail-content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}.detail-content::-webkit-scrollbar{width:3px}.detail-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:3px}
   .d-card{background:var(--glass-bg,rgba(30,34,48,0.55));border:1px solid var(--glass-border);border-radius:12px;padding:16px 18px}
   .d-card-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
