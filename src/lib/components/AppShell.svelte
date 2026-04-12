@@ -122,6 +122,7 @@
     background: var(--bg-elev-1);
     font-family: var(--font-sans);
     color: var(--text-primary);
+    min-width: 780px;
   }
 
   /* ── Sidebar ── */
