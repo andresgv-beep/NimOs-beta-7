@@ -411,3 +411,77 @@ func destroyPoolBtrfs(poolName string) map[string]interface{} {
 
 	return map[string]interface{}{"ok": true}
 }
+
+// exportPoolBtrfs unmounts a BTRFS pool without wiping disks.
+func exportPoolBtrfs(poolName string) map[string]interface{} {
+	storageMu.Lock()
+	defer storageMu.Unlock()
+
+	deps, canDestroy, _, err := canDestroyPool(poolName)
+	if err == nil && !canDestroy {
+		names := []string{}
+		for _, d := range deps {
+			names = append(names, d.AppName)
+		}
+		return map[string]interface{}{"error": "services_active", "services": names}
+	}
+
+	conf := getStorageConfigFull()
+	confPools, _ := conf["pools"].([]interface{})
+
+	var poolConf map[string]interface{}
+	var poolIdx int
+	for i, p := range confPools {
+		pm, _ := p.(map[string]interface{})
+		if n, _ := pm["name"].(string); n == poolName {
+			poolConf = pm
+			poolIdx = i
+			break
+		}
+	}
+	if poolConf == nil {
+		return map[string]interface{}{"error": fmt.Sprintf(`Pool "%s" not found`, poolName)}
+	}
+
+	mountPoint, _ := poolConf["mountPoint"].(string)
+	opts := CmdOptions{Timeout: 30 * time.Second}
+
+	logMsg("Exporting BTRFS pool '%s' — data preserved", poolName)
+
+	// 1. Delete shares from DB
+	deleteSharesForPool(poolName, mountPoint)
+
+	// 2. Unmount
+	if mountPoint != "" {
+		runCmd("umount", []string{"-f", mountPoint}, opts)
+		time.Sleep(500 * time.Millisecond)
+		verifyRes, _ := runCmd("findmnt", []string{"-n", "-o", "TARGET", mountPoint}, opts)
+		if strings.TrimSpace(verifyRes.Stdout) != "" {
+			runCmd("umount", []string{"-f", "-l", mountPoint}, opts)
+		}
+	}
+
+	// 3. Remove fstab entry (will be re-added on import)
+	removeFstabEntry(mountPoint)
+
+	// 4. Remove from storage.json
+	confPools = append(confPools[:poolIdx], confPools[poolIdx+1:]...)
+	conf["pools"] = confPools
+	if primary, _ := conf["primaryPool"].(string); primary == poolName {
+		if len(confPools) > 0 {
+			if first, ok := confPools[0].(map[string]interface{}); ok {
+				conf["primaryPool"] = first["name"]
+			}
+		} else {
+			conf["primaryPool"] = nil
+			conf["configuredAt"] = nil
+		}
+	}
+	saveStorageConfigFull(conf)
+
+	dbServiceDeleteByPool(poolName)
+	logMsg("BTRFS pool '%s' exported — data preserved, re-import via Restaurar volumen", poolName)
+	updateTorrentConfig()
+
+	return map[string]interface{}{"ok": true}
+}

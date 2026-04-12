@@ -124,6 +124,30 @@ func handleStorageRoutes(w http.ResponseWriter, r *http.Request) {
 					jsonError(w, 400, fmt.Sprintf("Unknown pool type '%s'", poolType))
 				}
 			}
+		case "/api/storage/pool/export":
+			poolName := bodyStr(body, "name")
+			if poolName == "" {
+				jsonError(w, 400, "Provide pool name")
+			} else {
+				conf := getStorageConfigFull()
+				confPools, _ := conf["pools"].([]interface{})
+				poolType := ""
+				for _, p := range confPools {
+					pm, _ := p.(map[string]interface{})
+					if n, _ := pm["name"].(string); n == poolName {
+						poolType, _ = pm["type"].(string)
+						break
+					}
+				}
+				switch poolType {
+				case "zfs":
+					jsonOk(w, exportPoolZfs(poolName))
+				case "btrfs":
+					jsonOk(w, exportPoolBtrfs(poolName))
+				default:
+					jsonError(w, 400, fmt.Sprintf("Unknown pool type '%s'", poolType))
+				}
+			}
 		case "/api/storage/pool/restore":
 			jsonOk(w, restorePoolFromIdentity(body))
 		case "/api/storage/pool/replace-disk":

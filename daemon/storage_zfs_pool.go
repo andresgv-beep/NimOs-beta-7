@@ -360,3 +360,106 @@ func destroyPoolZfs(poolName string) map[string]interface{} {
 
 	return map[string]interface{}{"ok": true}
 }
+
+// exportPoolZfs unmounts/exports a ZFS pool without destroying data.
+// The pool can be re-imported later via "Restaurar volumen".
+func exportPoolZfs(poolName string) map[string]interface{} {
+	storageMu.Lock()
+	defer storageMu.Unlock()
+
+	// Check service dependencies
+	deps, canDestroy, _, err := canDestroyPool(poolName)
+	if err == nil && !canDestroy {
+		names := []string{}
+		for _, d := range deps {
+			names = append(names, d.AppName)
+		}
+		return map[string]interface{}{
+			"error":    "services_active",
+			"services": names,
+		}
+	}
+
+	conf := getStorageConfigFull()
+	confPools, _ := conf["pools"].([]interface{})
+
+	var poolConf map[string]interface{}
+	var poolIdx int
+	for i, p := range confPools {
+		pm, _ := p.(map[string]interface{})
+		if n, _ := pm["name"].(string); n == poolName {
+			poolConf = pm
+			poolIdx = i
+			break
+		}
+	}
+	if poolConf == nil {
+		return map[string]interface{}{"error": fmt.Sprintf(`Pool "%s" not found`, poolName)}
+	}
+
+	zpoolName, _ := poolConf["zpoolName"].(string)
+	if zpoolName == "" {
+		zpoolName = "nimos-" + poolName
+	}
+	mountPoint, _ := poolConf["mountPoint"].(string)
+
+	logMsg("Exporting ZFS pool '%s' (zpool: %s) — data preserved", poolName, zpoolName)
+	opts := CmdOptions{Timeout: 30 * time.Second}
+
+	// 1. Unmount submounts (children first)
+	if mountPoint != "" {
+		mountsOut, _ := runCmd("findmnt", []string{"-rn", "-o", "TARGET", mountPoint}, opts)
+		mounts := strings.Split(strings.TrimSpace(mountsOut.Stdout), "\n")
+		for i := len(mounts) - 1; i >= 0; i-- {
+			m := strings.TrimSpace(mounts[i])
+			if m != "" && m != mountPoint {
+				runCmd("umount", []string{"-f", "-l", m}, opts)
+			}
+		}
+	}
+
+	// 2. Force-unmount all ZFS datasets
+	datasetsOut, _ := runCmd("zfs", []string{"list", "-H", "-o", "name", "-r", zpoolName}, opts)
+	if datasetsOut.Stdout != "" {
+		datasets := strings.Split(strings.TrimSpace(datasetsOut.Stdout), "\n")
+		for i := len(datasets) - 1; i >= 0; i-- {
+			ds := strings.TrimSpace(datasets[i])
+			if ds != "" {
+				runCmd("zfs", []string{"unmount", "-f", ds}, opts)
+			}
+		}
+	}
+	time.Sleep(500 * time.Millisecond)
+
+	// 3. Export zpool (preserves data on disks)
+	_, err = runCmd("zpool", []string{"export", "-f", zpoolName}, opts)
+	if err != nil {
+		return map[string]interface{}{"error": fmt.Sprintf("Failed to export pool: %v", err)}
+	}
+
+	// 4. Delete shares from DB (they'll be recreated on re-import)
+	deleteSharesForPool(poolName, mountPoint)
+
+	// 5. Remove from storage.json
+	confPools = append(confPools[:poolIdx], confPools[poolIdx+1:]...)
+	conf["pools"] = confPools
+	if primary, _ := conf["primaryPool"].(string); primary == poolName {
+		if len(confPools) > 0 {
+			if first, ok := confPools[0].(map[string]interface{}); ok {
+				conf["primaryPool"] = first["name"]
+			}
+		} else {
+			conf["primaryPool"] = nil
+			conf["configuredAt"] = nil
+		}
+	}
+	saveStorageConfigFull(conf)
+
+	// 6. Clean service registry
+	dbServiceDeleteByPool(poolName)
+
+	logMsg("ZFS pool '%s' exported — data preserved on disks, re-import via Restaurar volumen", poolName)
+	updateTorrentConfig()
+
+	return map[string]interface{}{"ok": true}
+}
