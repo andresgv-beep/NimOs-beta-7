@@ -542,9 +542,7 @@
                       {/each}
                     </svg>
                     <div class="donut-center">
-                      {@const usedTotal = Object.values(poolFileStats[pool.name] || {}).reduce((a,b) => a+b, 0)}
-                      {@const usedStr = formatBytes(usedTotal)}
-                      <div class="donut-val">{usedStr}</div>
+                      <div class="donut-val">{formatBytes(Object.values(poolFileStats[pool.name] || {}).reduce((a,b) => a+b, 0))}</div>
                       <div class="donut-lbl">USADO</div>
                     </div>
                   </div>
