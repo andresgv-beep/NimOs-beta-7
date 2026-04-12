@@ -6,6 +6,15 @@
 
   export let activeTab = 'disks';
 
+  // ── Generic dialog state ──
+  let dlg = { open:false, variant:'default', title:'', message:'', confirmText:'Confirmar', cancelText:'Cancelar', onConfirm:()=>{}, loading:false, services:[], requireInput:false };
+  function showDialog(opts) { dlg = { ...dlg, open:true, loading:false, services:[], requireInput:false, ...opts }; }
+  function closeDialog() { dlg = { ...dlg, open:false }; }
+
+  // ── Toast ──
+  let toast = { show:false, message:'', variant:'default' };
+  function showToast(message, variant='default') { toast = { show:true, message, variant }; setTimeout(()=> toast = { ...toast, show:false }, 4000); }
+
 
   let loading = true;
   let pools = [];
@@ -43,14 +52,14 @@
         // Backend barrier caught it — refresh services list so dialog shows them
         await loadPoolServices(detailPool.name);
       } else if (d.error) {
-        alert('Error: ' + (d.message || d.error));
+        showToast('Error: ' + (d.message || d.error), 'warning');
       } else {
         showDetachDialog = false;
         selectedPoolDisk = null;
         load();
       }
     } catch {
-      alert('Error de conexión');
+      showToast('Error de conexión', 'warning');
     }
     detaching = false;
   }
@@ -159,27 +168,45 @@
   }
 
   async function deleteSnap(snapshot) {
-    if (!confirm(`¿Borrar snapshot ${snapshot}?`)) return;
-    const res = await fetch('/api/storage/snapshot', {
-      method: 'DELETE',
-      headers: { ...hdrs(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot }),
+    showDialog({
+      variant: 'warning',
+      title: '¿Borrar snapshot?',
+      message: `Se eliminará el snapshot "${snapshot}". Esta acción no se puede deshacer.`,
+      confirmText: 'Borrar',
+      onConfirm: async () => {
+        dlg = { ...dlg, loading: true };
+        const res = await fetch('/api/storage/snapshot', {
+          method: 'DELETE',
+          headers: { ...hdrs(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ snapshot }),
+        });
+        const data = await res.json();
+        closeDialog();
+        if (data.ok) loadSnapshots(snapPool);
+        else showToast(data.error || 'Error', 'warning');
+      }
     });
-    const data = await res.json();
-    if (data.ok) loadSnapshots(snapPool);
-    else alert(data.error || 'Error');
   }
 
   async function rollbackSnap(snapshot) {
-    if (!confirm(`¿Rollback a ${snapshot}? Se perderán los cambios posteriores.`)) return;
-    const res = await fetch('/api/storage/snapshot/rollback', {
-      method: 'POST',
-      headers: { ...hdrs(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot }),
+    showDialog({
+      variant: 'warning',
+      title: '¿Rollback a snapshot?',
+      message: `Se restaurará "${snapshot}". Se perderán todos los cambios posteriores a este punto.`,
+      confirmText: 'Restaurar',
+      onConfirm: async () => {
+        dlg = { ...dlg, loading: true };
+        const res = await fetch('/api/storage/snapshot/rollback', {
+          method: 'POST',
+          headers: { ...hdrs(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ snapshot }),
+        });
+        const data = await res.json();
+        closeDialog();
+        if (data.ok) { snapMsg = 'Rollback completado'; snapMsgError = false; loadSnapshots(snapPool); }
+        else { snapMsg = data.error || 'Error en rollback'; snapMsgError = true; }
+      }
     });
-    const data = await res.json();
-    if (data.ok) { snapMsg = 'Rollback completado'; snapMsgError = false; loadSnapshots(snapPool); }
-    else { snapMsg = data.error || 'Error en rollback'; snapMsgError = true; }
   }
 
   // ── ZFS: Scrub ──────────────────────────────────────────────────────────────
@@ -229,7 +256,7 @@
       loadScrubStatus(poolName);
       activeTab = 'health';
     } else {
-      alert(data.error || 'Error al iniciar verificación');
+      showToast(data.error || 'Error al iniciar verificación', 'warning');
     }
   }
 
@@ -554,16 +581,16 @@
       });
       const d = await r.json();
       if (d.error === 'services_active') {
-        alert('No se puede reemplazar: ' + (d.services?.join(', ') || 'servicios activos') + '. Detén los servicios primero.');
+        showToast('No se puede reemplazar: ' + (d.services?.join(', ') || 'servicios activos') + '. Detén los servicios primero.', 'warning');
       } else if (d.error) {
-        alert('Error: ' + (d.message || d.error));
+        showToast('Error: ' + (d.message || d.error), 'warning');
       } else {
         showReplace = false;
         selectedPoolDisk = null;
         load();
       }
     } catch {
-      alert('Error de conexión');
+      showToast('Error de conexión', 'warning');
     }
     replacing = false;
   }
@@ -616,10 +643,10 @@
         activeTab = 'resumen';
         await load();
       } else {
-        alert(d.error || 'Error al destruir el volumen');
+        showToast(d.error || 'Error al destruir el volumen', 'warning');
       }
     } catch (e) {
-      alert('Error: ' + e.message);
+      showToast('Error: ' + e.message, 'warning');
     }
     destroying = false;
   }
@@ -708,32 +735,53 @@
   }
 
   async function wipeDisk(name) {
-    if (!confirm(`¿Wipear /dev/${name}? Se borrarán TODAS las particiones.`)) return;
-    wiping = name; wipeMsg = '';
-    try {
-      const res = await fetch('/api/storage/wipe', {
-        method: 'POST',
-        headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ disk: `/dev/${name}` }),
-      });
-      const data = await res.json();
-      if (data.ok === true) { wipeMsg = `${name} wipeado correctamente`; wipeMsgError = false; await load(); }
-      else { wipeMsg = data.error || 'Error desconocido al wipear'; wipeMsgError = true; }
-    } catch (e) { wipeMsg = 'Error de conexión'; wipeMsgError = true; }
-    wiping = null;
+    showDialog({
+      variant: 'danger',
+      title: `¿Wipear /dev/${name}?`,
+      message: 'Se borrarán TODAS las particiones y datos del disco. Esta acción no se puede deshacer.',
+      confirmText: 'Wipear disco',
+      requireInput: true,
+      onConfirm: async () => {
+        dlg = { ...dlg, loading: true };
+        wiping = name; wipeMsg = '';
+        try {
+          const res = await fetch('/api/storage/wipe', {
+            method: 'POST',
+            headers: { ...hdrs(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ disk: `/dev/${name}` }),
+          });
+          const data = await res.json();
+          if (data.ok === true) { wipeMsg = `${name} wipeado correctamente`; wipeMsgError = false; await load(); }
+          else { wipeMsg = data.error || 'Error desconocido al wipear'; wipeMsgError = true; }
+        } catch (e) { wipeMsg = 'Error de conexión'; wipeMsgError = true; }
+        wiping = null;
+        closeDialog();
+      }
+    });
   }
 
   async function destroyPool(name) {
-    if (!confirm(`¿Destruir pool "${name}"? Esta acción no se puede deshacer.`)) return;
-    try {
-      const res = await fetch('/api/storage/pool/destroy', {
-        method: 'POST',
-        headers: { ...hdrs(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (data.ok) { load(); } else { alert(data.error || 'Error'); }
-    } catch (e) { alert('Error de conexión'); }
+    showDialog({
+      variant: 'danger',
+      title: `¿Destruir pool "${name}"?`,
+      message: 'Se eliminarán permanentemente todos los datos del volumen. Esta acción no se puede deshacer.',
+      confirmText: 'Destruir',
+      requireInput: true,
+      onConfirm: async () => {
+        dlg = { ...dlg, loading: true };
+        try {
+          const res = await fetch('/api/storage/pool/destroy', {
+            method: 'POST',
+            headers: { ...hdrs(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+          });
+          const data = await res.json();
+          if (data.ok) { load(); } else { showToast(data.error || 'Error', 'warning'); }
+        } catch (e) { showToast('Error de conexión', 'warning'); }
+        closeDialog();
+      }
+    });
+  }
   }
 
   $: allHddDisks = [...provisioned.filter(d => !d.name?.startsWith('nvme')), ...eligible];
@@ -2043,6 +2091,28 @@
   on:openServices={() => { showDetachDialog = false; openWindow('nimhealth'); }}
 />
 
+<!-- Generic ConfirmDialog -->
+<ConfirmDialog
+  open={dlg.open}
+  variant={dlg.variant}
+  title={dlg.title}
+  message={dlg.message}
+  confirmText={dlg.confirmText}
+  cancelText={dlg.cancelText}
+  loading={dlg.loading}
+  services={dlg.services}
+  requireInput={dlg.requireInput}
+  on:confirm={dlg.onConfirm}
+  on:cancel={closeDialog}
+/>
+
+<!-- Toast -->
+{#if toast.show}
+  <div class="nimos-toast" class:warn={toast.variant==='warning'} class:err={toast.variant==='error'}>
+    {toast.message}
+  </div>
+{/if}
+
 <style>
   .storage-root { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; }
   .s-body { flex:1; overflow-y:auto; padding:18px 20px; }
@@ -2765,4 +2835,16 @@
   .rb-btn-go.active { opacity:1; pointer-events:all; }
   .rb-btn-go.active:hover { box-shadow:0 6px 22px rgba(160,90,224,0.45); transform:translateY(-1px); }
   .rb-btn-go:disabled { opacity:0.35; pointer-events:none; }
+
+  /* Toast */
+  .nimos-toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10001;
+    padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;
+    background:var(--bg-elev-1);border:1px solid var(--glass-border);
+    color:var(--text-primary);box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    animation:toastIn .25s ease both;pointer-events:none;
+  }
+  .nimos-toast.warn{border-color:var(--c-warn-border);color:var(--c-warn)}
+  .nimos-toast.err{border-color:var(--c-crit-border);color:var(--c-crit)}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>

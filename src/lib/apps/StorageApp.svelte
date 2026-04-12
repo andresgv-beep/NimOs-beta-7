@@ -7,6 +7,16 @@
   import SectionLabel from '$lib/ui/SectionLabel.svelte';
   import Button from '$lib/ui/Button.svelte';
   import StatusHero from '$lib/ui/StatusHero.svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+
+  // ── Generic dialog state ──
+  let dlg = { open:false, variant:'default', title:'', message:'', confirmText:'Confirmar', cancelText:'Cancelar', onConfirm:()=>{}, loading:false, services:[], requireInput:false };
+  function showDialog(opts) { dlg = { ...dlg, open:true, loading:false, services:[], requireInput:false, ...opts }; }
+  function closeDialog() { dlg = { ...dlg, open:false }; }
+
+  // ── Toast/notification state (replaces alert()) ──
+  let toast = { show:false, message:'', variant:'default' };
+  function showToast(message, variant='default') { toast = { show:true, message, variant }; setTimeout(()=> toast = { ...toast, show:false }, 4000); }
 
   let active = 'resumen';
   let loading = true;
@@ -173,24 +183,32 @@
     openMenu = null;
     const r = await fetch('/api/storage/scrub', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
     const d = await r.json();
-    alert(d.ok ? 'Verificación iniciada' : (d.error||'Error'));
+    showToast(d.ok ? 'Verificación iniciada' : (d.error||'Error'), d.ok ? 'default' : 'warning');
   }
   async function createSnapshot(name) {
     openMenu = null;
     const r = await fetch('/api/storage/snapshot', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
     const d = await r.json();
-    alert(d.ok ? 'Snapshot creado' : (d.error||'Error'));
+    showToast(d.ok ? 'Snapshot creado' : (d.error||'Error'), d.ok ? 'default' : 'warning');
   }
 
   async function exportPool(pool) {
     openMenu = null;
-    if (!confirm(`¿Desmontar "${pool.name}"? Los datos se conservan en los discos. Podrás re-importarlo desde "Restaurar volumen".`)) return;
-    try {
-      const d = await (await fetch('/api/storage/pool/export', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({name:pool.name}) })).json();
-      if (d.ok) { await load(); }
-      else if (d.error === 'services_active') { alert('Detén los servicios primero: ' + (d.services?.join(', ')||'')); }
-      else alert(d.error||'Error');
-    } catch(e) { alert('Error: '+e.message); }
+    showDialog({
+      variant: 'warning',
+      title: `¿Desmontar "${pool.name}"?`,
+      message: 'Los datos se conservan en los discos. Podrás re-importarlo desde "Restaurar volumen".',
+      confirmText: 'Desmontar',
+      onConfirm: async () => {
+        dlg = { ...dlg, loading: true };
+        try {
+          const d = await (await fetch('/api/storage/pool/export', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({name:pool.name}) })).json();
+          if (d.ok) { closeDialog(); await load(); }
+          else if (d.error === 'services_active') { closeDialog(); showToast('Detén los servicios primero: ' + (d.services?.join(', ')||''), 'warning'); }
+          else { closeDialog(); showToast(d.error||'Error', 'warning'); }
+        } catch(e) { closeDialog(); showToast('Error: '+e.message, 'warning'); }
+      }
+    });
   }
 
   async function openDestroyModal(pool) {
@@ -225,8 +243,8 @@
         await fetch('/api/storage/pool/restore', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({ zpoolName:destroyPool.zpoolName, name:destroyPool.name, restoreConfig:false }) });
       }
       const d = await (await fetch('/api/storage/pool/destroy',{method:'POST',headers:{...hdrs(),'Content-Type':'application/json'},body:JSON.stringify({name:destroyPool.name})})).json();
-      if (d.ok) { showDestroy=false; destroyPool=null; await load(); } else alert(d.error||'Error');
-    } catch(e) { alert('Error: '+e.message); }
+      if (d.ok) { showDestroy=false; destroyPool=null; await load(); } else showToast(d.error||'Error', 'warning');
+    } catch(e) { showToast('Error: '+e.message, 'warning'); }
     destroying = false;
   }
 
@@ -284,8 +302,8 @@
       if (d.ok) {
         restorable = restorable.filter(p => p.name !== pool.name);
         await load();
-      } else alert(d.error || 'Error restaurando');
-    } catch(e) { alert('Error: '+e.message); }
+      } else showToast(d.error || 'Error restaurando', 'warning');
+    } catch(e) { showToast('Error: '+e.message, 'warning'); }
     restoring = null;
   }
 </script>
@@ -580,6 +598,28 @@
   </div>
 {/if}
 
+<!-- Generic ConfirmDialog -->
+<ConfirmDialog
+  open={dlg.open}
+  variant={dlg.variant}
+  title={dlg.title}
+  message={dlg.message}
+  confirmText={dlg.confirmText}
+  cancelText={dlg.cancelText}
+  loading={dlg.loading}
+  services={dlg.services}
+  requireInput={dlg.requireInput}
+  on:confirm={dlg.onConfirm}
+  on:cancel={closeDialog}
+/>
+
+<!-- Toast -->
+{#if toast.show}
+  <div class="nimos-toast" class:warn={toast.variant==='warning'} class:err={toast.variant==='error'}>
+    {toast.message}
+  </div>
+{/if}
+
 <style>
   .state-msg{font-size:13px;color:var(--text-muted);padding:20px 0;text-align:center}
 
@@ -736,4 +776,16 @@
   .status-pill .dot{width:6px;height:6px;border-radius:50%}
   .status-ok{background:rgba(16,185,129,0.12);color:var(--c-ok);border:1px solid rgba(16,185,129,0.3)}.status-ok .dot{background:var(--c-ok)}
   .status-warn{background:rgba(245,158,11,0.12);color:var(--c-warn);border:1px solid rgba(245,158,11,0.3)}.status-warn .dot{background:var(--c-warn)}
+
+  /* Toast */
+  .nimos-toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10001;
+    padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;
+    background:var(--bg-elev-1);border:1px solid var(--glass-border);
+    color:var(--text-primary);box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    animation:toastIn .25s ease both;pointer-events:none;
+  }
+  .nimos-toast.warn{border-color:var(--c-warn-border);color:var(--c-warn)}
+  .nimos-toast.err{border-color:var(--c-crit-border);color:var(--c-crit)}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
