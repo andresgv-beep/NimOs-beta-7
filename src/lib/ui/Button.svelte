@@ -2,13 +2,15 @@
   /** 
    * Standard button. 
    * variant: "default" | "primary" | "danger"
+   * size: "default" | "sm"
    */
   export let variant = 'default';
+  export let size = 'default';
   export let disabled = false;
 </script>
 
 <button
-  class="btn {variant}"
+  class="btn {variant} {size}"
   {disabled}
   on:click
 >
@@ -31,6 +33,12 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
+  }
+  .btn.sm {
+    font-size: 12px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    gap: 8px;
   }
   .btn:hover { background: var(--bg-elev-1); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
