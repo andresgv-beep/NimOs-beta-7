@@ -186,7 +186,18 @@
     alert(d.ok ? 'Snapshot creado' : (d.error||'Error'));
   }
 
-  async function openDestroy(pool) {
+  async function exportPool(pool) {
+    openMenu = null;
+    if (!confirm(`¿Desmontar "${pool.name}"? Los datos se conservan en los discos. Podrás re-importarlo desde "Restaurar volumen".`)) return;
+    try {
+      const d = await (await fetch('/api/storage/pool/export', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({name:pool.name}) })).json();
+      if (d.ok) { await load(); }
+      else if (d.error === 'services_active') { alert('Detén los servicios primero: ' + (d.services?.join(', ')||'')); }
+      else alert(d.error||'Error');
+    } catch(e) { alert('Error: '+e.message); }
+  }
+
+  async function openDestroyModal(pool) {
     openMenu = null;
     destroyPool = pool;
     destroyInput = ''; destroying = false; stoppingService = {};
@@ -356,7 +367,8 @@
               <div class="menu-item" on:click={()=>createSnapshot(pool.name)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>Punto de restauración</div>
               <div class="menu-item" on:click={()=>startScrub(pool.name)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Verificar integridad</div>
               <div class="menu-divider"></div>
-              <div class="menu-item danger" on:click={()=>openDestroy(pool)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 3h4v2H4V6h4z"/><path d="M6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/></svg>Quitar volumen</div>
+              <div class="menu-item" on:click={()=>exportPool(pool)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Desmontar volumen</div>
+              <div class="menu-item danger" on:click={()=>openDestroyModal(pool)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 3h4v2H4V6h4z"/><path d="M6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/></svg>Destruir volumen</div>
             </div>
           {/if}
         </div>
