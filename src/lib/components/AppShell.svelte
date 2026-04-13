@@ -114,6 +114,7 @@
         <slot name="titlebar-actions" />
       </div>
     </div>
+    <slot name="toolbar" />
     <div class="content">
       <slot />
     </div>
