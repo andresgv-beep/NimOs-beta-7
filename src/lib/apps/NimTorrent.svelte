@@ -154,15 +154,17 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <AppShell title="NimTorrent" {appIcon} {sections} bind:active={activeTab} showSearch>
-  <svelte:fragment slot="titlebar-actions">
-    <button class="tb-btn primary" title="Añadir torrent" on:click={openAddModal}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" title="Reanudar todo" on:click={resumeAll}><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button>
-    <button class="tb-btn" title="Pausar todo" on:click={pauseAll}><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
-    <div class="tb-sep"></div>
-    <div class="tb-filter">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" placeholder="Filtrar..." bind:value={search}>
+  <svelte:fragment slot="toolbar">
+    <div class="toolbar">
+      <button class="tb-btn primary" title="Añadir torrent" on:click={openAddModal}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Reanudar todo" on:click={resumeAll}><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button>
+      <button class="tb-btn" title="Pausar todo" on:click={pauseAll}><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+      <div class="tb-sep"></div>
+      <div class="tb-filter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Filtrar..." bind:value={search}>
+      </div>
     </div>
   </svelte:fragment>
 
@@ -320,7 +322,8 @@
 {/if}
 
 <style>
-  /* Toolbar buttons */
+  /* Toolbar */
+  .toolbar{display:flex;align-items:center;gap:4px;padding:8px 18px;border-bottom:1px solid var(--glass-border);flex-shrink:0}
   .tb-btn{width:30px;height:30px;border-radius:6px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);transition:all .12s}
   .tb-btn:hover{background:var(--bg-elev-2);color:var(--text-primary)}
   .tb-btn.primary{color:var(--accent)}
