@@ -190,7 +190,7 @@
 <style>
   .window {
     position: fixed;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--window-border);
     box-shadow: var(--window-shadow);
@@ -213,7 +213,7 @@
 
   .drag-zone {
     position: absolute; top: 0; left: 0; right: 0;
-    height: 38px; z-index: 1;
+    height: 34px; z-index: 1;
     cursor: default; user-select: none;
   }
 
