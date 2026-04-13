@@ -126,23 +126,25 @@
     left: 50%;
     transform: translateX(-50%);
     width: 680px; max-height: 75vh; overflow-y: auto;
-    background: var(--bg-frame, #111028);
-    border: 1px solid var(--window-border, rgba(255,255,255,0.12));
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid var(--glass-border);
     border-radius: 16px;
     box-shadow: var(--window-shadow, 0 32px 90px rgba(0,0,0,0.60));
     padding: 28px;
     animation: launchIn 0.25s cubic-bezier(0.16,1,0.3,1) both;
   }
   .launcher::-webkit-scrollbar { width: 3px; }
-  .launcher::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.2); border-radius: 2px; }
+  .launcher::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
   @keyframes launchIn {
     from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.96); }
     to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
   }
   .launcher-title {
-    font-size: 13px; font-weight: 600; color: var(--text-1);
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
     margin-bottom: 16px; padding: 0 4px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-sans);
   }
   .app-grid {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
@@ -154,7 +156,7 @@
     transition: all 0.15s; position: relative;
     animation: fadeUp 0.3s ease both;
   }
-  .app-item:hover { background: rgba(128,128,128,0.08); border-color: var(--border); }
+  .app-item:hover { background: var(--bg-elev-2); border-color: var(--glass-border); }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
@@ -162,15 +164,15 @@
   .app-icon {
     width: 58px; height: 58px;
     display: flex; align-items: center; justify-content: center;
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
     transition: transform 0.15s;
   }
   .app-item:hover .app-icon { transform: scale(1.1) translateY(-2px); }
   .icon-emoji { font-size: 42px; line-height: 1; }
-  .icon-img { width: 62px; height: 62px; border-radius: 14px; object-fit: contain; mix-blend-mode: screen; }
+  .icon-img { width: 62px; height: 62px; border-radius: 14px; object-fit: contain; }
   .app-name {
-    font-size: 11px; color: var(--text-2);
-    text-align: center; font-family: 'DM Sans', sans-serif;
+    font-size: 11px; color: var(--text-secondary);
+    text-align: center; font-family: var(--font-sans);
     max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .web-dot {

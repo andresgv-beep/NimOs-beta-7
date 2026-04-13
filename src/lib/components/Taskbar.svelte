@@ -165,10 +165,10 @@
       <div class="transfer-btn" on:click={openTransferManager} title="Transferencias">
         <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z" fill="currentColor" opacity="0.9"/>
-          <path d="M12.37 8.88H17.62" stroke="var(--bg-frame)" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M6.38 8.88L7.13 9.63L9.38 7.38" stroke="var(--bg-frame)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <path d="M12.37 15.88H17.62" stroke="var(--bg-frame)" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M6.38 15.88L7.13 16.63L9.38 14.38" stroke="var(--bg-frame)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M12.37 8.88H17.62" stroke="var(--bg-elev-1)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M6.38 8.88L7.13 9.63L9.38 7.38" stroke="var(--bg-elev-1)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M12.37 15.88H17.62" stroke="var(--bg-elev-1)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M6.38 15.88L7.13 16.63L9.38 14.38" stroke="var(--bg-elev-1)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
       </div>
       <div class="notif-bell-wrap">
@@ -329,19 +329,18 @@
     display: flex; align-items: center;
     padding: 0 10px; gap: 2px;
     z-index: 9000;
-    /* Tokens instead of hardcoded */
-    background: var(--taskbar-bg, rgba(17,16,40,0.80));
+    background: var(--glass-bg);
     backdrop-filter: blur(20px) saturate(1.4);
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    border-color: var(--taskbar-border, rgba(255,255,255,0.07));
+    border-color: var(--glass-border);
   }
-  .taskbar.classic[data-position="bottom"] { bottom: 0; border-top: 1px solid var(--border); }
-  .taskbar.classic[data-position="top"]    { top: 0;    border-bottom: 1px solid var(--border); }
+  .taskbar.classic[data-position="bottom"] { bottom: 0; border-top: 1px solid var(--glass-border); }
+  .taskbar.classic[data-position="top"]    { top: 0;    border-bottom: 1px solid var(--glass-border); }
   .taskbar.classic[data-position="left"]   {
     left: 0; top: 0; bottom: 0; right: auto;
     width: var(--taskbar-height, 48px); height: auto;
     flex-direction: column; padding: 10px 0;
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--glass-border);
   }
 
   /* Light theme taskbar */
@@ -357,27 +356,27 @@
   .tb-launcher {
     width: 40px; height: 40px; border-radius: 8px;
     border: none; background: transparent;
-    color: var(--text-2);
+    color: var(--text-secondary);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: all .15s; flex-shrink: 0;
   }
   .tb-launcher:hover, .tb-launcher.active {
-    background: var(--active-bg); color: var(--text-1);
+    background: var(--accent-dim); color: var(--text-primary);
   }
 
-  .transfer-btn { display:flex; align-items:center; justify-content:center; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--text-2); transition:color .15s, background .15s; }
-  .transfer-btn:hover { background:var(--ibtn-bg); color:var(--text-1); }
-  .transfer-activity { display:flex; align-items:center; justify-content:center; color:var(--text-1); }
+  .transfer-btn { display:flex; align-items:center; justify-content:center; cursor:pointer; padding:4px 6px; border-radius:8px; color:var(--text-secondary); transition:color .15s, background .15s; }
+  .transfer-btn:hover { background:var(--bg-elev-2); color:var(--text-primary); }
+  .transfer-activity { display:flex; align-items:center; justify-content:center; color:var(--text-primary); }
   .notif-bell-wrap { position:relative; display:flex; align-items:center; }
   .notif-bell { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background .15s; }
-  .notif-bell:hover { background:var(--ibtn-bg); }
+  .notif-bell:hover { background:var(--bg-elev-2); }
   .notif-bell.active { background:rgba(124,111,255,0.12); }
-  .notif-bell svg { width:20px; height:20px; color:var(--text-2); transition:color .15s; }
-  .notif-bell:hover svg, .notif-bell.active svg { color:var(--text-1); }
-  .notif-badge { position:absolute; top:5px; right:5px; min-width:13px; height:13px; border-radius:7px; background:var(--red); font-size:8px; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; padding:0 3px; }
+  .notif-bell svg { width:20px; height:20px; color:var(--text-secondary); transition:color .15s; }
+  .notif-bell:hover svg, .notif-bell.active svg { color:var(--text-primary); }
+  .notif-badge { position:absolute; top:5px; right:5px; min-width:13px; height:13px; border-radius:7px; background:var(--c-crit); font-size:8px; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; padding:0 3px; }
   .sep {
     width: 1px; height: 22px;
-    background: var(--border);
+    background: var(--glass-border);
     margin: 0 6px; flex-shrink: 0;
   }
   .taskbar.classic[data-position="left"] .sep {
@@ -394,10 +393,10 @@
     cursor: pointer; transition: all .15s;
     position: relative; flex-shrink: 0;
     flex-direction: column; gap: 2px;
-    color: var(--text-1);
+    color: var(--text-primary);
   }
-  .tb-btn:hover { background: var(--ibtn-bg); }
-  .tb-btn.open  { background: var(--ibtn-bg); }
+  .tb-btn:hover { background: var(--bg-elev-2); }
+  .tb-btn.open  { background: var(--bg-elev-2); }
   .tb-btn.minimized { opacity: 0.45; }
 
   .tb-emoji { font-size: 23px; line-height: 1; }
@@ -425,13 +424,13 @@
   }
   .clock {
     font-size: 12px; font-weight: 600;
-    font-family: 'DM Mono', monospace;
-    color: var(--text-1);
+    font-family: var(--font-mono);
+    color: var(--text-primary);
     line-height: 1;
   }
   .clock-date {
-    font-size: 9px; color: var(--text-3);
-    font-family: 'DM Mono', monospace;
+    font-size: 9px; color: var(--text-muted);
+    font-family: var(--font-mono);
     text-transform: capitalize;
   }
 
@@ -451,19 +450,11 @@
     display: flex; align-items: center; gap: 4px;
     padding: 6px 10px;
     border-radius: 18px;
-    background: var(--taskbar-bg, rgba(17,16,40,0.80));
+    background: var(--glass-bg);
     backdrop-filter: blur(24px) saturate(1.6);
     -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid var(--border);
+    border: 1px solid var(--glass-border);
     box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
-  }
-
-  :global([data-theme="light"]) .dock-inner {
-    background: rgba(220,220,228,0.88);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
-  }
-  :global([data-theme="dark"]) .dock-inner {
-    background: rgba(24,24,24,0.85);
   }
 
   .dock-btn {
@@ -473,12 +464,12 @@
     cursor: pointer; transition: all .18s cubic-bezier(0.34,1.56,0.64,1);
     position: relative; gap: 2px; flex-shrink: 0;
   }
-  .dock-btn:hover { transform: translateY(-2px) scale(1.06); background: var(--ibtn-bg); }
-  .dock-btn.open  { background: var(--ibtn-bg); }
+  .dock-btn:hover { transform: translateY(-2px) scale(1.06); background: var(--bg-elev-2); }
+  .dock-btn.open  { background: var(--bg-elev-2); }
   .dock-btn.minimized { opacity: 0.4; }
-  .dock-btn.active { background: var(--active-bg); }
+  .dock-btn.active { background: var(--accent-dim); }
 
-  .launcher-btn:hover { background: var(--active-bg) !important; }
+  .launcher-btn:hover { background: var(--accent-dim) !important; }
 
   .dock-emoji { font-size: 22px; line-height: 1; }
 
@@ -490,7 +481,7 @@
 
   .dock-sep {
     width: 1px; height: 28px;
-    background: var(--border);
+    background: var(--glass-border);
     margin: 0 4px; flex-shrink: 0;
   }
 
@@ -514,8 +505,10 @@
   .ctx-menu {
     position: fixed; z-index: 9999;
     min-width: 200px;
-    background: var(--bg-inner);
-    border: 1px solid var(--border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.2);
     overflow: hidden;
@@ -530,16 +523,16 @@
     padding: 10px 12px 8px;
   }
   .ctx-icon { font-size: 16px; }
-  .ctx-app-name { font-size: 12px; font-weight: 600; color: var(--text-1); }
-  .ctx-divider { height: 1px; background: var(--border); margin: 2px 0; }
+  .ctx-app-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .ctx-divider { height: 1px; background: var(--glass-border); margin: 2px 0; }
   .ctx-item {
     display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; font-size: 12px; color: var(--text-2);
+    padding: 8px 12px; font-size: 12px; color: var(--text-secondary);
     cursor: pointer; transition: all .1s;
   }
-  .ctx-item:hover { background: var(--active-bg); color: var(--text-1); }
-  .ctx-item.danger { color: var(--red); }
+  .ctx-item:hover { background: var(--accent-dim); color: var(--text-primary); }
+  .ctx-item.danger { color: var(--c-crit); }
   .ctx-item.danger:hover { background: rgba(248,113,113,0.10); }
-  .ctx-ico { font-size: 11px; width: 14px; text-align: center; color: var(--text-3); flex-shrink: 0; }
-  .ctx-item.danger .ctx-ico { color: var(--red); }
+  .ctx-ico { font-size: 11px; width: 14px; text-align: center; color: var(--text-muted); flex-shrink: 0; }
+  .ctx-item.danger .ctx-ico { color: var(--c-crit); }
 </style>
