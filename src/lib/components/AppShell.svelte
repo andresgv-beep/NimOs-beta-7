@@ -85,6 +85,9 @@
             </svg>
           {/if}
           {item.label}
+          {#if item.badge !== undefined && item.badge !== null && item.badge !== 0}
+            <span class="sb-badge" class:sb-badge-accent={item.badgeColor === 'accent'} class:sb-badge-ok={item.badgeColor === 'ok'} class:sb-badge-warn={item.badgeColor === 'warn'} class:sb-badge-crit={item.badgeColor === 'crit'}>{item.badge}</span>
+          {/if}
         </div>
       {/each}
     {/each}
@@ -191,6 +194,21 @@
     fill: currentColor; opacity: 0.45; stroke: none;
   }
   .sb-item.active .sb-icon :global([data-dot]) { opacity: 0.7; }
+
+  /* Badges */
+  .sb-badge {
+    margin-left: auto;
+    padding: 1px 6px; border-radius: 10px;
+    font-size: 10px; font-weight: 600;
+    font-family: var(--font-mono, monospace);
+    background: var(--bg-elev-2); color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .sb-item.active .sb-badge { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .sb-badge-accent { background: rgba(59,130,246,0.12) !important; color: var(--accent) !important; }
+  .sb-badge-ok { background: var(--c-ok-dim) !important; color: var(--c-ok) !important; }
+  .sb-badge-warn { background: var(--c-warn-dim) !important; color: var(--c-warn) !important; }
+  .sb-badge-crit { background: var(--c-crit-dim) !important; color: var(--c-crit) !important; }
 
   /* User card */
   .sb-bottom {
