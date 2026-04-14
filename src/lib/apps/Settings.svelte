@@ -474,18 +474,6 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <AppShell title="NimSettings" {appIcon} sections={sidebarSections} bind:active={activeView}>
   <svelte:fragment slot="titlebar-actions">
-    {#if activeView === 'appearance'}
-      <TabNav tabs={[
-        { id:'tema',    label:'Tema'    },
-        { id:'taskbar', label:'Taskbar' },
-        { id:'escala',  label:'Escala'  },
-      ]} bind:active={appearanceTab} />
-    {:else if activeView === 'shares' && pools.length > 0}
-      <button class="tb-new-share-btn" on:click={startNewShare}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nueva carpeta compartida
-      </button>
-    {/if}
   </svelte:fragment>
 
         {#if loading}
@@ -526,6 +514,15 @@
           <button class="btn-accent" style="margin-top:14px" on:click={startNewUser}>+ Nuevo usuario</button>
 
         {:else if activeView === 'shares'}
+          {#if pools.length > 0}
+            <div class="section-header">
+              <div class="section-label">Carpetas compartidas</div>
+              <button class="tb-new-share-btn" on:click={startNewShare}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:10px;height:10px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nueva carpeta
+              </button>
+            </div>
+          {/if}
           {#if shares.length > 0}
             <div class="share-list">
               {#each shares as s}
@@ -864,6 +861,11 @@
           {#if applying}<div class="update-progress"><div class="spinner" style="width:16px;height:16px"></div><span>No cierres el navegador</span></div>{/if}
 
         {:else if activeView === 'appearance'}
+          <TabNav tabs={[
+            { id:'tema',    label:'Tema'    },
+            { id:'taskbar', label:'Taskbar' },
+            { id:'escala',  label:'Escala'  },
+          ]} bind:active={appearanceTab} />
           {#if appearanceTab === 'tema'}
             <div class="section-label">Tema del sistema</div>
             <div class="theme-row">
@@ -1137,6 +1139,7 @@
   .spinner { width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,0.08); border-top-color:var(--accent); animation:spin .7s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
   .section-label { font-size:9px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px; }
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
   .coming-soon { font-size:12px; color:var(--text-muted); }
   .empty-state { display:flex; flex-direction:column; align-items:center; gap:8px; padding:40px 0; }
   .empty-icon { width:38px; height:38px; border-radius:9px; background:rgba(124,111,255,0.08); border:1px solid rgba(124,111,255,0.12); display:flex; align-items:center; justify-content:center; }
