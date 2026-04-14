@@ -239,11 +239,11 @@
     background: var(--bg-elev-1);
     border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
   }
-  .tb-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
-  .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .tb-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; white-space: nowrap; }
+  .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 1; overflow: hidden; min-width: 0; }
 
   /* Window controls */
-  .wf-controls { display: flex; align-items: center; margin-left: 8px; }
+  .wf-controls { display: flex; align-items: center; flex-shrink: 0; }
   .wf-btn {
     width: 36px; height: 30px;
     border: none; background: transparent; padding: 0;
