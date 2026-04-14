@@ -231,38 +231,29 @@
   }
 
   /* ── Main ── */
-  .main { display: flex; flex-direction: column; overflow: hidden; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
 
   .titlebar {
     display: flex; align-items: center; gap: 14px;
-    padding: 0 12px 0 24px; height: var(--titlebar-height);
+    padding: 0 4px 0 24px; height: var(--titlebar-height);
     background: var(--bg-elev-1);
     border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
-    min-width: 0;
-    position: relative;
-    z-index: 10000;
   }
   .tb-title {
     font-size: 14px; font-weight: 600; color: var(--text-primary);
     letter-spacing: -0.2px; white-space: nowrap;
-    flex-shrink: 0;
   }
   .tb-actions {
-    flex: 1;
-    min-width: 0;
+    margin-left: auto;
     display: flex; align-items: center; gap: 8px;
-    overflow: hidden;
-    justify-content: flex-end;
+    min-width: 0;
   }
 
   /* Window controls */
   .wf-controls {
     display: flex; align-items: center;
     flex-shrink: 0;
-    margin-left: 8px;
-    position: relative;
-    z-index: 10001;
   }
   .wf-btn {
     width: 36px; height: 30px;
