@@ -286,7 +286,7 @@
   .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px;height:var(--titlebar-height,40px);background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
   .nh-title{font-size:15px;font-weight:600;color:var(--text-primary);letter-spacing:-0.2px}
   .nh-sub{font-size:13px;color:var(--text-muted)}
-  .wf-controls{display:flex;align-items:center;margin-left:auto}
+  .wf-controls{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
   .wf-btn{width:36px;height:30px;border:none;background:transparent;padding:0;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;border-radius:6px}
   .wf-btn svg{width:14px;height:14px}
   .wf-btn:hover{background:rgba(255,255,255,0.06);color:var(--text-primary)}
