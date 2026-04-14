@@ -240,6 +240,8 @@
     border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
     min-width: 0;
+    position: relative;
+    z-index: 10000;
   }
   .tb-title {
     font-size: 14px; font-weight: 600; color: var(--text-primary);
@@ -259,6 +261,8 @@
     display: flex; align-items: center;
     flex-shrink: 0;
     margin-left: 8px;
+    position: relative;
+    z-index: 10001;
   }
   .wf-btn {
     width: 36px; height: 30px;
