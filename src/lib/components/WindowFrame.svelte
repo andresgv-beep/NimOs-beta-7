@@ -95,31 +95,6 @@
   style="z-index:{win.zIndex}; left:{x}px; top:{y}px; width:{w}px; height:{h}px;"
   on:mousedown={() => focusWindow(win.id)}
 >
-  <!-- Drag zone — invisible bar at top for dragging -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="drag-zone" on:mousedown={onTitleMouseDown}></div>
-
-  <!-- Window controls — right side icons -->
-  {#if win.appId === 'transfermanager'}
-    <div class="wf-controls">
-      <button class="wf-btn" on:click={() => closeWindow(win.id)} title="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  {:else}
-    <div class="wf-controls">
-      <button class="wf-btn" on:click={() => minimizeWindow(win.id)} title="Minimizar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
-      <button class="wf-btn" on:click={doMaximize} title="Maximizar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-      </button>
-      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)} title="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  {/if}
-
   <!-- App content — fills entire window -->
   <div class="content">
     {#if win.isWebApp && win.webAppPort}
@@ -178,6 +153,31 @@
       </div>
     {/if}
   </div>
+
+  <!-- Drag zone — invisible bar at top for dragging (after content so it's on top) -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="drag-zone" on:mousedown={onTitleMouseDown}></div>
+
+  <!-- Window controls — right side icons (after content so they're on top) -->
+  {#if win.appId === 'transfermanager'}
+    <div class="wf-controls">
+      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)} title="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  {:else}
+    <div class="wf-controls">
+      <button class="wf-btn" on:click={() => minimizeWindow(win.id)} title="Minimizar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button class="wf-btn" on:click={doMaximize} title="Maximizar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)} title="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  {/if}
 
   {#if !win.maximized}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
