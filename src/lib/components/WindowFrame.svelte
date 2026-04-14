@@ -188,8 +188,8 @@
     border-radius: 0 !important; border: none !important;
     box-shadow: none !important;
     left: 0 !important; top: 0 !important;
-    width: 100vw !important;
-    height: calc(100vh - var(--taskbar-height, 48px)) !important;
+    width: calc(100vw / var(--ui-zoom, 1)) !important;
+    height: calc((100vh - var(--taskbar-height, 48px)) / var(--ui-zoom, 1)) !important;
   }
   @keyframes winIn {
     from { opacity: 0; transform: scale(0.96) translateY(10px); }
