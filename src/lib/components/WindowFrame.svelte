@@ -197,7 +197,7 @@
   }
 
   .drag-zone {
-    position: absolute; top: 0; left: 0; right: 0;
+    position: absolute; top: 0; left: 0; right: 120px;
     height: 34px; z-index: 9998;
     cursor: default; user-select: none;
   }
