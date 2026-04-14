@@ -1,7 +1,9 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, getContext } from 'svelte';
   import { token, hdrs } from '$lib/stores/auth.js';
   import { APP_META } from '$lib/apps.js';
+
+  const wc = getContext('windowControls');
 
   let view = 'dashboard';
   let services = [];
@@ -151,6 +153,13 @@
     <div class="nh-titlebar">
       <span class="nh-title">NimHealth</span>
       <span class="nh-sub">Task Manager</span>
+      {#if wc}
+        <div class="wf-controls">
+          <button class="wf-btn" on:click={wc.minimize} title="Minimizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <button class="wf-btn" on:click={wc.maximize} title="Maximizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+          <button class="wf-btn wf-close" on:click={wc.close} title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+      {/if}
     </div>
 
     <div class="hw-bar">
@@ -226,6 +235,13 @@
   {:else if view==='detail' && selectedService}
     <div class="nh-titlebar">
       <span class="nh-title">NimHealth</span>
+      {#if wc}
+        <div class="wf-controls">
+          <button class="wf-btn" on:click={wc.minimize} title="Minimizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <button class="wf-btn" on:click={wc.maximize} title="Maximizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+          <button class="wf-btn wf-close" on:click={wc.close} title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+      {/if}
     </div>
     <div class="detail-nav">
       <!-- svelte-ignore a11y_click_events_have_key_events --><!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -270,6 +286,11 @@
   .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px;height:var(--titlebar-height,40px);background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
   .nh-title{font-size:15px;font-weight:600;color:var(--text-primary);letter-spacing:-0.2px}
   .nh-sub{font-size:13px;color:var(--text-muted)}
+  .wf-controls{display:flex;align-items:center;margin-left:auto}
+  .wf-btn{width:36px;height:30px;border:none;background:transparent;padding:0;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;border-radius:6px}
+  .wf-btn svg{width:14px;height:14px}
+  .wf-btn:hover{background:rgba(255,255,255,0.06);color:var(--text-primary)}
+  .wf-close:hover{background:rgba(239,68,68,0.8);color:#fff}
   .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .15s}
   .back-btn:hover{color:var(--text-primary);background:var(--bg-elev-2)}.back-btn svg{width:14px;height:14px}
   .hw-bar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);padding:10px 24px;flex-shrink:0}
