@@ -267,7 +267,7 @@
 
 <style>
   .nh-root{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;font-family:var(--font-sans,'IBM Plex Sans',sans-serif);color:var(--text-primary);background:var(--bg-app)}
-  .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px 0 80px;height:48px;background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
+  .nh-titlebar{display:flex;align-items:center;gap:14px;padding:0 24px;height:var(--titlebar-height,40px);background:var(--bg-elev-1);border-bottom:1px solid var(--glass-border);flex-shrink:0}
   .nh-title{font-size:15px;font-weight:600;color:var(--text-primary);letter-spacing:-0.2px}
   .nh-sub{font-size:13px;color:var(--text-muted)}
   .back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .15s}
