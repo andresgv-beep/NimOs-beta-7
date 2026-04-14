@@ -211,13 +211,13 @@
 
   .drag-zone {
     position: absolute; top: 0; left: 0; right: 0;
-    height: 34px; z-index: 1;
+    height: 34px; z-index: 9998;
     cursor: default; user-select: none;
   }
 
   .wf-controls {
     position: absolute; top: 0; right: 0;
-    display: flex; z-index: 10;
+    display: flex; z-index: 9999;
     height: var(--titlebar-height, 40px);
     align-items: center;
     padding-right: 4px;
