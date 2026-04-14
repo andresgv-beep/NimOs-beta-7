@@ -1160,13 +1160,13 @@
   .share-list { display:flex; flex-direction:column; gap:6px; }
   .share-pill {
     background:var(--glass-bg); border:1px solid var(--glass-border);
-    border-radius:12px; transition:background .18s; position:relative;
+    border-radius:10px; transition:background .18s; position:relative;
   }
   .share-pill:hover { background:var(--bg-elev-2); }
   .share-pill.open { background:var(--bg-elev-2); }
   .share-head {
     display:grid; grid-template-columns:36px 1fr auto 28px 28px;
-    align-items:center; gap:16px; padding:14px 18px; cursor:pointer;
+    align-items:center; gap:16px; padding:10px 18px; cursor:pointer;
   }
   .share-icon {
     width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
