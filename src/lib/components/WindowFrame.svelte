@@ -1,11 +1,19 @@
 <script>
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, setContext } from 'svelte';
   import { closeWindow, focusWindow, minimizeWindow, maximizeWindow, updateWindowPos, getWindowPos } from '$lib/stores/windows.js';
   import { APP_META } from '$lib/apps.js';
 
   export let win;
 
   $: meta = APP_META[win.appId] || { name: win.appId, icon: '📦' };
+
+  // Provide window controls to child components (AppShell etc.)
+  setContext('windowControls', {
+    close: () => closeWindow(win.id),
+    minimize: () => minimizeWindow(win.id),
+    maximize: () => doMaximize(),
+    getWin: () => win,
+  });
 
   // Reactive position state for the style binding
   let x = 0, y = 0, w = 800, h = 520;
@@ -154,30 +162,9 @@
     {/if}
   </div>
 
-  <!-- Drag zone — invisible bar at top for dragging (after content so it's on top) -->
+  <!-- Drag zone — invisible bar at top for dragging -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="drag-zone" on:mousedown={onTitleMouseDown}></div>
-
-  <!-- Window controls — right side icons (after content so they're on top) -->
-  {#if win.appId === 'transfermanager'}
-    <div class="wf-controls">
-      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)} title="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  {:else}
-    <div class="wf-controls">
-      <button class="wf-btn" on:click={() => minimizeWindow(win.id)} title="Minimizar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
-      <button class="wf-btn" on:click={doMaximize} title="Maximizar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-      </button>
-      <button class="wf-btn wf-close" on:click={() => closeWindow(win.id)} title="Cerrar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  {/if}
 
   {#if !win.maximized}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -214,24 +201,6 @@
     height: 34px; z-index: 9998;
     cursor: default; user-select: none;
   }
-
-  .wf-controls {
-    position: absolute; top: 0; right: 0;
-    display: flex; z-index: 9999;
-    height: var(--titlebar-height, 40px);
-    align-items: center;
-    padding-right: 4px;
-  }
-  .wf-btn {
-    width: 36px; height: 100%;
-    border: none; background: transparent; padding: 0;
-    color: var(--text-muted, rgba(255,255,255,0.35));
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: background 0.12s, color 0.12s;
-  }
-  .wf-btn svg { width: 14px; height: 14px; }
-  .wf-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary, rgba(255,255,255,0.9)); }
-  .wf-close:hover { background: rgba(239,68,68,0.8); color: #fff; }
 
   .content { flex: 1; overflow: hidden; }
 
