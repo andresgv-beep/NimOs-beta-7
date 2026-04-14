@@ -472,7 +472,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<AppShell title="NimSettings" {appIcon} sections={sidebarSections} bind:active={activeView}>
+<AppShell title="NimSettings" appIconUrl="/icons/settings.png" sections={sidebarSections} bind:active={activeView}>
   <svelte:fragment slot="titlebar-actions">
   </svelte:fragment>
 
@@ -531,7 +531,7 @@
                 <div class="share-pill" class:open={selectedShare === s.name}>
                   <div class="share-head" on:click={(e) => { if (!e.target.closest('.share-menu-wrap')) selectedShare = selectedShare === s.name ? null : s.name; }}>
                     <div class="share-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" opacity="0.85"/></svg>
+                      <img src="/icons/files.png" alt="" />
                     </div>
                     <div class="share-ident">
                       <div class="share-name">{s.displayName || s.name}</div>
@@ -1169,10 +1169,9 @@
     align-items:center; gap:16px; padding:10px 18px; cursor:pointer;
   }
   .share-icon {
-    width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
-    background:rgba(59,130,246,0.10); border:1px solid rgba(59,130,246,0.20); color:var(--accent);
+    width:36px; height:36px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
-  .share-icon svg { width:20px; height:20px; display:block; }
+  .share-icon img { width:32px; height:32px; object-fit:contain; }
   .share-ident { min-width:0; }
   .share-name { font-size:15px; font-weight:700; letter-spacing:-0.3px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-primary); }
   .share-sub { font-size:11px; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); }
