@@ -7,6 +7,7 @@
    */
   export let title = '';
   export let appIcon = [];
+  export let appIconUrl = '';
   export let sections = [];
   export let active = '';
   export let showSearch = false;
@@ -32,17 +33,21 @@
   <aside class="sidebar">
     <!-- App header -->
     <div class="sb-header">
-      <svg class="sb-app-icon" viewBox="0 0 24 24">
-        {#each appIcon as el}
-          {#if el.tag === 'path'}<path {...el.attrs}/>
-          {:else if el.tag === 'ellipse'}<ellipse {...el.attrs}/>
-          {:else if el.tag === 'circle'}<circle {...el.attrs}/>
-          {:else if el.tag === 'rect'}<rect {...el.attrs}/>
-          {:else if el.tag === 'polyline'}<polyline {...el.attrs}/>
-          {:else if el.tag === 'line'}<line {...el.attrs}/>
-          {/if}
-        {/each}
-      </svg>
+      {#if appIconUrl}
+        <img class="sb-app-img" src={appIconUrl} alt={title} />
+      {:else}
+        <svg class="sb-app-icon" viewBox="0 0 24 24">
+          {#each appIcon as el}
+            {#if el.tag === 'path'}<path {...el.attrs}/>
+            {:else if el.tag === 'ellipse'}<ellipse {...el.attrs}/>
+            {:else if el.tag === 'circle'}<circle {...el.attrs}/>
+            {:else if el.tag === 'rect'}<rect {...el.attrs}/>
+            {:else if el.tag === 'polyline'}<polyline {...el.attrs}/>
+            {:else if el.tag === 'line'}<line {...el.attrs}/>
+            {/if}
+          {/each}
+        </svg>
+      {/if}
       <span class="sb-app-title">{title}</span>
     </div>
 
@@ -149,6 +154,10 @@
     width: 22px; height: 22px; flex-shrink: 0;
     stroke: var(--text-primary); fill: none;
     stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .sb-app-img {
+    width: 24px; height: 24px; flex-shrink: 0;
+    object-fit: contain;
   }
   .sb-app-title {
     font-size: 16px; font-weight: 700;
