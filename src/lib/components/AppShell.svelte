@@ -105,11 +105,7 @@
 
   <div class="main">
     <div class="titlebar">
-      <span class="tb-title">{title}</span>
-      {#if subtitle}
-        <span class="tb-sep"></span>
-        <span class="tb-sub">{subtitle}</span>
-      {/if}
+      <span class="tb-title">{subtitle || title}</span>
       <div class="tb-actions">
         <slot name="titlebar-actions" />
       </div>
@@ -241,9 +237,7 @@
     background: var(--bg-elev-1);
     border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
   }
-  .tb-title { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
-  .tb-sep { width: 1px; height: 16px; background: var(--glass-border); }
-  .tb-sub { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+  .tb-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
   .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
   .content {
