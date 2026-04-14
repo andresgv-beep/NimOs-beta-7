@@ -528,46 +528,48 @@
               {#each shares as s}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div class="share-row" class:selected={selectedShare === s.name}
-                  on:click={(e) => { if (!e.target.closest('.share-menu-wrap')) selectedShare = selectedShare === s.name ? null : s.name; }}>
-                  <div class="share-folder-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                  </div>
-                  <span class="share-name">{s.displayName || s.name}</span>
-                  <span class="share-pool">{s.pool || '—'}</span>
-                  <div class="share-protocols">
-                    <span class="proto smb" class:on={s.smb}>SMB</span>
-                    <span class="proto nfs" class:on={s.nfs}>NFS</span>
-                    <span class="proto ftp" class:on={s.ftp}>FTP</span>
-                  </div>
-                  <span class="share-users">
-                    {Object.keys(s.permissions || {}).length} usuario{Object.keys(s.permissions || {}).length !== 1 ? 's' : ''}
-                  </span>
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="share-menu-wrap">
-                    <button class="btn-more" on:click|stopPropagation={() => toggleMenu(s.name)} title="Opciones">···</button>
-                    {#if shareMenu === s.name}
-                      <!-- svelte-ignore a11y_click_events_have_key_events -->
-                      <!-- svelte-ignore a11y_no_static_element_interactions -->
-                      <div class="share-dropdown">
-                        <div class="sd-item" on:click={() => { shareMenu = null; startEditShare(s); }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                          Editar permisos
-                        </div>
-                        <div class="sd-item" on:click={() => openQuota(s)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                          Cambiar quota
-                        </div>
-                        <div class="sd-sep"></div>
-                        <div class="sd-item danger" on:click={() => openDelete(s)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                          Eliminar carpeta
-                        </div>
+                <div class="share-pill" class:open={selectedShare === s.name}>
+                  <div class="share-head" on:click={(e) => { if (!e.target.closest('.share-menu-wrap')) selectedShare = selectedShare === s.name ? null : s.name; }}>
+                    <div class="share-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" opacity="0.85"/></svg>
+                    </div>
+                    <div class="share-ident">
+                      <div class="share-name">{s.displayName || s.name}</div>
+                      <div class="share-sub">{s.pool || '—'} · {Object.keys(s.permissions || {}).length} usuario{Object.keys(s.permissions || {}).length !== 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="share-protocols">
+                      <span class="proto smb" class:on={s.smb}>SMB</span>
+                      <span class="proto nfs" class:on={s.nfs}>NFS</span>
+                      <span class="proto ftp" class:on={s.ftp}>FTP</span>
+                    </div>
+                    <div class="share-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></div>
+                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div class="share-menu-wrap">
+                      <div class="share-kebab" on:click|stopPropagation={() => toggleMenu(s.name)}>
+                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
                       </div>
-                    {/if}
+                      {#if shareMenu === s.name}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div class="share-dropdown">
+                          <div class="sd-item" on:click={() => { shareMenu = null; startEditShare(s); }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                            Editar permisos
+                          </div>
+                          <div class="sd-item" on:click={() => openQuota(s)}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                            Cambiar quota
+                          </div>
+                          <div class="sd-sep"></div>
+                          <div class="sd-item danger" on:click={() => openDelete(s)}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                            Eliminar carpeta
+                          </div>
+                        </div>
+                      {/if}
+                    </div>
                   </div>
-                </div>
 
                 <!-- Panel de detalle -->
                 {#if selectedShare === s.name}
@@ -654,6 +656,7 @@
                     </div>
                   </div>
                 {/if}
+                </div>
               {/each}
             </div>
           {:else}
@@ -1153,25 +1156,40 @@
   .sub-tab:hover { color:var(--text-secondary); }
   .sub-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 
-  /* ── Share list ── */
-  .share-list { display:flex; flex-direction:column; gap:2px; }
-  .share-row {
-    display:flex; align-items:center; gap:12px;
-    padding:10px 12px; border-radius:8px; cursor:pointer;
-    border:1px solid transparent; transition:all .12s;
+  /* ── Share list (pill design matching Storage) ── */
+  .share-list { display:flex; flex-direction:column; gap:6px; }
+  .share-pill {
+    background:var(--glass-bg); border:1px solid var(--glass-border);
+    border-radius:12px; transition:background .18s; position:relative;
   }
-  .share-row:hover { background:var(--bg-elev-2); }
-  .share-row.selected { background:var(--bg-elev-2); border-color:var(--accent); }
-  .share-folder-icon { width:32px; height:32px; flex-shrink:0; border-radius:8px; background:rgba(124,111,255,0.10); display:flex; align-items:center; justify-content:center; }
-  .share-folder-icon svg { width:16px; height:16px; color:var(--accent); }
-  .share-name { font-size:12px; font-weight:600; color:var(--text-primary); min-width:80px; }
-  .share-pool { font-size:10px; color:var(--text-muted); font-family:var(--font-mono); flex:1; }
-  .share-protocols { display:flex; gap:3px; flex-shrink:0; }
-  .proto { padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text-muted); background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all .15s; }
+  .share-pill:hover { background:var(--bg-elev-2); }
+  .share-pill.open { background:var(--bg-elev-2); }
+  .share-head {
+    display:grid; grid-template-columns:36px 1fr auto 28px 28px;
+    align-items:center; gap:16px; padding:14px 18px; cursor:pointer;
+  }
+  .share-icon {
+    width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    background:rgba(59,130,246,0.10); border:1px solid rgba(59,130,246,0.20); color:var(--accent);
+  }
+  .share-icon svg { width:20px; height:20px; display:block; }
+  .share-ident { min-width:0; }
+  .share-name { font-size:15px; font-weight:700; letter-spacing:-0.3px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-primary); }
+  .share-sub { font-size:11px; color:var(--text-muted); margin-top:3px; font-family:var(--font-mono); }
+  .share-protocols { display:flex; gap:4px; flex-shrink:0; }
+  .proto { padding:3px 7px; border-radius:5px; font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text-muted); background:var(--bg-elev-2); border:1px solid var(--glass-border); transition:all .15s; }
   .proto.smb.on { color:#60a5fa; background:rgba(96,165,250,0.10); border-color:rgba(96,165,250,0.22); }
   .proto.nfs.on { color:#4ade80; background:rgba(74,222,128,0.10); border-color:rgba(74,222,128,0.22); }
   .proto.ftp.on { color:#fbbf24; background:rgba(251,191,36,0.10); border-color:rgba(251,191,36,0.22); }
-  .share-users { font-size:10px; color:var(--text-muted); flex-shrink:0; min-width:58px; text-align:right; }
+  .share-chev { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); transition:all .15s; }
+  .share-chev:hover { background:var(--bg-elev-1); color:var(--text-primary); }
+  .share-chev svg { width:13px; height:13px; transition:transform .25s; }
+  .share-pill.open .share-chev svg { transform:rotate(90deg); }
+  .share-pill.open .share-chev { color:var(--text-primary); }
+  .share-kebab { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer; transition:all .15s; }
+  .share-kebab:hover { background:var(--bg-elev-1); color:var(--text-primary); }
+  .share-kebab svg { width:15px; height:15px; }
+  .share-menu-wrap { position:relative; }
 
   /* ── Share detail panel ── */
   @keyframes detailIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
