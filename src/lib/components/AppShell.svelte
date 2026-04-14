@@ -233,7 +233,7 @@
 
   .titlebar {
     display: flex; align-items: center; gap: 14px;
-    padding: 0 24px; height: var(--titlebar-height);
+    padding: 0 120px 0 24px; height: var(--titlebar-height);
     background: var(--bg-elev-1);
     border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
   }
