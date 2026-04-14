@@ -237,13 +237,29 @@
     display: flex; align-items: center; gap: 14px;
     padding: 0 12px 0 24px; height: var(--titlebar-height);
     background: var(--bg-elev-1);
-    border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    min-width: 0;
   }
-  .tb-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; white-space: nowrap; }
-  .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 1; overflow: hidden; min-width: 0; }
+  .tb-title {
+    font-size: 14px; font-weight: 600; color: var(--text-primary);
+    letter-spacing: -0.2px; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tb-actions {
+    flex: 1;
+    min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    overflow: hidden;
+    justify-content: flex-end;
+  }
 
   /* Window controls */
-  .wf-controls { display: flex; align-items: center; flex-shrink: 0; }
+  .wf-controls {
+    display: flex; align-items: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
   .wf-btn {
     width: 36px; height: 30px;
     border: none; background: transparent; padding: 0;
