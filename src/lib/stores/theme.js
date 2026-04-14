@@ -83,6 +83,7 @@ function applyToDOM(p) {
   // UI Scale — applies CSS zoom to the entire desktop
   const scale = computeUiScale(p.uiScale);
   root.style.setProperty('--ui-scale', scale.toString());
+  root.style.setProperty('--ui-zoom', scale.toString());
   // CSS zoom is the cleanest way to scale everything without breaking layouts
   // It scales px values, mouse coordinates, and scrollbars uniformly
   root.style.zoom = scale;
