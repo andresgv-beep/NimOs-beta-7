@@ -814,4 +814,56 @@ $: viewMode = viewModePref === 'auto'
   .nimos-toast.warn{border-color:var(--c-warn-border);color:var(--c-warn)}
   .nimos-toast.err{border-color:var(--c-crit-border);color:var(--c-crit)}
   @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+  /* ── Pools container (patrón max-width centrado) ── */
+.view-toggle-row {
+  max-width: 860px;
+  margin: 0 auto 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+.pools-container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pools-container.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 400px));
+  justify-content: center;
+}
+
+/* Kebab menu (reutiliza el comportamiento existente) */
+.pool-menu {
+  position: absolute;
+  right: 28px;
+  margin-top: 4px;
+  background: var(--bg-elev-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pool-menu button {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pool-menu button:hover { background: var(--bg-elev-2); }
+.pool-menu button.destructive { color: var(--c-crit); }
+.pool-menu button.destructive:hover { background: var(--c-crit-dim); }
 </style>
