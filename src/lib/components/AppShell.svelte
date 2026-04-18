@@ -127,6 +127,7 @@
 <style>
   .app-shell {
     width: 100%; height: 100%;
+    min-height: 0;
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
     background: var(--bg-elev-1);
@@ -240,7 +241,14 @@
   }
 
   /* ── Main ── */
-  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
 
   .titlebar {
     display: flex; align-items: center; gap: 14px;
@@ -279,7 +287,27 @@
   .content {
     flex: 1; overflow-y: auto;
     background: var(--bg-app); padding: 24px 28px;
+    min-height: 0;
   }
-  .content::-webkit-scrollbar { width: 3px; }
-  .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+  .content::-webkit-scrollbar {
+    width: 10px;
+  }
+  .content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22);
+    background-clip: padding-box;
+  }
+  /* Firefox */
+  .content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  }
 </style>
