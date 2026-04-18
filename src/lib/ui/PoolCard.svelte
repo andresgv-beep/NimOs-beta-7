@@ -248,6 +248,8 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     transition: border-color 0.2s;
+    min-width: 0;
+    overflow: hidden;
   }
   .pool-card.expanded { padding: 24px 26px; }
   .pool-card.compact  { padding: 20px 22px; }
@@ -323,9 +325,10 @@
   /* ── Body EXPANDED ── */
   .pc-body-x {
     display: grid;
-    grid-template-columns: 130px 1fr auto;
+    grid-template-columns: 130px minmax(0, 1fr) auto;
     gap: 26px;
     align-items: center;
+    min-width: 0;
   }
 
   .pc-dist-wrap { min-width: 0; }
@@ -374,7 +377,8 @@
     display: flex;
     flex-direction: column;
     gap: 7px;
-    min-width: 160px;
+    min-width: 140px;
+    max-width: 180px;
   }
   .pc-actions :global(button) {
     justify-content: flex-start;
@@ -386,7 +390,7 @@
     padding-top: 16px;
     border-top: 1px solid var(--glass-border);
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
     gap: 10px;
   }
 
