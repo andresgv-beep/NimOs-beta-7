@@ -23,12 +23,14 @@
   import Button from './Button.svelte';
   import Donut from './Donut.svelte';
   import DiskChip from './DiskChip.svelte';
+  import PoolActivity from './PoolActivity.svelte';
 
   const dispatch = createEventDispatcher();
 
   export let pool;
   export let fileStats = null;
   export let variant = 'expanded';
+  export let activity = null; // { action, state, progress?, speed?, timeRemaining?, ok?, message? }
 
   // ── Categorías visuales de archivos (coherentes con StorageApp) ──
   const CATEGORIES = [
@@ -143,6 +145,13 @@
       </svg>
     </button>
   </div>
+
+  <!-- Activity strip (solo si hay acción en curso o recién completada) -->
+  {#if activity}
+    <div class="pc-activity-row">
+      <PoolActivity {activity} size={variant === 'expanded' ? 'full' : 'compact'} />
+    </div>
+  {/if}
 
   <!-- ══ Variante EXPANDED ══ -->
   {#if variant === 'expanded'}
@@ -271,6 +280,17 @@
   }
   .pool-card.expanded .pc-head { margin-bottom: 18px; }
   .pool-card.compact  .pc-head { margin-bottom: 14px; }
+
+  /* Activity row (cuando hay activity activa) */
+  .pc-activity-row {
+    margin-bottom: 16px;
+  }
+  .pool-card.compact .pc-activity-row {
+    margin-bottom: 12px;
+  }
+  /* Si hay activity el head necesita menos margen bottom */
+  .pool-card.expanded .pc-head:has(+ .pc-activity-row) { margin-bottom: 14px; }
+  .pool-card.compact  .pc-head:has(+ .pc-activity-row) { margin-bottom: 10px; }
 
   .pc-icon {
     border-radius: 9px;
