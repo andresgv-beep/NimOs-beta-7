@@ -16,6 +16,7 @@ const DEFAULTS = {
   textScale: 100, uiScale: 'auto', wallpaper: '', showWidgets: true, widgetMode: 'dynamic',
   widgetScale: 100, pinnedApps: ['files', 'appstore', 'nimsettings'],
   widgetLayout: null,
+  poolViewMode: 'auto',
 };
 
 // Single prefs store
