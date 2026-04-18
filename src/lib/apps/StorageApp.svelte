@@ -855,24 +855,19 @@ $: viewMode = viewModePref === 'auto'
   .nimos-toast.err{border-color:var(--c-crit-border);color:var(--c-crit)}
   @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
-  /* ── Pools container (patrón max-width centrado) ── */
+  /* ── Pools container (fluido, pegado al sidebar) ── */
 .view-toggle-row {
-  max-width: 860px;
-  margin: 0 auto 14px;
+  margin: 0 0 14px;
   display: flex;
   justify-content: flex-end;
 }
 .pools-container {
-  max-width: 860px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 700px), 1fr));
   gap: 14px;
 }
 .pools-container.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 400px));
-  justify-content: center;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
 }
 
 /* Kebab menu (reutiliza el comportamiento existente) */
