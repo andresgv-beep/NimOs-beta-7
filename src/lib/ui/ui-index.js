@@ -5,3 +5,7 @@ export { default as SectionLabel } from './SectionLabel.svelte';
 export { default as InfoGrid } from './InfoGrid.svelte';
 export { default as DiskTable } from './DiskTable.svelte';
 export { default as StatusHero } from './StatusHero.svelte';
+export { default as Donut }        from './Donut.svelte';
+export { default as DiskChip }     from './DiskChip.svelte';
+export { default as PoolCard }     from './PoolCard.svelte';
+export { default as ViewToggle }   from './ViewToggle.svelte';
