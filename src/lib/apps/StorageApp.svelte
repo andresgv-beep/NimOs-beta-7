@@ -352,24 +352,36 @@ $: viewMode = viewModePref === 'auto'
       <div style="height:14px"></div>
     {/if}
 
-    <!-- Pool pills -->
-    <div class="pool-list" on:click={closeMenus}>
-      {#each pools as pool}
-        <div class="pool-pill" class:open={expandedPools[pool.name]}>
+    <!-- View toggle (solo si hay más de 1 pool) -->
+{#if pools.length > 1}
+  <div class="view-toggle-row">
+    <ViewToggle value={viewMode} on:change={onViewModeChange} />
+  </div>
+{/if}
 
-          {#if expandedPools[pool.name]}
-            <!-- OPEN STATE -->
-            <div class="pool-head" on:click={()=>togglePill(pool.name)}>
-              <div class="pool-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.84 13.38c1.13 0 2.14.45 2.9 1.18L19.37 5.18C18.84 3.54 17.9 3 16.74 3H7.26C6.1 3 5.16 3.54 4.63 5.18L2.27 14.56c.75-.73 1.76-1.18 2.89-1.18z"/><path d="M5.16 14.4C4 14.4 2.96 15.07 2.41 16.08c-.26.48-.41 1.03-.41 1.62C2 19.55 3.44 21 5.16 21h13.68c1.72 0 3.16-1.45 3.16-3.3 0-.59-.15-1.14-.41-1.62-.55-1.01-1.58-1.68-2.75-1.68z"/></svg></div>
-              <div class="pool-ident"><div class="pill-name">{pool.name}</div><div class="pill-sub">{pillSub(pool)}</div></div>
-              <div class="bar">
-                <div class="bar-pct {barColor(pool.usagePercent||0)}" style="left:{Math.max(pool.usagePercent||0,2)}%">{pool.usagePercent||0}<span class="sym">%</span></div>
-                <div class="bar-fill {barColor(pool.usagePercent||0)}" style="width:{Math.max(pool.usagePercent||0,1)}%"></div>
-              </div>
-              <div class="cap-total">{pool.totalFormatted||'—'}</div>
-              <div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></div>
-              <div class="kebab" on:click|stopPropagation={e=>toggleMenu(pool.name,e)}><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></div>
-            </div>
+    <!-- Pool cards -->
+    <div class="pools-container" class:grid={viewMode === 'compact'}>
+      {#each pools as pool (pool.name)}
+        <PoolCard
+          {pool}
+          fileStats={poolFileStats[pool.name]}
+          variant={viewMode}
+          on:snapshot={(e) => createSnapshot(e.detail.name)}
+          on:scrub={(e) => startScrub(e.detail.name)}
+          on:addDisk={() => showToast('Añadir disco próximamente', 'default')}
+          on:menu={(e) => toggleMenu(e.detail.pool.name, e.detail.event)}
+        />
+    
+        {#if openMenu === pool.name}
+          <div class="pool-menu" on:click|stopPropagation>
+            <button on:click={() => createSnapshot(pool.name)}>Crear snapshot</button>
+            <button on:click={() => startScrub(pool.name)}>Verificar integridad</button>
+            <button on:click={() => exportPool(pool)}>Desmontar volumen</button>
+            <button class="destructive" on:click={() => openDestroyModal(pool)}>Destruir volumen</button>
+          </div>
+        {/if}
+      {/each}
+    </div>
 
             <!-- Expanded body: legend + donut -->
             <div class="pool-body">
