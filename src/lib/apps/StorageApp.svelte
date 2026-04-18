@@ -23,6 +23,17 @@
 
   let active = 'resumen';
   let loading = true;
+
+// ── View mode (expanded = A1, compact = A2) ──
+$: viewModePref = $prefs.poolViewMode || 'auto';
+$: viewMode = viewModePref === 'auto'
+  ? (pools.length <= 3 ? 'expanded' : 'compact')
+  : viewModePref;
+
+  function onViewModeChange(e) {
+  setPref('poolViewMode', e.detail);
+  }
+  
   let pools = [];
   let shares = [];
   let poolFileStats = {};
