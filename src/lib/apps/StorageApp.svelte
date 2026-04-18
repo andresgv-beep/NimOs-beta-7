@@ -756,7 +756,7 @@ $: viewMode = viewModePref === 'auto'
 }
 .pools-container.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 400px));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 400px));
   justify-content: center;
 }
 
