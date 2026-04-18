@@ -352,8 +352,8 @@ $: viewMode = viewModePref === 'auto'
       <div style="height:14px"></div>
     {/if}
 
-    <!-- View toggle (solo si hay más de 1 pool) -->
-{#if pools.length > 1}
+    <!-- View toggle (siempre visible cuando hay pools) -->
+{#if pools.length > 0}
   <div class="view-toggle-row">
     <ViewToggle value={viewMode} on:change={onViewModeChange} />
   </div>
