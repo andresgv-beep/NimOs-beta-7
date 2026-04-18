@@ -33,6 +33,92 @@ $: viewMode = viewModePref === 'auto'
   function onViewModeChange(e) {
   setPref('poolViewMode', e.detail);
   }
+
+  // ── Pool activity tracking (scrub, snapshot, export, resilver) ──
+  // Shape: { [poolName]: { action, state, progress?, speed?, timeRemaining?, ok?, message? } }
+  let poolActivity = {};
+  let scrubPollInterval = null;
+
+  function setActivity(name, a) {
+    poolActivity = { ...poolActivity, [name]: a };
+  }
+  function clearActivity(name) {
+    const copy = { ...poolActivity };
+    delete copy[name];
+    poolActivity = copy;
+  }
+  function completeActivity(name, ok, message) {
+    const prev = poolActivity[name];
+    if (!prev) return;
+    setActivity(name, { ...prev, state: 'completed', ok, message });
+    setTimeout(() => {
+      // Solo limpia si sigue siendo la misma acción completada (no sobrescribir otra nueva)
+      const cur = poolActivity[name];
+      if (cur && cur.state === 'completed' && cur.action === prev.action) {
+        clearActivity(name);
+      }
+    }, 4500);
+  }
+
+  // Poll de scrub/resilver — se lanza cuando hay al menos una activity de esos tipos en 'running'
+  async function pollScrubs() {
+    const names = Object.entries(poolActivity)
+      .filter(([, a]) => a?.state === 'running' && (a.action === 'scrub' || a.action === 'resilver'))
+      .map(([n]) => n);
+    if (names.length === 0) {
+      if (scrubPollInterval) { clearInterval(scrubPollInterval); scrubPollInterval = null; }
+      return;
+    }
+    for (const name of names) {
+      try {
+        const r = await fetch(`/api/storage/scrub/status?pool=${encodeURIComponent(name)}`, { headers: hdrs() });
+        const d = await r.json();
+        const prev = poolActivity[name];
+        if (!prev || prev.state !== 'running') continue;
+        if (d.status === 'scrubbing') {
+          setActivity(name, {
+            ...prev,
+            progress: typeof d.progress === 'number' ? d.progress : prev.progress,
+            speed: d.speed && d.speed !== '—' ? d.speed : undefined,
+            timeRemaining: d.timeRemaining && d.timeRemaining !== '—' ? d.timeRemaining : undefined,
+          });
+        } else if (d.status === 'done') {
+          completeActivity(name, true, 'Verificación completada');
+          await load(); // refrescar salud del pool
+        } else if (d.status === 'canceled') {
+          completeActivity(name, false, 'Verificación cancelada');
+        } else if (d.status === 'error') {
+          completeActivity(name, false, d.error || 'Error en verificación');
+        }
+      } catch {}
+    }
+  }
+
+  function ensureScrubPoll() {
+    if (scrubPollInterval) return;
+    scrubPollInterval = setInterval(pollScrubs, 3000);
+  }
+
+  // Detectar scrubs en marcha al cargar (alguien pudo haberlo lanzado antes)
+  async function detectOngoingScrubs() {
+    for (const p of pools) {
+      if (p.type !== 'zfs') continue; // de momento solo ZFS tiene progress fiable
+      try {
+        const r = await fetch(`/api/storage/scrub/status?pool=${encodeURIComponent(p.name)}`, { headers: hdrs() });
+        const d = await r.json();
+        if (d.status === 'scrubbing' && !poolActivity[p.name]) {
+          setActivity(p.name, {
+            action: 'scrub',
+            state: 'running',
+            progress: typeof d.progress === 'number' ? d.progress : 0,
+            speed: d.speed !== '—' ? d.speed : undefined,
+            timeRemaining: d.timeRemaining !== '—' ? d.timeRemaining : undefined,
+          });
+        }
+      } catch {}
+    }
+    if (Object.keys(poolActivity).length > 0) ensureScrubPoll();
+  }
   
   let pools = [];
   let shares = [];
@@ -126,6 +212,9 @@ $: viewMode = viewModePref === 'auto'
         for (const k of ['video','image','audio','document','other']) agg[pn][k] += s.fileStats[k] || 0;
       }
       poolFileStats = agg;
+
+      // Detectar scrubs/resilvers ya en marcha (al abrir Storage o refrescar)
+      detectOngoingScrubs();
     } catch (e) { console.error('[Storage] load failed', e); }
     loading = false;
   }
@@ -195,15 +284,31 @@ $: viewMode = viewModePref === 'auto'
 
   async function startScrub(name) {
     openMenu = null;
-    const r = await fetch('/api/storage/scrub', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
-    const d = await r.json();
-    showToast(d.ok ? 'Verificación iniciada' : (d.error||'Error'), d.ok ? 'default' : 'warning');
+    // Marca activity inmediatamente (feedback visual al momento)
+    setActivity(name, { action: 'scrub', state: 'running', progress: 0 });
+    try {
+      const r = await fetch('/api/storage/scrub', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
+      const d = await r.json();
+      if (!d.ok) {
+        completeActivity(name, false, d.error || 'No se pudo iniciar');
+        return;
+      }
+      // La verificación está corriendo — el poll se encargará del progress
+      ensureScrubPoll();
+    } catch (e) {
+      completeActivity(name, false, 'Error de conexión');
+    }
   }
   async function createSnapshot(name) {
     openMenu = null;
-    const r = await fetch('/api/storage/snapshot', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
-    const d = await r.json();
-    showToast(d.ok ? 'Snapshot creado' : (d.error||'Error'), d.ok ? 'default' : 'warning');
+    setActivity(name, { action: 'snapshot', state: 'running' });
+    try {
+      const r = await fetch('/api/storage/snapshot', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({pool:name}) });
+      const d = await r.json();
+      completeActivity(name, !!d.ok, d.ok ? 'Snapshot creado' : (d.error || 'Error al crear snapshot'));
+    } catch (e) {
+      completeActivity(name, false, 'Error de conexión');
+    }
   }
 
   async function exportPool(pool) {
@@ -215,12 +320,18 @@ $: viewMode = viewModePref === 'auto'
       confirmText: 'Desmontar',
       onConfirm: async () => {
         dlg = { ...dlg, loading: true };
+        setActivity(pool.name, { action: 'export', state: 'running' });
         try {
           const d = await (await fetch('/api/storage/pool/export', { method:'POST', headers:{...hdrs(),'Content-Type':'application/json'}, body:JSON.stringify({name:pool.name}) })).json();
-          if (d.ok) { closeDialog(); await load(); }
-          else if (d.error === 'services_active') { closeDialog(); showToast('Detén los servicios primero: ' + (d.services?.join(', ')||''), 'warning'); }
-          else { closeDialog(); showToast(d.error||'Error', 'warning'); }
-        } catch(e) { closeDialog(); showToast('Error: '+e.message, 'warning'); }
+          if (d.ok) {
+            // Al desmontar, el pool desaparecerá del array tras load() — la activity se va con él
+            closeDialog();
+            clearActivity(pool.name);
+            await load();
+          }
+          else if (d.error === 'services_active') { closeDialog(); completeActivity(pool.name, false, 'Detén los servicios primero: ' + (d.services?.join(', ')||'')); }
+          else { closeDialog(); completeActivity(pool.name, false, d.error || 'Error al desmontar'); }
+        } catch(e) { closeDialog(); completeActivity(pool.name, false, 'Error: ' + e.message); }
       }
     });
   }
@@ -291,7 +402,10 @@ $: viewMode = viewModePref === 'auto'
 
   let refreshInterval;
   onMount(()=>{ load(); refreshInterval=setInterval(load,30000); });
-  onDestroy(()=>{ if(refreshInterval) clearInterval(refreshInterval); });
+  onDestroy(()=>{
+    if(refreshInterval) clearInterval(refreshInterval);
+    if(scrubPollInterval) clearInterval(scrubPollInterval);
+  });
 
   // Restore
   let restorable = [];
@@ -366,6 +480,7 @@ $: viewMode = viewModePref === 'auto'
           {pool}
           fileStats={poolFileStats[pool.name]}
           variant={viewMode}
+          activity={poolActivity[pool.name]}
           on:snapshot={(e) => createSnapshot(e.detail.name)}
           on:scrub={(e) => startScrub(e.detail.name)}
           on:addDisk={() => showToast('Añadir disco próximamente', 'default')}
