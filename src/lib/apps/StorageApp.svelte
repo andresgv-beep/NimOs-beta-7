@@ -7,6 +7,9 @@
   import SectionLabel from '$lib/ui/SectionLabel.svelte';
   import Button from '$lib/ui/Button.svelte';
   import StatusHero from '$lib/ui/StatusHero.svelte';
+  import PoolCard from '$lib/ui/PoolCard.svelte';
+  import ViewToggle from '$lib/ui/ViewToggle.svelte';
+  import { prefs, setPref } from '$lib/stores/theme.js';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
   // ── Generic dialog state ──
