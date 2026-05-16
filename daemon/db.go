@@ -1,9 +1,7 @@
 package main
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -28,25 +26,14 @@ func openDB() error {
 	}
 
 	var err error
-	db, err = sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_busy_timeout=10000&_foreign_keys=ON")
+	db, err = sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_busy_timeout=5000&_foreign_keys=ON")
 	if err != nil {
 		return fmt.Errorf("cannot open database: %v", err)
 	}
 
-	// SQLite only supports one writer at a time. Using a single connection
-	// serializes all DB operations through Go's connection pool, preventing
-	// "database is locked" errors entirely.
-	// WAL mode allows concurrent readers but still only one writer.
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-
-	// Force foreign_keys ON explicitly. The query string `?_foreign_keys=ON`
-	// is not honored by modernc.org/sqlite, so we set it via PRAGMA after
-	// opening. Required for CASCADE/RESTRICT in storage_* tables to work.
-	// see docs/storage_invariants.md#5.1
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		return fmt.Errorf("cannot enable foreign_keys: %v", err)
-	}
+	// Allow multiple readers, WAL handles concurrency
+	db.SetMaxOpenConns(4)
+	db.SetMaxIdleConns(2)
 
 	if err := createTables(); err != nil {
 		return fmt.Errorf("cannot create tables: %v", err)
@@ -143,83 +130,7 @@ func createTables() error {
 		return fmt.Errorf("backup tables: %v", err)
 	}
 
-	// Create notification table
-	if err := createNotificationTable(); err != nil {
-		return fmt.Errorf("notification table: %v", err)
-	}
-
-	// Create app registry table
-	if err := createAppRegistryTable(); err != nil {
-		return fmt.Errorf("app registry table: %v", err)
-	}
-
-	// Create service registry tables
-	if err := createServiceRegistryTables(); err != nil {
-		return fmt.Errorf("service registry tables: %v", err)
-	}
-
-	// Create download tokens table (CRIT-008)
-	if err := createDownloadTokensTable(); err != nil {
-		return fmt.Errorf("download tokens table: %v", err)
-	}
-
-	// ── Schema migrations (versioned) ──
-	runSchemaMigrations()
-
 	return nil
-}
-
-// runSchemaMigrations applies versioned migrations.
-// Each migration runs once and bumps user_version.
-func runSchemaMigrations() {
-	var version int
-	db.QueryRow("PRAGMA user_version").Scan(&version)
-
-	if version < 1 {
-		// v1: Extend app_registry with type and managed_by columns
-		db.Exec(`ALTER TABLE app_registry ADD COLUMN type TEXT DEFAULT 'ui'`)
-		db.Exec(`ALTER TABLE app_registry ADD COLUMN managed_by TEXT DEFAULT 'none'`)
-
-		// Update existing apps with correct type and managed_by
-		updates := []struct {
-			id, appType, managedBy string
-		}{
-			{"nimsettings", "ui", "none"},
-			{"storage", "system", "internal"},
-			{"network", "system", "internal"},
-			{"nimtorrent", "daemon", "systemd"},
-			{"appstore", "ui", "none"},
-			{"files", "ui", "none"},
-			{"mediaplayer", "ui", "none"},
-			{"terminal", "ui", "none"},
-			{"containers", "docker", "docker"},
-			{"monitor", "ui", "none"},
-			{"vms", "system", "internal"},
-			{"texteditor", "ui", "none"},
-		}
-		for _, u := range updates {
-			db.Exec(`UPDATE app_registry SET type = ?, managed_by = ? WHERE id = ?`,
-				u.appType, u.managedBy, u.id)
-		}
-
-		// Add nimbackup if not present
-		db.Exec(`INSERT OR IGNORE INTO app_registry (id, name, category, admin_only, public, type, managed_by)
-			VALUES ('nimbackup', 'NimBackup', 'system', 0, 0, 'daemon', 'internal')`)
-
-		db.Exec("PRAGMA user_version = 1")
-		logMsg("schema: migrated to version 1 (app_registry extended, service registry)")
-	}
-
-	if version < 2 {
-		// v2: Add NimHealth app to registry
-		db.Exec(`INSERT OR IGNORE INTO app_registry (id, name, category, admin_only, public, type, managed_by)
-			VALUES ('nimhealth', 'NimHealth', 'system', 0, 0, 'ui', 'none')`)
-		db.Exec("PRAGMA user_version = 2")
-		logMsg("schema: migrated to version 2 (nimhealth app)")
-	}
-
-	// Future migrations go here:
-	// if version < 3 { ... db.Exec("PRAGMA user_version = 3") }
 }
 
 // ═══════════════════════════════════
@@ -353,51 +264,62 @@ func migrateFromJSON() {
 // User operations
 // ═══════════════════════════════════
 
-// dbUsersListRaw returns typed user summaries from the DB.
-func dbUsersListRaw() ([]DBUserSummary, error) {
+func dbUsersList() ([]map[string]interface{}, error) {
 	rows, err := db.Query(`SELECT username, role, description, totp_enabled, created_at FROM users ORDER BY created_at`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var users []DBUserSummary
+	var users []map[string]interface{}
 	for rows.Next() {
-		var u DBUserSummary
+		var username, role, desc, created string
 		var totpEnabled int
-		rows.Scan(&u.Username, &u.Role, &u.Description, &totpEnabled, &u.CreatedAt)
-		u.TotpEnabled = totpEnabled == 1
-		users = append(users, u)
+		rows.Scan(&username, &role, &desc, &totpEnabled, &created)
+		users = append(users, map[string]interface{}{
+			"username":    username,
+			"role":        role,
+			"description": desc,
+			"totpEnabled": totpEnabled == 1,
+			"created":     created,
+		})
 	}
 	if users == nil {
-		users = []DBUserSummary{}
+		users = []map[string]interface{}{}
 	}
 	return users, nil
 }
 
-// dbUsersGetRaw returns a typed DBUser struct.
-func dbUsersGetRaw(username string) (*DBUser, error) {
-	var u DBUser
-	u.Username = username
-	var totpEnabled int
+func dbUsersGet(username string) (map[string]interface{}, error) {
+	var pwd, role, desc, totpSecret, created string
 	var backupCodesJSON string
+	var totpEnabled int
 	var updatedAt sql.NullString
 	err := db.QueryRow(`SELECT password, role, description, totp_secret, totp_enabled, backup_codes, created_at, updated_at FROM users WHERE username = ?`, username).
-		Scan(&u.Password, &u.Role, &u.Description, &u.TotpSecret, &totpEnabled, &backupCodesJSON, &u.CreatedAt, &updatedAt)
+		Scan(&pwd, &role, &desc, &totpSecret, &totpEnabled, &backupCodesJSON, &created, &updatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %s", username)
 	}
-	u.TotpEnabled = totpEnabled == 1
+
+	result := map[string]interface{}{
+		"username":    username,
+		"password":    pwd,
+		"role":        role,
+		"description": desc,
+		"totpSecret":  totpSecret,
+		"totpEnabled": totpEnabled == 1,
+		"created":     created,
+	}
 
 	// Parse backup codes JSON array
 	if backupCodesJSON != "" {
 		var codes []interface{}
 		if json.Unmarshal([]byte(backupCodesJSON), &codes) == nil {
-			u.BackupCodes = codes
+			result["backupCodes"] = codes
 		}
 	}
 
-	return &u, nil
+	return result, nil
 }
 
 func dbUsersCreate(username, password, role, description string) error {
@@ -406,37 +328,33 @@ func dbUsersCreate(username, password, role, description string) error {
 	return err
 }
 
-func dbUsersUpdate(username string, u UserUpdate) error {
+func dbUsersUpdate(username string, fields map[string]interface{}) error {
+	// Build dynamic update
 	sets := []string{}
 	args := []interface{}{}
-	if u.Password != nil {
-		sets = append(sets, "password = ?")
-		args = append(args, *u.Password)
-	}
-	if u.Role != nil {
-		sets = append(sets, "role = ?")
-		args = append(args, *u.Role)
-	}
-	if u.Description != nil {
-		sets = append(sets, "description = ?")
-		args = append(args, *u.Description)
-	}
-	if u.TotpSecret != nil {
-		sets = append(sets, "totp_secret = ?")
-		args = append(args, *u.TotpSecret)
-	}
-	if u.TotpEnabled != nil {
-		sets = append(sets, "totp_enabled = ?")
-		if *u.TotpEnabled {
-			args = append(args, 1)
-		} else {
-			args = append(args, 0)
+	for k, v := range fields {
+		col := ""
+		switch k {
+		case "password":
+			col = "password"
+		case "role":
+			col = "role"
+		case "description":
+			col = "description"
+		case "totpSecret":
+			col = "totp_secret"
+		case "totpEnabled":
+			col = "totp_enabled"
+		case "backupCodes":
+			col = "backup_codes"
+			// Serialize as JSON
+			jsonData, _ := json.Marshal(v)
+			v = string(jsonData)
+		default:
+			continue
 		}
-	}
-	if u.BackupCodes != nil {
-		sets = append(sets, "backup_codes = ?")
-		jsonData, _ := json.Marshal(u.BackupCodes)
-		args = append(args, string(jsonData))
+		sets = append(sets, col+" = ?")
+		args = append(args, v)
 	}
 	if len(sets) == 0 {
 		return nil
@@ -472,7 +390,7 @@ func dbUsersVerifyPassword(username string) (string, error) {
 // Session operations
 // ═══════════════════════════════════
 
-const sessionExpiryMs int64 = 24 * 60 * 60 * 1000 // 24 hours (sliding — renewed on each request)
+const sessionExpiryMs int64 = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 func dbSessionCreate(token, username, role, ip string) error {
 	now := time.Now().UnixMilli()
@@ -482,21 +400,25 @@ func dbSessionCreate(token, username, role, ip string) error {
 	return err
 }
 
-func dbSessionGet(token string) (*DBSession, error) {
-	var s DBSession
+func dbSessionGet(token string) (map[string]interface{}, error) {
+	var username, role, ip string
+	var createdAt, expiresAt int64
 	err := db.QueryRow(`SELECT username, role, created_at, expires_at, ip FROM sessions WHERE token = ?`, token).
-		Scan(&s.Username, &s.Role, &s.CreatedAt, &s.ExpiresAt, &s.IP)
+		Scan(&username, &role, &createdAt, &expiresAt, &ip)
 	if err != nil {
 		return nil, fmt.Errorf("session not found")
 	}
-	if time.Now().UnixMilli() > s.ExpiresAt {
+	if time.Now().UnixMilli() > expiresAt {
 		db.Exec(`DELETE FROM sessions WHERE token = ?`, token)
 		return nil, fmt.Errorf("session expired")
 	}
-	// Sliding expiry: renew on each use so active users stay logged in
-	newExpiry := time.Now().UnixMilli() + sessionExpiryMs
-	db.Exec(`UPDATE sessions SET expires_at = ? WHERE token = ?`, newExpiry, token)
-	return &s, nil
+	return map[string]interface{}{
+		"username": username,
+		"role":     role,
+		"created":  createdAt,
+		"expires":  expiresAt,
+		"ip":       ip,
+	}, nil
 }
 
 func dbSessionDelete(token string) error {
@@ -508,137 +430,89 @@ func dbSessionCleanup() int64 {
 	now := time.Now().UnixMilli()
 	result, _ := db.Exec(`DELETE FROM sessions WHERE expires_at < ?`, now)
 	n, _ := result.RowsAffected()
-	// Also clean expired download tokens
-	db.Exec(`DELETE FROM download_tokens WHERE expires_at < ?`, now)
 	return n
-}
-
-// ═══════════════════════════════════
-// Download tokens (CRIT-008: short-lived, one-time-use)
-// ═══════════════════════════════════
-
-func createDownloadTokensTable() error {
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS download_tokens (
-		token      TEXT PRIMARY KEY,
-		username   TEXT NOT NULL,
-		role       TEXT NOT NULL,
-		share      TEXT NOT NULL,
-		path       TEXT NOT NULL,
-		created_at INTEGER NOT NULL,
-		expires_at INTEGER NOT NULL
-	)`)
-	return err
-}
-
-const downloadTokenExpiryMs int64 = 60 * 1000 // 60 seconds
-
-func dbDownloadTokenCreate(username, role, share, path string) (string, error) {
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
-		return "", err
-	}
-	token := hex.EncodeToString(raw)
-	hashed := sha256Hex(token)
-	now := time.Now().UnixMilli()
-	expires := now + downloadTokenExpiryMs
-	_, err := db.Exec(`INSERT INTO download_tokens (token, username, role, share, path, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		hashed, username, role, share, path, now, expires)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-// dbDownloadTokenConsume validates and deletes (one-time-use) a download token.
-// Returns username, role, share, path if valid.
-func dbDownloadTokenConsume(rawToken string) (string, string, string, string, error) {
-	hashed := sha256Hex(rawToken)
-	var username, role, share, path string
-	var expiresAt int64
-	err := db.QueryRow(`SELECT username, role, share, path, expires_at FROM download_tokens WHERE token = ?`, hashed).
-		Scan(&username, &role, &share, &path, &expiresAt)
-	if err != nil {
-		return "", "", "", "", fmt.Errorf("invalid download token")
-	}
-	// Always delete (one-time-use)
-	db.Exec(`DELETE FROM download_tokens WHERE token = ?`, hashed)
-	if time.Now().UnixMilli() > expiresAt {
-		return "", "", "", "", fmt.Errorf("download token expired")
-	}
-	return username, role, share, path, nil
 }
 
 // ═══════════════════════════════════
 // Share operations (data layer)
 // ═══════════════════════════════════
 
-// dbSharesListRaw returns typed share structs from the DB.
-// This is the primary query — other functions build on top of it.
-func dbSharesListRaw() ([]DBShare, error) {
+func dbSharesList() ([]map[string]interface{}, error) {
 	rows, err := db.Query(`SELECT name, display_name, description, path, volume, pool, recycle_bin, created_by, created_at FROM shares ORDER BY created_at`)
 	if err != nil {
 		return nil, err
 	}
 
-	// Collect rows first, then close before subqueries
+	// Collect all share names first, then close rows before subqueries
 	type shareRow struct {
-		DBShare
-		recycleBinInt int
+		name, displayName, desc, path, volume, pool, createdBy, created string
+		recycleBin int
 	}
 	var shareRows []shareRow
 	for rows.Next() {
 		var s shareRow
-		rows.Scan(&s.Name, &s.DisplayName, &s.Description, &s.Path, &s.Volume, &s.Pool, &s.recycleBinInt, &s.CreatedBy, &s.CreatedAt)
-		s.RecycleBin = s.recycleBinInt == 1
+		rows.Scan(&s.name, &s.displayName, &s.desc, &s.path, &s.volume, &s.pool, &s.recycleBin, &s.createdBy, &s.created)
 		shareRows = append(shareRows, s)
 	}
 	rows.Close()
 
-	var shares []DBShare
-	for _, sr := range shareRows {
-		s := sr.DBShare
-		s.Permissions = map[string]string{}
-
-		prows, _ := db.Query(`SELECT username, permission FROM share_permissions WHERE share_name = ?`, s.Name)
+	// Now build results with subqueries (rows are closed, no deadlock)
+	var shares []map[string]interface{}
+	for _, s := range shareRows {
+		perms := map[string]string{}
+		prows, _ := db.Query(`SELECT username, permission FROM share_permissions WHERE share_name = ?`, s.name)
 		if prows != nil {
 			for prows.Next() {
 				var u, p string
 				prows.Scan(&u, &p)
-				s.Permissions[u] = p
+				perms[u] = p
 			}
 			prows.Close()
 		}
 
-		arows, _ := db.Query(`SELECT app_id, uid, permission FROM app_permissions WHERE share_name = ?`, s.Name)
+		var appPerms []map[string]interface{}
+		arows, _ := db.Query(`SELECT app_id, uid, permission FROM app_permissions WHERE share_name = ?`, s.name)
 		if arows != nil {
 			for arows.Next() {
-				var ap AppPermission
-				arows.Scan(&ap.AppId, &ap.Uid, &ap.Permission)
-				s.AppPermissions = append(s.AppPermissions, ap)
+				var appId, perm string
+				var uid int
+				arows.Scan(&appId, &uid, &perm)
+				appPerms = append(appPerms, map[string]interface{}{"appId": appId, "uid": uid, "permission": perm})
 			}
 			arows.Close()
 		}
-		if s.AppPermissions == nil {
-			s.AppPermissions = []AppPermission{}
+		if appPerms == nil {
+			appPerms = []map[string]interface{}{}
 		}
 
-		shares = append(shares, s)
+		shares = append(shares, map[string]interface{}{
+			"name":           s.name,
+			"displayName":    s.displayName,
+			"description":    s.desc,
+			"path":           s.path,
+			"volume":         s.volume,
+			"pool":           s.pool,
+			"recycleBin":     s.recycleBin == 1,
+			"createdBy":      s.createdBy,
+			"created":        s.created,
+			"permissions":    perms,
+			"appPermissions": appPerms,
+		})
 	}
 	if shares == nil {
-		shares = []DBShare{}
+		shares = []map[string]interface{}{}
 	}
 	return shares, nil
 }
 
-// dbSharesGetRaw returns a single typed share struct.
-func dbSharesGetRaw(name string) (*DBShare, error) {
-	raw, err := dbSharesListRaw()
+func dbSharesGet(name string) (map[string]interface{}, error) {
+	shares, err := dbSharesList()
 	if err != nil {
 		return nil, err
 	}
-	for _, s := range raw {
-		if s.Name == name {
-			return &s, nil
+	for _, s := range shares {
+		if s["name"] == name {
+			return s, nil
 		}
 	}
 	return nil, fmt.Errorf("share not found: %s", name)
@@ -651,20 +525,21 @@ func dbSharesCreate(name, displayName, desc, path, volume, pool, createdBy strin
 	return err
 }
 
-func dbSharesUpdate(name string, u ShareUpdate) error {
+func dbSharesUpdate(name string, fields map[string]interface{}) error {
 	sets := []string{}
 	args := []interface{}{}
-	if u.Description != nil {
-		sets = append(sets, "description = ?")
-		args = append(args, *u.Description)
-	}
-	if u.RecycleBin != nil {
-		sets = append(sets, "recycle_bin = ?")
-		if *u.RecycleBin {
-			args = append(args, 1)
-		} else {
-			args = append(args, 0)
+	for k, v := range fields {
+		col := ""
+		switch k {
+		case "description":
+			col = "description"
+		case "recycleBin":
+			col = "recycle_bin"
+		default:
+			continue
 		}
+		sets = append(sets, col+" = ?")
+		args = append(args, v)
 	}
 	if len(sets) == 0 {
 		return nil
@@ -705,6 +580,28 @@ func dbShareRemoveAppPermission(shareName, appId string) error {
 // Preferences operations
 // ═══════════════════════════════════
 
+func dbPrefsGet(username string) (map[string]interface{}, error) {
+	rows, err := db.Query(`SELECT key, value FROM preferences WHERE username = ?`, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	prefs := map[string]interface{}{}
+	for rows.Next() {
+		var key, value string
+		rows.Scan(&key, &value)
+		// Try to parse as JSON
+		var parsed interface{}
+		if json.Unmarshal([]byte(value), &parsed) == nil {
+			prefs[key] = parsed
+		} else {
+			prefs[key] = value
+		}
+	}
+	return prefs, nil
+}
+
 func dbPrefsSet(username, key, value string) error {
 	_, err := db.Exec(`INSERT OR REPLACE INTO preferences (username, key, value) VALUES (?, ?, ?)`,
 		username, key, value)
@@ -717,94 +614,19 @@ func dbPrefsDelete(username, key string) error {
 }
 
 // ═══════════════════════════════════
-// App Registry — stored in DB, not hardcoded
+// User App Access
 // ═══════════════════════════════════
 
-func createAppRegistryTable() error {
-	_, err := db.Exec(`
-	CREATE TABLE IF NOT EXISTS app_registry (
-		id          TEXT PRIMARY KEY,
-		name        TEXT NOT NULL,
-		category    TEXT NOT NULL DEFAULT 'app',
-		admin_only  INTEGER DEFAULT 0,
-		public      INTEGER DEFAULT 0
-	);`)
-	if err != nil {
-		return err
-	}
-
-	// Seed default apps if table is empty
-	var count int
-	db.QueryRow("SELECT COUNT(*) FROM app_registry").Scan(&count)
-	if count == 0 {
-		tx, _ := db.Begin()
-		seedApps := []struct {
-			id, name, category string
-			adminOnly, public  int
-		}{
-			{"nimsettings", "NimSettings", "system", 0, 0},
-			{"storage", "Storage", "system", 1, 0},
-			{"network", "Network", "system", 1, 0},
-			{"nimtorrent", "NimTorrent", "app", 0, 0},
-			{"appstore", "App Store", "system", 0, 0},
-			{"files", "Files", "app", 0, 1},
-			{"mediaplayer", "Media Player", "app", 0, 1},
-			{"terminal", "Terminal", "system", 0, 0},
-			{"containers", "Containers", "system", 0, 0},
-			{"monitor", "System Monitor", "system", 0, 0},
-			{"vms", "Virtual Machines", "system", 0, 0},
-			{"texteditor", "Text Editor", "app", 0, 0},
-		}
-		for _, a := range seedApps {
-			tx.Exec(`INSERT OR IGNORE INTO app_registry (id, name, category, admin_only, public) VALUES (?, ?, ?, ?, ?)`,
-				a.id, a.name, a.category, a.adminOnly, a.public)
-		}
-		tx.Commit()
-		logMsg("app_registry: seeded %d default apps", len(seedApps))
-	}
-	return nil
+// Apps that are always available to all authenticated users (no permission needed)
+var publicApps = map[string]bool{
+	"files":       true,
+	"mediaplayer": true,
 }
 
-// isPublicApp checks if an app is accessible to all authenticated users
-func isPublicApp(appId string) bool {
-	var pub int
-	err := db.QueryRow(`SELECT public FROM app_registry WHERE id = ?`, appId).Scan(&pub)
-	if err != nil {
-		return false
-	}
-	return pub == 1
-}
-
-// isAdminOnlyApp checks if an app is restricted to admin users
-func isAdminOnlyApp(appId string) bool {
-	var adminOnly int
-	err := db.QueryRow(`SELECT admin_only FROM app_registry WHERE id = ?`, appId).Scan(&adminOnly)
-	if err != nil {
-		return false
-	}
-	return adminOnly == 1
-}
-
-// dbListAppRegistry returns all registered apps for the admin panel
-func dbListAppRegistry() ([]DBAppRegistryEntry, error) {
-	rows, err := db.Query(`SELECT id, name, category, admin_only, public FROM app_registry ORDER BY category, name`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var result []DBAppRegistryEntry
-	for rows.Next() {
-		var a DBAppRegistryEntry
-		var adminOnly, public int
-		rows.Scan(&a.Id, &a.Name, &a.Category, &adminOnly, &public)
-		a.AdminOnly = adminOnly == 1
-		a.Public = public == 1
-		result = append(result, a)
-	}
-	if result == nil {
-		result = []DBAppRegistryEntry{}
-	}
-	return result, nil
+// Apps that are ALWAYS admin-only (cannot be delegated)
+var adminOnlyApps = map[string]bool{
+	"storage": true,
+	"network": true,
 }
 
 // Check if a user has access to an app
@@ -814,10 +636,10 @@ func dbUserHasAppAccess(username, role, appId string) bool {
 	if role == "admin" {
 		return true
 	}
-	if isPublicApp(appId) {
+	if publicApps[appId] {
 		return true
 	}
-	if isAdminOnlyApp(appId) {
+	if adminOnlyApps[appId] {
 		return false
 	}
 	var count int
@@ -833,10 +655,10 @@ func dbUserGetAppPermission(username, role, appId string) string {
 	if role == "admin" {
 		return "manage"
 	}
-	if isPublicApp(appId) {
+	if publicApps[appId] {
 		return "use"
 	}
-	if isAdminOnlyApp(appId) {
+	if adminOnlyApps[appId] {
 		return ""
 	}
 	var perm string
@@ -848,39 +670,50 @@ func dbUserGetAppPermission(username, role, appId string) string {
 }
 
 // List all app access for a user
-func dbUserListAppAccess(username string) ([]DBAppGrant, error) {
+func dbUserListAppAccess(username string) ([]map[string]interface{}, error) {
 	rows, err := db.Query(`SELECT app_id, permission, granted_by, granted_at FROM user_app_access WHERE username = ? ORDER BY app_id`, username)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var result []DBAppGrant
+	var result []map[string]interface{}
 	for rows.Next() {
-		g := DBAppGrant{Username: username}
-		rows.Scan(&g.AppId, &g.Permission, &g.GrantedBy, &g.GrantedAt)
-		result = append(result, g)
+		var appId, perm, grantedBy, grantedAt string
+		rows.Scan(&appId, &perm, &grantedBy, &grantedAt)
+		result = append(result, map[string]interface{}{
+			"appId":     appId,
+			"permission": perm,
+			"grantedBy": grantedBy,
+			"grantedAt": grantedAt,
+		})
 	}
 	if result == nil {
-		result = []DBAppGrant{}
+		result = []map[string]interface{}{}
 	}
 	return result, nil
 }
 
 // List all app access entries (for admin panel)
-func dbAppAccessListAll() ([]DBAppGrant, error) {
+func dbAppAccessListAll() ([]map[string]interface{}, error) {
 	rows, err := db.Query(`SELECT username, app_id, permission, granted_by, granted_at FROM user_app_access ORDER BY username, app_id`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var result []DBAppGrant
+	var result []map[string]interface{}
 	for rows.Next() {
-		var g DBAppGrant
-		rows.Scan(&g.Username, &g.AppId, &g.Permission, &g.GrantedBy, &g.GrantedAt)
-		result = append(result, g)
+		var username, appId, perm, grantedBy, grantedAt string
+		rows.Scan(&username, &appId, &perm, &grantedBy, &grantedAt)
+		result = append(result, map[string]interface{}{
+			"username":   username,
+			"appId":      appId,
+			"permission": perm,
+			"grantedBy":  grantedBy,
+			"grantedAt":  grantedAt,
+		})
 	}
 	if result == nil {
-		result = []DBAppGrant{}
+		result = []map[string]interface{}{}
 	}
 	return result, nil
 }
